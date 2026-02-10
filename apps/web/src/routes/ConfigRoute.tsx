@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, type Path } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { OrderInputSchema, type OrderInput } from 'shared'
 import { apiPost } from '@/lib/http'
@@ -57,7 +57,8 @@ export function ConfigRoute() {
   }
 
   const form = useForm<OrderInput>({
-    resolver: zodResolver(OrderInputSchema),
+    // NOTE: keep build stable across Zod typings changes between deps.
+    resolver: zodResolver(OrderInputSchema as any),
     mode: 'onTouched',
     defaultValues: {
       recipientName: '',
@@ -99,7 +100,7 @@ export function ConfigRoute() {
           : { label: 'Sempurna!', pct: 100, color: 'bg-green-600', text: 'text-green-700' }
 
   const handleNext = async () => {
-    let fieldsToValidate: string[] = []
+    let fieldsToValidate: Path<OrderInput>[] = []
     if (step === 0) fieldsToValidate = ['recipientName']
     if (step === 1) fieldsToValidate = ['musicPreferences.genre', 'musicPreferences.voiceStyle']
     if (step === 2) fieldsToValidate = ['story']

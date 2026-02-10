@@ -12,10 +12,20 @@
     "dev:worker": "npm run dev:worker -w api",
     "build": "npm run build -ws",
     "lint": "npm run lint -ws",
-    "typecheck": "npm run typecheck -ws"
+    "typecheck": "npm run typecheck -ws",
+    "db:up": "docker compose -f infra/docker-compose.yml up -d",
+    "db:down": "docker compose -f infra/docker-compose.yml down",
+    "pm2:start": "pm2 start infra/ecosystem.config.cjs",
+    "pm2:reload": "pm2 reload infra/ecosystem.config.cjs",
+    "pm2:stop": "pm2 stop infra/ecosystem.config.cjs",
+    "pm2:delete": "pm2 delete infra/ecosystem.config.cjs",
+    "pm2:logs": "pm2 logs"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
     "shadcn": "^3.8.4"
+  },
+  "dependencies": {
+    "nodemailer": "^8.0.1"
   }
 }
