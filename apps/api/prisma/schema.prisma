@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PromptTemplateType {
+  lyrics
+  mood_description
+  music
+}
+
+enum OrderStatus {
+  created
+  processing
+  completed
+  failed
+}
+
+enum DeliveryStatus {
+  delivery_pending
+  delivery_scheduled
+  delivered
+  delivery_failed
+}
+
+enum PaymentStatus {
+  free
+  pending
+  paid
+  failed
+}
+
+model Settings {
+  id               String   @id @default(cuid())
+  openaiApiKeyEnc  String?
+  kaiAiApiKeyEnc   String?
+  whatsappProvider String   @default("mock")
+  whatsappConfig   Json?
+  instantEnabled   Boolean  @default(true)
+  deliveryDelayHours Int?
+  paymentsEnabled  Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model PromptTemplate {
+  id           String             @id @default(cuid())
+  type         PromptTemplateType
+  templateText String
+  kaiSettings  Json?
+  version      Int
+  isActive     Boolean            @default(false)
+  createdAt    DateTime           @default(now())
+
+  @@unique([type, version])
+  @@index([type, isActive])
+}
+
+model Customer {
+  id            String   @id @default(cuid())
+  name          String
+  whatsappNumber String  @unique
+  email         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  orders        Order[]
+}
+
+model EmailVerification {
+  id        String   @id @default(cuid())
+  email     String
+  codeHash  String
+  expiresAt DateTime
+  verifiedAt DateTime?
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email, createdAt])
+  @@index([expiresAt])
+}
+
+model Order {
+  id                 String         @id @default(cuid())
+  customerId         String
+  customer           Customer       @relation(fields: [customerId], references: [id])
+
+  inputPayload       Json
+
+  status             OrderStatus    @default(created)
+  deliveryStatus     DeliveryStatus @default(delivery_pending)
+  paymentStatus      PaymentStatus  @default(free)
+
+  lyricsText         String?
+  moodDescription    String?
+  trackUrl           String?
+  trackMetadata      Json?
+
+  confirmedAt        DateTime?
+  generationStartedAt DateTime?
+  generationCompletedAt DateTime?
+  deliveryScheduledAt DateTime?
+  deliveredAt        DateTime?
+
+  errorMessage       String?
+
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  events             OrderEvent[]
+
+  @@index([status])
+  @@index([deliveryStatus])
+  @@index([customerId, createdAt])
+}
+
+model OrderEvent {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type      String
+  message   String?
+  data      Json?
+  createdAt DateTime @default(now())
+
+  @@index([orderId, createdAt])
+  @@index([type])
+}
+

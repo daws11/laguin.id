@@ -1,0 +1,21 @@
+{
+  "name": "valentine-projects",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,worker,web -c blue,magenta,green \"npm:dev:api\" \"npm:dev:worker\" \"npm:dev:web\"",
+    "dev:web": "npm run dev -w web",
+    "dev:api": "npm run dev -w api",
+    "dev:worker": "npm run dev:worker -w api",
+    "build": "npm run build -ws",
+    "lint": "npm run lint -ws",
+    "typecheck": "npm run typecheck -ws"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "shadcn": "^3.8.4"
+  }
+}
