@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { Check, Clock, Music, Loader2, ArrowLeft } from 'lucide-react'
 
@@ -62,6 +62,17 @@ export function CheckoutRoute() {
   const [order, setOrder] = useState<OrderSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [checklistStep, setChecklistStep] = useState(0)
+
+  const hasAttemptedAutoConfirm = useRef(false)
+
+  // Auto-confirm logic: trigger immediately when order is loaded and status is created
+  useEffect(() => {
+    if (orderId && order?.status === 'created' && !confirming && !hasAttemptedAutoConfirm.current) {
+      hasAttemptedAutoConfirm.current = true
+      confirm()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderId, order?.status])
 
   // Initial Load
   useEffect(() => {
@@ -153,7 +164,7 @@ export function CheckoutRoute() {
 
   // UX rule: do not display raw backend errors (credits, JSON, stack-like messages).
   // Even when backend marks the order as failed, keep the user on a "success / in progress" experience.
-  const showProgressUI = Boolean(order && (order.status === 'processing' || order.status === 'created' || order.status === 'failed' || confirming))
+  const showProgressUI = Boolean(order && (order.status === 'processing' || order.status === 'created' || order.status === 'failed' || confirming || hasAttemptedAutoConfirm.current))
 
   return (
     <div className="min-h-screen bg-[#FFF5F7] font-sans pb-32 pt-10 px-4">
@@ -196,7 +207,7 @@ export function CheckoutRoute() {
                     <div>
                       <p className="font-bold text-[#E11D48]">Pesanan Berhasil Diterima</p>
                       <p className="opacity-90 mt-1">
-                        Pesanan kamu sedang diproses. Link lagu akan tersedia setelah proses selesai, dan/atau kami akan mengirimkannya via WhatsApp.
+                        Pesanan kamu sedang diproses. Kami akan mengirimkannya melalui email dan memberitahu Anda via WhatsApp ketika sudah selesai.
                       </p>
                     </div>
                   </div>
@@ -238,17 +249,20 @@ export function CheckoutRoute() {
               </CardContent>
             </Card>
 
-            {/* Actions */}
-            {order.status === 'created' ? (
+            {/* Actions: Removed auto-confirm button. Only show if error occurs to retry. */}
+            {error && order.status === 'created' ? (
                <Button 
                  className="w-full h-14 rounded-full bg-[#E11D48] text-white text-lg font-bold shadow-xl shadow-rose-200 hover:bg-rose-700 hover:scale-[1.02] transition-all duration-300" 
-                 onClick={() => void confirm()} 
+                 onClick={() => {
+                    hasAttemptedAutoConfirm.current = true
+                    confirm()
+                 }} 
                  disabled={confirming}
                >
                  {confirming ? (
                    <span className="flex items-center gap-2"><Loader2 className="animate-spin" /> Memproses...</span>
                  ) : (
-                   'Buat Lagu (Konfirmasi Pesanan)'
+                   'Coba Lagi (Konfirmasi Pesanan)'
                  )}
                </Button>
             ) : null}

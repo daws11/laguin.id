@@ -39,6 +39,8 @@ function verifyOtpHash(code: string, codeHash: string) {
   return crypto.timingSafeEqual(expected, actual)
 }
 
+import { generateOtpEmailHtml } from '../lib/emailTemplates'
+
 function renderOtpEmailText(code: string) {
   return [
     'Kode verifikasi email kamu:',
@@ -83,6 +85,7 @@ export const emailVerificationRoutes: FastifyPluginAsync = async (app) => {
         to: email,
         subject: 'Kode verifikasi email',
         text: renderOtpEmailText(code),
+        html: generateOtpEmailHtml(code),
       })
     } catch (e) {
       req.log.error({ err: e }, 'Failed to send verification email')

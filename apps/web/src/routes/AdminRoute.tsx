@@ -387,6 +387,17 @@ function moveItem<T>(arr: T[], from: number, to: number) {
   return copy
 }
 
+function parseToastItemsJson(raw: string): ToastItem[] {
+  const parsed = JSON.parse(raw) as any
+  const arr = Array.isArray(parsed) ? parsed : parsed && typeof parsed === 'object' ? parsed.items : null
+  if (!Array.isArray(arr)) return []
+  return safeArr(arr, (x) => ({
+    fullName: asString(x?.fullName, '').trim(),
+    city: asString(x?.city, '').trim(),
+    recipientName: asString(x?.recipientName, '').trim(),
+  })).filter((x) => x.fullName || x.city || x.recipientName)
+}
+
 function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
   const cfg =
     s?.publicSiteConfig && typeof s.publicSiteConfig === 'object' ? (s.publicSiteConfig as any) : {}
@@ -511,6 +522,9 @@ export function AdminRoute() {
 
   const [settings, setSettings] = useState<Settings | null>(null)
   const [publicSiteDraft, setPublicSiteDraft] = useState<PublicSiteDraft>(() => buildDraftFromSettings(null))
+  const [toastItemsJson, setToastItemsJson] = useState('')
+  const [toastItemsJsonError, setToastItemsJsonError] = useState<string | null>(null)
+  const [toastItemsPage, setToastItemsPage] = useState(1)
   const [publicCfgError, setPublicCfgError] = useState<string | null>(null)
   const [publicCfgSavedAt, setPublicCfgSavedAt] = useState<string | null>(null)
   const lastLoadedSettingsIdRef = useRef<string | null>(null)
@@ -551,6 +565,19 @@ export function AdminRoute() {
     setSelectedCustomer(null)
     setSelectedOrder(null)
   }
+
+  const TOAST_ITEMS_PAGE_SIZE = 5
+  const toastItemsTotal = publicSiteDraft.activityToast.items.length
+  const toastItemsTotalPages = Math.max(1, Math.ceil(toastItemsTotal / TOAST_ITEMS_PAGE_SIZE))
+  const toastItemsPageSafe = Math.min(toastItemsTotalPages, Math.max(1, toastItemsPage))
+  const toastItemsStartIdx = (toastItemsPageSafe - 1) * TOAST_ITEMS_PAGE_SIZE
+  const toastItemsEndIdx = Math.min(toastItemsTotal, toastItemsStartIdx + TOAST_ITEMS_PAGE_SIZE)
+
+  // Keep page in range if items count changes.
+  useEffect(() => {
+    if (toastItemsPage !== toastItemsPageSafe) setToastItemsPage(toastItemsPageSafe)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toastItemsTotal, toastItemsTotalPages])
 
   async function refreshSettings() {
     if (!token) return
@@ -1978,7 +2005,9 @@ export function AdminRoute() {
                               type="button"
                               size="sm"
                               variant="secondary"
-                              onClick={() =>
+                              onClick={() => {
+                                const nextLen = publicSiteDraft.activityToast.items.length + 1
+                                setToastItemsPage(Math.ceil(nextLen / TOAST_ITEMS_PAGE_SIZE))
                                 setPublicSiteDraft((d) => ({
                                   ...d,
                                   activityToast: {
@@ -1986,14 +2015,155 @@ export function AdminRoute() {
                                     items: [...d.activityToast.items, { fullName: '', city: '', recipientName: '' }],
                                   },
                                 }))
-                              }
+                              }}
                             >
                               + tambah
                             </Button>
                           </div>
 
+                          <div className="rounded-lg border bg-muted/10 p-2 space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="text-[10px] font-bold text-gray-700">Bulk input (JSON)</div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setToastItemsJsonError(null)
+                                  setToastItemsJson(JSON.stringify(publicSiteDraft.activityToast.items, null, 2))
+                                }}
+                              >
+                                Copy current
+                              </Button>
+                            </div>
+
+                            <Textarea
+                              rows={6}
+                              className="text-[11px] font-mono"
+                              placeholder={`[\n  { "fullName": "Budi", "city": "Jakarta", "recipientName": "Salsa" }\n]`}
+                              value={toastItemsJson}
+                              onChange={(e) => {
+                                setToastItemsJson(e.target.value)
+                                setToastItemsJsonError(null)
+                              }}
+                            />
+
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => {
+                                  setToastItemsJsonError(null)
+                                  try {
+                                    const items = parseToastItemsJson(toastItemsJson)
+                                    if (!items.length) {
+                                      setToastItemsJsonError(
+                                        'Tidak ada item valid. Pastikan JSON berupa array item atau { "items": [...] } dengan field fullName/city/recipientName.',
+                                      )
+                                      return
+                                    }
+                                    setPublicSiteDraft((d) => ({
+                                      ...d,
+                                      activityToast: { ...d.activityToast, items },
+                                    }))
+                                    setToastItemsPage(1)
+                                  } catch (e: unknown) {
+                                    setToastItemsJsonError(
+                                      `JSON tidak valid.${e instanceof Error && e.message ? ` ${e.message}` : ''}`,
+                                    )
+                                  }
+                                }}
+                              >
+                                Apply (replace)
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setToastItemsJsonError(null)
+                                  try {
+                                    const items = parseToastItemsJson(toastItemsJson)
+                                    if (!items.length) {
+                                      setToastItemsJsonError(
+                                        'Tidak ada item valid. Pastikan JSON berupa array item atau { "items": [...] } dengan field fullName/city/recipientName.',
+                                      )
+                                      return
+                                    }
+                                    const nextLen = publicSiteDraft.activityToast.items.length + items.length
+                                    setToastItemsPage(Math.ceil(nextLen / TOAST_ITEMS_PAGE_SIZE))
+                                    setPublicSiteDraft((d) => ({
+                                      ...d,
+                                      activityToast: { ...d.activityToast, items: [...d.activityToast.items, ...items] },
+                                    }))
+                                  } catch (e: unknown) {
+                                    setToastItemsJsonError(
+                                      `JSON tidak valid.${e instanceof Error && e.message ? ` ${e.message}` : ''}`,
+                                    )
+                                  }
+                                }}
+                              >
+                                Apply (append)
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setToastItemsJson('')
+                                  setToastItemsJsonError(null)
+                                }}
+                              >
+                                Clear
+                              </Button>
+                            </div>
+
+                            {toastItemsJsonError ? (
+                              <div className="text-[10px] text-destructive">{toastItemsJsonError}</div>
+                            ) : (
+                              <div className="text-[10px] text-muted-foreground">
+                                Tips: bisa paste array langsung, atau object <span className="font-mono">{`{ "items": [...] }`}</span>.
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap items-center justify-between gap-2 border rounded-lg bg-background p-2">
+                            <div className="text-[10px] text-muted-foreground">
+                              Menampilkan <span className="font-medium text-gray-800">{toastItemsTotal ? toastItemsStartIdx + 1 : 0}</span>–
+                              <span className="font-medium text-gray-800">{toastItemsEndIdx}</span> dari{' '}
+                              <span className="font-medium text-gray-800">{toastItemsTotal}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={toastItemsPageSafe <= 1}
+                                onClick={() => setToastItemsPage((p) => Math.max(1, p - 1))}
+                              >
+                                Prev
+                              </Button>
+                              <div className="text-[10px] text-muted-foreground">
+                                Page <span className="font-medium text-gray-800">{toastItemsPageSafe}</span> /{' '}
+                                <span className="font-medium text-gray-800">{toastItemsTotalPages}</span>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={toastItemsPageSafe >= toastItemsTotalPages}
+                                onClick={() => setToastItemsPage((p) => Math.min(toastItemsTotalPages, p + 1))}
+                              >
+                                Next
+                              </Button>
+                            </div>
+                          </div>
+
                           <div className="space-y-2">
-                            {publicSiteDraft.activityToast.items.map((it, i) => (
+                            {publicSiteDraft.activityToast.items.slice(toastItemsStartIdx, toastItemsEndIdx).map((it, relIdx) => {
+                              const i = toastItemsStartIdx + relIdx
+                              return (
                               <div key={i} className="rounded-lg border p-2 bg-white space-y-2">
                                 <div className="flex items-center justify-between gap-2">
                                   <div className="text-[10px] font-bold text-gray-600">Item #{i + 1}</div>
@@ -2105,7 +2275,8 @@ export function AdminRoute() {
                                   </div>
                                 </div>
                               </div>
-                            ))}
+                              )
+                            })}
                           </div>
                         </div>
 
@@ -2573,11 +2744,32 @@ export function AdminRoute() {
                               <span className="text-muted-foreground">{t.delivery}</span>
                               <span className="font-medium">{selectedOrder.deliveryStatus}</span>
                             </div>
-                            {selectedOrder.trackUrl ? (
-                              <a className="text-sm underline" href={selectedOrder.trackUrl}>
-                                {t.songLink}
-                              </a>
-                            ) : null}
+                            {(() => {
+                              const meta =
+                                selectedOrder.trackMetadata && typeof selectedOrder.trackMetadata === 'object'
+                                  ? (selectedOrder.trackMetadata as any)
+                                  : null
+                              const tracks = Array.isArray(meta?.tracks)
+                                ? (meta.tracks as unknown[]).filter((x): x is string => typeof x === 'string' && x.length > 0)
+                                : []
+                              const links = tracks.length ? tracks : selectedOrder.trackUrl ? [selectedOrder.trackUrl] : []
+                              if (!links.length) return null
+                              return (
+                                <div className="grid gap-1">
+                                  {links.map((url: string, idx: number) => (
+                                    <a
+                                      key={`${url}-${idx}`}
+                                      className="text-sm underline"
+                                      href={url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      {links.length > 1 ? `${t.songLink} ${idx + 1}` : t.songLink}
+                                    </a>
+                                  ))}
+                                </div>
+                              )
+                            })()}
                             {selectedOrder.errorMessage ? (
                               <div className="text-destructive">{t.error}: {selectedOrder.errorMessage}</div>
                             ) : null}

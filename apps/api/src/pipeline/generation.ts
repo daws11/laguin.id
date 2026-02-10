@@ -317,6 +317,23 @@ export async function processOrderGeneration(orderId: string) {
   if (!finalOrder) throw new Error('Order not found (final)')
   if (!finalOrder.trackUrl) return { ok: true, pending: true, reason: 'track_not_ready' }
 
+  // Kie.ai commonly returns 2 variations. Avoid completing/delivering too early (e.g. only first track ready).
+  const finalMeta: any =
+    (finalOrder.trackMetadata && typeof finalOrder.trackMetadata === 'object' ? finalOrder.trackMetadata : null) ?? {}
+  const finalTracks: string[] = Array.isArray(finalMeta?.tracks)
+    ? (finalMeta.tracks as unknown[]).filter((x): x is string => typeof x === 'string' && x.length > 0)
+    : []
+  const isMocked = finalMeta?.mocked === true
+  const hasAllTracks = finalTracks.length >= 2
+
+  const startedAtMs = finalOrder.generationStartedAt ? finalOrder.generationStartedAt.getTime() : null
+  const waitedMs = startedAtMs ? Date.now() - startedAtMs : 0
+  const waitTimeoutMs = 10 * 60 * 1000 // 10 minutes safety valve
+
+  if (!isMocked && !hasAllTracks && waitedMs < waitTimeoutMs) {
+    return { ok: true, pending: true, reason: 'waiting_for_all_tracks', trackCount: finalTracks.length }
+  }
+
   if (!finalOrder.generationCompletedAt) {
     const generationCompletedAt = new Date()
     const deliveryScheduledAt = settings.instantEnabled

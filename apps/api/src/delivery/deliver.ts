@@ -3,6 +3,9 @@ import { addOrderEvent } from '../lib/events'
 import { getWhatsAppProvider } from '../whatsapp'
 import { sendEmail } from '../lib/mailer'
 
+import { generateSongCompletedEmailHtml } from '../lib/emailTemplates'
+
+
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n))
 }
@@ -14,38 +17,29 @@ function computeBackoffSeconds(failureCount: number) {
   return clamp(60 * 2 ** exp, 60, 60 * 60)
 }
 
-function buildSongReadyEmail(params: { customerName: string; trackUrl: string }) {
+function buildSongReadyEmail(params: { customerName: string; trackUrl: string; trackUrls?: string[] }) {
   const subject = 'Lagu kamu sudah siap'
   const text = [
     `Hai ${params.customerName},`,
     '',
+    'Lagu untuk ' + params.customerName + ' sudah siap!',
     'Lagu kamu sudah selesai dibuat dan sudah siap untuk didengarkan.',
     '',
     `Link lagu: ${params.trackUrl}`,
+    ...(params.trackUrls && params.trackUrls.length > 1 ? params.trackUrls.slice(1).map((url, i) => `Link lagu ${i + 2}: ${url}`) : []),
     '',
     'Terima kasih!',
   ].join('\n')
 
-  const html = [
-    `<p>Hai <b>${escapeHtml(params.customerName)}</b>,</p>`,
-    `<p>Lagu kamu sudah selesai dibuat dan sudah siap untuk didengarkan.</p>`,
-    `<p><a href="${escapeHtmlAttr(params.trackUrl)}">Klik di sini untuk membuka lagu</a></p>`,
-    `<p>Jika link tidak bisa diklik, copy-paste ini:</p>`,
-    `<p><code>${escapeHtml(params.trackUrl)}</code></p>`,
-    `<p>Terima kasih!</p>`,
-  ].join('\n')
+  const html = generateSongCompletedEmailHtml({
+    customerName: params.customerName,
+    trackUrl: params.trackUrl,
+    trackUrls: params.trackUrls,
+  })
 
   return { subject, text, html }
 }
 
-function escapeHtml(s: string) {
-  return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;')
-}
-
-function escapeHtmlAttr(s: string) {
-  // conservative escaping for attribute context
-  return escapeHtml(s)
-}
 
 async function scheduleDeliveryRetry(params: { orderId: string; reason: string; error?: unknown }) {
   const { orderId, reason, error } = params
@@ -127,9 +121,13 @@ export async function sendSongEmailForOrder(orderId: string, opts?: { force?: bo
     if (existing) return { ok: true, skipped: true, reason: 'already_sent' }
   }
 
+  const meta = order.trackMetadata as any
+  const trackUrls = Array.isArray(meta?.tracks) ? (meta.tracks as string[]) : undefined
+
   const { subject, text, html } = buildSongReadyEmail({
     customerName: order.customer.name,
     trackUrl: order.trackUrl,
+    trackUrls,
   })
 
   try {

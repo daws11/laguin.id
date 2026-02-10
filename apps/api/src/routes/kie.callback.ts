@@ -67,6 +67,11 @@ export const kieCallbackRoutes: FastifyPluginAsync = async (app) => {
     const currentMeta: any =
       (order.trackMetadata && typeof order.trackMetadata === 'object' ? order.trackMetadata : null) ?? {}
 
+    const previousTracks: string[] = Array.isArray(currentMeta?.tracks)
+      ? (currentMeta.tracks as unknown[]).filter((x): x is string => typeof x === 'string' && x.length > 0)
+      : []
+    const mergedTracks = Array.from(new Set([...previousTracks, ...audioUrls]))
+
     // Persist callback payload for debugging/audit
     await prisma.order.update({
       where: { id: order.id },
@@ -76,10 +81,12 @@ export const kieCallbackRoutes: FastifyPluginAsync = async (app) => {
           taskId,
           callbackType,
           callback: body,
-          status: audioUrl ? 'SUCCESS' : currentMeta?.status,
-          tracks: audioUrls.length ? audioUrls : currentMeta?.tracks,
+          // Only treat as SUCCESS when Kie says generation is complete.
+          status: callbackType === 'complete' && mergedTracks.length ? 'SUCCESS' : currentMeta?.status,
+          tracks: mergedTracks.length ? mergedTracks : currentMeta?.tracks,
         } as any,
-        trackUrl: order.trackUrl ?? audioUrl ?? undefined,
+        // Do NOT set trackUrl on partial callbacks (e.g. "first") or we may deliver only 1 of 2 variations.
+        trackUrl: order.trackUrl ?? (callbackType === 'complete' ? audioUrl ?? undefined : undefined),
       },
     })
 

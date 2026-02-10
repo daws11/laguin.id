@@ -100,36 +100,50 @@ const defaultPublicSiteConfig: PublicSiteConfig = {
 }
 
 function CountdownTimer() {
-  // Mocked time: "29d 14h 32m 45s" style from screenshot, dynamic for feel
-  const [time, setTime] = useState({ d: 6, h: 14, m: 32, s: 45 })
+  const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0 })
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTime((prev) => {
-        let { d, h, m, s } = prev
-        if (s > 0) s--
-        else {
-          s = 59
-          if (m > 0) m--
-          else {
-            m = 59
-            if (h > 0) h--
-            else {
-              h = 23
-              if (d > 0) d--
-            }
-          }
-        }
-        return { d, h, m, s }
-      })
-    }, 1000)
+    // Target date: February 14, 2026 (or next Feb 14)
+    // Adjust year dynamically to always point to next Valentine's
+    const now = new Date()
+    let targetYear = now.getFullYear()
+    // If today is past Feb 14, target next year
+    if (now.getMonth() > 1 || (now.getMonth() === 1 && now.getDate() > 14)) {
+      targetYear++
+    }
+    const targetDate = new Date(`${targetYear}-02-14T00:00:00`)
+
+    const updateTimer = () => {
+      const now = new Date()
+      const diff = targetDate.getTime() - now.getTime()
+
+      if (diff <= 0) {
+        setTime({ d: 0, h: 0, m: 0, s: 0 })
+        return
+      }
+
+      const d = Math.floor(diff / (1000 * 60 * 60 * 24))
+      const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+      const s = Math.floor((diff % (1000 * 60)) / 1000)
+
+      setTime({ d, h, m, s })
+    }
+
+    updateTimer() // Initial call
+    const timer = setInterval(updateTimer, 1000)
     return () => clearInterval(timer)
   }, [])
 
   return (
-    <div className="bg-[#E11D48] px-4 py-2 text-center text-xs font-bold text-white uppercase tracking-wide">
-      💝 Valentine's dalam {time.d}h {time.h}j {time.m}m {time.s}d lagi •{' '}
-      <span className="line-through opacity-70">Rp 200.000</span> <span className="text-white">GRATIS</span> (100 orang pertama)
+    <div className="bg-[#E11D48] px-2 py-2 text-center text-[9px] sm:text-xs font-bold text-white uppercase tracking-wide leading-snug">
+      <span className="whitespace-nowrap sm:whitespace-normal">
+        💝 Valentine's dalam {time.d}h {time.h}j {time.m}m {time.s}d lagi
+      </span>
+      <span className="hidden sm:inline"> • </span>
+      <span className="block sm:inline mt-0.5 sm:mt-0">
+        <span className="line-through opacity-70">Rp 200rb</span> <span className="text-white">GRATIS</span> (100 pertama)
+      </span>
     </div>
   )
 }
@@ -404,28 +418,28 @@ export function LandingRoute() {
     : defaultPublicSiteConfig.activityToast) as ActivityToastConfig
 
   return (
-    <div className="min-h-screen bg-[#FFF5F7] font-sans pb-32">
+    <div className="min-h-screen bg-[#FFF5F7] font-sans pb-32 overflow-x-hidden">
       <ActivityToast config={toastConfig} />
 
       {/* Sticky Top Banner */}
       <div className="sticky top-0 z-50">
         <CountdownTimer />
         <div className="border-b border-rose-100 bg-white/95 px-4 py-3 backdrop-blur-sm">
-          <div className="mx-auto flex max-w-7xl items-center justify-between">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
             <div className="flex items-center gap-2 font-serif text-xl font-bold text-[#E11D48]">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E11D48] text-white">
                 L
               </div>
               Laguin.id
             </div>
-            <div className="text-right flex items-center gap-3">
+            <div className="text-right flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3">
               <div className="hidden md:block text-xs font-medium text-rose-600 bg-rose-50 px-3 py-1 rounded-full">
                 💝 Spesial Valentine
               </div>
-              <div>
+              <div className="leading-tight">
                 <span className="text-xs text-gray-400 line-through">Rp 200.000</span>{' '}
-                <span className="text-lg font-bold text-[#E11D48]">GRATIS</span>
-                <Badge variant="destructive" className="ml-1 h-5 px-1 py-0 text-[10px]">
+                <span className="text-base sm:text-lg font-bold text-[#E11D48]">GRATIS</span>
+                <Badge variant="destructive" className="ml-1 h-5 px-1 py-0 text-[10px] align-middle">
                   11 kuota gratis tersisa!
                 </Badge>
               </div>
@@ -434,9 +448,9 @@ export function LandingRoute() {
         </div>
       </div>
 
-      <main className="mx-auto max-w-7xl px-4 pt-12 space-y-20">
+      <main className="mx-auto max-w-7xl px-4 pt-8 sm:pt-12 space-y-12 sm:space-y-20">
         {/* HERO SECTION */}
-        <section className="grid md:grid-cols-2 gap-12 items-center">
+        <section className="grid md:grid-cols-2 gap-10 md:gap-12 items-center">
           <div className="text-center md:text-left space-y-8">
             <div className="flex justify-center md:justify-start gap-1 text-yellow-400 mb-2">
               <Star className="h-4 w-4 fill-current" />
@@ -444,15 +458,15 @@ export function LandingRoute() {
               <Star className="h-4 w-4 fill-current" />
               <Star className="h-4 w-4 fill-current" />
               <Star className="h-4 w-4 fill-current" />
-              <span className="ml-2 text-sm font-bold text-gray-900">2,847 pria menangis terharu</span>
+              <span className="ml-2 text-xs sm:text-sm font-bold text-gray-900">2,847 pria menangis terharu</span>
             </div>
             
-            <h1 className="font-serif text-5xl md:text-7xl font-bold leading-tight text-gray-900 tracking-tight">
+            <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl font-bold leading-tight text-gray-900 tracking-tight">
               Valentine kali ini, <br />
               <span className="text-[#E11D48]">buat dia menangis bahagia.</span>
             </h1>
 
-            <p className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-lg mx-auto md:mx-0">
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 leading-relaxed max-w-lg mx-auto md:mx-0">
               Sebuah <strong className="text-gray-900">lagu</strong> personal dengan{' '}
               <strong className="text-gray-900">namanya</strong> di dalam lirik. Kualitas studio. Dikirim dalam 24 jam.
             </p>
@@ -466,7 +480,7 @@ export function LandingRoute() {
               </Button>
             </div>
 
-            <div className="flex justify-center md:justify-start gap-6 text-xs font-bold text-gray-500 uppercase tracking-wide">
+            <div className="flex flex-wrap justify-center md:justify-start gap-x-6 gap-y-2 text-[11px] sm:text-xs font-bold text-gray-500 uppercase tracking-wide">
               <span className="flex items-center gap-1"><Zap className="h-4 w-4 text-green-500" /> Pengiriman 24 jam</span>
               <span className="flex items-center gap-1"><ShieldCheck className="h-4 w-4 text-green-500" /> Garansi Uang Kembali</span>
               <span className="flex items-center gap-1 text-[#E11D48]">11 kuota gratis tersisa!</span>
@@ -543,11 +557,11 @@ export function LandingRoute() {
         <section className="space-y-8 max-w-4xl mx-auto">
           <div className="text-center space-y-2">
             <div className="text-[#E11D48] text-sm font-bold uppercase tracking-wider">Contoh Nyata</div>
-            <h2 className="font-serif text-4xl font-bold text-gray-900">Dengar <span className="text-[#E11D48] italic">namanya</span> di lagu asli</h2>
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">Dengar <span className="text-[#E11D48] italic">namanya</span> di lagu asli</h2>
             <p className="text-gray-500">Lagu asli yang kami buat. Nama asli. Air mata asli.</p>
           </div>
 
-          <div className="bg-white rounded-3xl p-6 md:p-10 shadow-xl border border-rose-100/50">
+          <div className="bg-white rounded-3xl p-5 sm:p-6 md:p-10 shadow-xl border border-rose-100/50">
              <AudioPlayerCard 
                name={nowPlayingName}
                quote={nowPlayingQuote}
@@ -598,7 +612,7 @@ export function LandingRoute() {
                      <div className="font-bold text-gray-900">{track.title}</div>
                      <div className="text-xs text-gray-500">{track.subtitle}</div>
                    </div>
-                   <div className="text-xs font-bold text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <div className="text-xs font-bold text-rose-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                      {track.ctaLabel ?? 'PUTAR'}
                    </div>
                 </button>
@@ -645,7 +659,7 @@ export function LandingRoute() {
         {/* COMPARISON SECTION */}
         <section className="space-y-10 text-center max-w-5xl mx-auto">
           <div className="space-y-2">
-            <h2 className="font-serif text-4xl font-bold text-gray-900">
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">
               Kado yang akan dia <span className="text-gray-400 line-through decoration-rose-500">lupakan</span> vs. yang akan dia <span className="text-[#E11D48] italic">putar ulang</span>
             </h2>
           </div>
@@ -705,7 +719,7 @@ export function LandingRoute() {
         <section className="space-y-10">
           <div className="text-center space-y-2">
             <div className="text-[#E11D48] text-sm font-bold uppercase tracking-wider">Reaksi Nyata</div>
-            <h2 className="font-serif text-4xl font-bold text-gray-900">"Dia <span className="text-[#E11D48] italic">tidak pernah</span> menangis"</h2>
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">"Dia <span className="text-[#E11D48] italic">tidak pernah</span> menangis"</h2>
             <p className="text-gray-600">...mereka semua bilang begitu. 98% salah.</p>
           </div>
 
@@ -770,7 +784,7 @@ export function LandingRoute() {
         <section className="space-y-10">
           <div className="text-center space-y-2">
             <h2 className="text-[#E11D48] text-sm font-bold uppercase tracking-wider">Proses Mudah</h2>
-            <h2 className="font-serif text-4xl font-bold text-gray-900">Tiga langkah menuju <span className="text-[#E11D48] italic">tangis bahagia</span></h2>
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">Tiga langkah menuju <span className="text-[#E11D48] italic">tangis bahagia</span></h2>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
@@ -845,8 +859,8 @@ export function LandingRoute() {
 
         {/* FOOTER CTA */}
         <section className="text-center space-y-6 pb-12">
-           <h2 className="font-serif text-4xl font-bold text-gray-900">Jangan biarkan Valentine berlalu</h2>
-           <p className="text-gray-600 text-lg">Beri dia hadiah yang tak akan pernah dia lupakan. Gabung <strong>2,847 wanita</strong> yang membuat pasangannya menangis terharu.</p>
+           <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">Jangan biarkan Valentine berlalu</h2>
+           <p className="text-gray-600 text-base sm:text-lg">Beri dia hadiah yang tak akan pernah dia lupakan. Gabung <strong>2,847 wanita</strong> yang membuat pasangannya menangis terharu.</p>
            
            <div className="pt-4">
              <Button asChild size="lg" className="h-16 px-12 rounded-full bg-[#E11D48] text-xl font-bold shadow-2xl shadow-rose-300 hover:bg-rose-700 hover:scale-105 transition-all">
@@ -857,7 +871,7 @@ export function LandingRoute() {
              </Button>
            </div>
            
-           <div className="flex justify-center gap-6 text-xs font-bold text-gray-400 uppercase tracking-wide pt-4">
+           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[11px] sm:text-xs font-bold text-gray-400 uppercase tracking-wide pt-4">
              <span>🔒 Checkout Aman</span>
              <span>Hanya 11 kuota gratis tersisa</span>
            </div>
@@ -881,7 +895,7 @@ export function LandingRoute() {
       </footer>
 
       {/* STICKY BOTTOM CTA (Mobile Only) */}
-      <div className="md:hidden fixed inset-x-0 bottom-0 z-50 bg-white border-t border-gray-100 p-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div className="md:hidden fixed inset-x-0 bottom-0 z-50 bg-white border-t border-gray-100 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="mx-auto max-w-md space-y-2">
            <div className="flex justify-center gap-4 text-[10px] font-bold text-gray-500 uppercase tracking-wide">
              <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-green-500" /> 24 jam</span>

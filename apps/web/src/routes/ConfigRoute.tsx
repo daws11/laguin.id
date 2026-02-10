@@ -48,9 +48,42 @@ export function ConfigRoute() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [relationship, setRelationship] = useState('Pasangan')
+  const storyTextareaRef = useRef<HTMLTextAreaElement | null>(null)
 
-  // Countdown timer logic (mocked for now to match screenshot "6 days until Valentine's")
-  const timeLeft = { days: 6, hours: 14, mins: 32 }
+  // Countdown timer logic to match LandingRoute
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, mins: 0 })
+
+  useEffect(() => {
+    // Target date: February 14, 2026 (or next Feb 14)
+    // Adjust year dynamically to always point to next Valentine's
+    const now = new Date()
+    let targetYear = now.getFullYear()
+    // If today is past Feb 14, target next year
+    if (now.getMonth() > 1 || (now.getMonth() === 1 && now.getDate() > 14)) {
+      targetYear++
+    }
+    const targetDate = new Date(`${targetYear}-02-14T00:00:00`)
+
+    const updateTimer = () => {
+      const now = new Date()
+      const diff = targetDate.getTime() - now.getTime()
+
+      if (diff <= 0) {
+        setTimeLeft({ days: 0, hours: 0, mins: 0 })
+        return
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+
+      setTimeLeft({ days, hours, mins })
+    }
+
+    updateTimer() // Initial call
+    const timer = setInterval(updateTimer, 60000) // Update every minute is enough for this view
+    return () => clearInterval(timer)
+  }, [])
 
   // Email verification (OTP) state for checkout step
   const [emailVerificationId, setEmailVerificationId] = useState<string | null>(null)
@@ -72,7 +105,7 @@ export function ConfigRoute() {
       mood: '',
       vibe: '',
       tempo: '',
-      voiceStyle: '',
+      voiceStyle: 'Surprise me',
       language: 'Indonesian',
     },
     whatsappNumber: '',
@@ -99,6 +132,8 @@ export function ConfigRoute() {
   const language = watch('musicPreferences.language')
   const storyText = watch('story') ?? ''
   const email = (watch('email') ?? '').trim()
+  const hasEnteredOtp = otpDigits.some((d) => Boolean(d))
+  const storyRegister = register('story')
 
   const didHydrateDraftRef = useRef(false)
   const suppressOtpResetOnceRef = useRef(false)
@@ -168,6 +203,7 @@ export function ConfigRoute() {
         musicPreferences: {
           ...DEFAULT_ORDER_INPUT.musicPreferences,
           ...(fv.musicPreferences ?? {}),
+          voiceStyle: fv.musicPreferences?.voiceStyle || DEFAULT_ORDER_INPUT.musicPreferences.voiceStyle,
         },
         emailVerificationId: DEFAULT_ORDER_INPUT.emailVerificationId,
       }
@@ -265,11 +301,15 @@ export function ConfigRoute() {
       setOtpError('Email wajib diisi.')
       return
     }
-    if (errors.email) {
+    // Ensure email is validated even if the field hasn't been touched yet.
+    const emailOk = await form.trigger('email')
+    if (!emailOk) {
       setOtpError('Format email tidak valid.')
       return
     }
     if (resendCooldownSec > 0) return
+    // UX guard: if user already started entering OTP, they should verify instead of requesting again.
+    if (emailVerified || hasEnteredOtp) return
 
     setOtpSending(true)
     try {
@@ -355,6 +395,27 @@ export function ConfigRoute() {
     window.setTimeout(() => otpRefs.current?.[Math.max(0, nextFocus)]?.focus?.(), 0)
   }
 
+  function appendStoryPrompt(prompt: string) {
+    const current = storyText ?? ''
+    const currentHasMeaningfulText = current.trim().length > 0
+    const separator = currentHasMeaningfulText && !current.endsWith('\n') ? '\n' : ''
+    const next = `${currentHasMeaningfulText ? current : ''}${separator}${prompt}:\n`
+
+    setValue('story', next, { shouldDirty: true, shouldTouch: true, shouldValidate: true })
+
+    window.setTimeout(() => {
+      const el = storyTextareaRef.current
+      if (!el) return
+      el.focus()
+      try {
+        const end = el.value.length
+        el.setSelectionRange(end, end)
+      } catch {
+        // ignore (some browsers can throw if textarea isn't focusable yet)
+      }
+    }, 0)
+  }
+
   const onSubmit = async (data: OrderInput) => {
     // Email must be verified before we create draft order (per flow)
     if (!emailVerified || !data.emailVerificationId) {
@@ -382,7 +443,7 @@ export function ConfigRoute() {
     <div className="min-h-screen bg-[#FFF5F7] font-sans text-gray-900 pb-32">
       {/* Top Banner */}
       <div className="bg-[#E11D48] px-4 py-2 text-center text-xs font-bold text-white uppercase tracking-wide">
-        🎁 {timeLeft.days} hari menuju Valentine • Dikirim dalam 24 jam
+        🎁 {timeLeft.days} hari {timeLeft.hours} jam {timeLeft.mins} menit menuju Valentine • Dikirim dalam 24 jam
       </div>
 
       {/* Header */}
@@ -538,7 +599,7 @@ export function ConfigRoute() {
                       key={prompt} 
                       label={prompt} 
                       icon={prompt.includes('bertemu') ? '💞' : prompt.includes('suka') ? '😍' : prompt.includes('Jokes') ? '😂' : '🔮'}
-                      onClick={() => setValue('story', (watch('story') || '') + (watch('story') ? ' ' : '') + prompt + ': ')}
+                      onClick={() => appendStoryPrompt(prompt)}
                     />
                   ))}
                 </div>
@@ -550,7 +611,11 @@ export function ConfigRoute() {
 
               <div className="space-y-2">
                 <Textarea 
-                  {...register('story')} 
+                  {...storyRegister}
+                  ref={(el) => {
+                    storyRegister.ref(el)
+                    storyTextareaRef.current = el
+                  }}
                   rows={6} 
                   placeholder="Mulai ketik ceritamu di sini..." 
                   className="rounded-xl border-gray-300 text-base shadow-sm focus-visible:ring-[#E11D48] resize-none p-4"
@@ -646,10 +711,22 @@ export function ConfigRoute() {
                        variant="outline"
                        className="h-11 rounded-xl border-gray-200"
                        onClick={() => void sendEmailOtp()}
-                       disabled={otpSending || otpVerifying || !email || Boolean(errors.email) || resendCooldownSec > 0}
+                      disabled={
+                        otpSending ||
+                        otpVerifying ||
+                        !email ||
+                        Boolean(errors.email) ||
+                        resendCooldownSec > 0 ||
+                        emailVerified ||
+                        hasEnteredOtp
+                      }
                      >
                        {otpSending ? (
                          <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Mengirim...</span>
+                      ) : emailVerified ? (
+                        'Email terverifikasi'
+                      ) : hasEnteredOtp ? (
+                        'Verifikasi kode di bawah'
                        ) : resendCooldownSec > 0 ? (
                          `Kirim ulang (${resendCooldownSec}s)`
                        ) : (
