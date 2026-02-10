@@ -261,7 +261,7 @@ type Settings = {
   hasYcloudKey: boolean
 }
 
-type LandingPlaylistItem = { title: string; subtitle: string; ctaLabel: string }
+type LandingPlaylistItem = { title: string; subtitle: string; ctaLabel: string; audioUrl: string }
 type ToastItem = { fullName: string; city: string; recipientName: string }
 
 type PublicSiteDraft = {
@@ -340,9 +340,9 @@ const defaultPublicSiteDraft: PublicSiteDraft = {
         audioUrl: '',
       },
       playlist: [
-        { title: 'Untuk Rizky, Segalanya Bagiku', subtitle: 'Country • 3:12', ctaLabel: 'PUTAR' },
-        { title: 'Untuk Dimas, 10 Tahun Bersama', subtitle: 'Acoustic • 2:58', ctaLabel: 'PUTAR' },
-        { title: 'Untuk Andi, Petualangan Kita', subtitle: 'Pop Ballad • 3:45', ctaLabel: 'PUTAR' },
+        { title: 'Untuk Rizky, Segalanya Bagiku', subtitle: 'Country • 3:12', ctaLabel: 'PUTAR', audioUrl: '' },
+        { title: 'Untuk Dimas, 10 Tahun Bersama', subtitle: 'Acoustic • 2:58', ctaLabel: 'PUTAR', audioUrl: '' },
+        { title: 'Untuk Andi, Petualangan Kita', subtitle: 'Pop Ballad • 3:45', ctaLabel: 'PUTAR', audioUrl: '' },
       ],
     },
   },
@@ -401,7 +401,8 @@ function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
     title: asString(x?.title, ''),
     subtitle: asString(x?.subtitle, ''),
     ctaLabel: asString(x?.ctaLabel, 'PUTAR'),
-  })).filter((x) => x.title || x.subtitle)
+    audioUrl: asString(x?.audioUrl, ''),
+  })).filter((x) => x.title || x.subtitle || x.audioUrl)
 
   const toast = cfg?.activityToast && typeof cfg.activityToast === 'object' ? cfg.activityToast : {}
   const toastItems = safeArr(toast?.items, (x) => ({
@@ -1450,6 +1451,7 @@ export function AdminRoute() {
                                   title: x.title.trim(),
                                   subtitle: x.subtitle.trim(),
                                   ctaLabel: x.ctaLabel.trim() || 'PUTAR',
+                                  audioUrl: x.audioUrl.trim() || null,
                                 })),
                               },
                             }
@@ -1641,7 +1643,7 @@ export function AdminRoute() {
                                       ...d.landing.audioSamples,
                                       playlist: [
                                         ...d.landing.audioSamples.playlist,
-                                        { title: '', subtitle: '', ctaLabel: 'PUTAR' },
+                                        { title: '', subtitle: '', ctaLabel: 'PUTAR', audioUrl: '' },
                                       ],
                                     },
                                   },
@@ -1786,6 +1788,70 @@ export function AdminRoute() {
                                     placeholder="PUTAR"
                                   />
                                 </div>
+
+                                <div className="space-y-1">
+                                  <div className="text-[10px] font-medium text-muted-foreground">Audio URL (MP3, opsional)</div>
+                                  <Input
+                                    className="h-8 text-xs"
+                                    value={item.audioUrl}
+                                    onChange={(e) =>
+                                      setPublicSiteDraft((d) => ({
+                                        ...d,
+                                        landing: {
+                                          ...d.landing,
+                                          audioSamples: {
+                                            ...d.landing.audioSamples,
+                                            playlist: d.landing.audioSamples.playlist.map((x, idx) =>
+                                              idx === i ? { ...x, audioUrl: e.target.value } : x,
+                                            ),
+                                          },
+                                        },
+                                      }))
+                                    }
+                                    placeholder="/uploads/audios/... atau https://..."
+                                  />
+                                  <div className="pt-1 space-y-2">
+                                    <input
+                                      type="file"
+                                      accept="audio/mpeg,audio/*"
+                                      className="block w-full text-[11px]"
+                                      onChange={async (e) => {
+                                        const f = e.target.files?.[0]
+                                        if (!f || !token) return
+                                        try {
+                                          setPublicCfgError(null)
+                                          const fd = new FormData()
+                                          fd.append('file', f)
+                                          const res = await apiUpload<{ ok: true; path: string }>(
+                                            '/api/admin/uploads?kind=audio',
+                                            fd,
+                                            { token },
+                                          )
+                                          setPublicSiteDraft((d) => ({
+                                            ...d,
+                                            landing: {
+                                              ...d.landing,
+                                              audioSamples: {
+                                                ...d.landing.audioSamples,
+                                                playlist: d.landing.audioSamples.playlist.map((x, idx) =>
+                                                  idx === i ? { ...x, audioUrl: res.path } : x,
+                                                ),
+                                              },
+                                            },
+                                          }))
+                                        } catch (err: any) {
+                                          setPublicCfgError(err?.message ?? 'Upload gagal.')
+                                        } finally {
+                                          e.target.value = ''
+                                        }
+                                      }}
+                                    />
+                                    <div className="text-[10px] text-muted-foreground">Upload akan menghasilkan path seperti `/uploads/audios/...`</div>
+                                    {item.audioUrl.trim() ? (
+                                      <audio className="w-full" controls src={resolveApiUrl(item.audioUrl.trim())} />
+                                    ) : null}
+                                  </div>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -1834,6 +1900,7 @@ export function AdminRoute() {
                                   title: x.title.trim(),
                                   subtitle: x.subtitle.trim(),
                                   ctaLabel: x.ctaLabel.trim() || 'PUTAR',
+                                  audioUrl: x.audioUrl.trim() || null,
                                 })),
                               },
                             }
@@ -2085,6 +2152,7 @@ export function AdminRoute() {
                                   title: x.title.trim(),
                                   subtitle: x.subtitle.trim(),
                                   ctaLabel: x.ctaLabel.trim() || 'PUTAR',
+                                  audioUrl: x.audioUrl.trim() || null,
                                 })),
                               },
                             }

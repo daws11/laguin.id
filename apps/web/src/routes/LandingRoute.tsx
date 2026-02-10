@@ -41,7 +41,7 @@ type PublicSiteConfig = {
     }
     audioSamples?: {
       nowPlaying?: { name?: string; quote?: string; time?: string; metaText?: string | null; audioUrl?: string | null }
-      playlist?: Array<{ title?: string; subtitle?: string; ctaLabel?: string }>
+      playlist?: Array<{ title?: string; subtitle?: string; ctaLabel?: string; audioUrl?: string | null }>
     }
   }
   activityToast?: ActivityToastConfig
@@ -251,7 +251,6 @@ function AudioPlayerCard({
       )}
 
       <div className="mt-3 flex items-center gap-2 border-t border-gray-50 pt-3">
-        <div className="h-6 w-6 rounded-full bg-gray-200" /> {/* Avatar placeholder */}
         <div className="text-xs">
           <span className="font-bold block">{name}</span>
           {metaText ? <span className="text-gray-500 text-[10px]">{metaText}</span> : null}
@@ -273,6 +272,8 @@ function AudioPlayerCard({
 export function LandingRoute() {
   const [publicSiteConfig, setPublicSiteConfig] = useState<PublicSiteConfig | null>(null)
   const [heroOpen, setHeroOpen] = useState(false)
+  const [playlistPlayingIndex, setPlaylistPlayingIndex] = useState<number | null>(null)
+  const playlistAudioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -388,6 +389,15 @@ export function LandingRoute() {
     Array.isArray(audioSamples.playlist) && audioSamples.playlist.length > 0
       ? audioSamples.playlist
       : defaultPublicSiteConfig.landing!.audioSamples!.playlist!
+
+  const playlistAudioUrl =
+    playlistPlayingIndex !== null &&
+    playlistPlayingIndex >= 0 &&
+    playlistPlayingIndex < playlist.length &&
+    typeof (playlist[playlistPlayingIndex] as any)?.audioUrl === 'string' &&
+    String((playlist[playlistPlayingIndex] as any).audioUrl).trim()
+      ? resolveAsset(String((playlist[playlistPlayingIndex] as any).audioUrl).trim())
+      : null
 
   const toastConfig = (site.activityToast && typeof site.activityToast === 'object'
     ? site.activityToast
@@ -547,10 +557,43 @@ export function LandingRoute() {
              />
              <div className="mt-8 space-y-4">
                {playlist.map((track, i) => (
-                 <div key={i} className="flex items-center gap-4 p-4 rounded-xl hover:bg-rose-50 transition-colors cursor-pointer group">
-                   <div className="h-10 w-10 rounded-full bg-rose-100 text-[#E11D48] flex items-center justify-center group-hover:bg-[#E11D48] group-hover:text-white transition-colors">
-                     <Play className="h-5 w-5 ml-0.5" fill="currentColor" />
-                   </div>
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    const urlRaw = (track as any)?.audioUrl
+                    const url = typeof urlRaw === 'string' && urlRaw.trim() ? resolveAsset(urlRaw.trim()) : null
+                    if (!url) return
+
+                    const a = playlistAudioRef.current
+                    if (!a) {
+                      setPlaylistPlayingIndex(i)
+                      return
+                    }
+
+                    if (playlistPlayingIndex === i && !a.paused) {
+                      a.pause()
+                      setPlaylistPlayingIndex(null)
+                      return
+                    }
+
+                    // switch track and play
+                    setPlaylistPlayingIndex(i)
+                    // play will be handled by effect below after src updates
+                  }}
+                  className={cn(
+                    'flex w-full items-center gap-4 p-4 rounded-xl transition-colors group text-left',
+                    (track as any)?.audioUrl ? 'hover:bg-rose-50 cursor-pointer' : 'opacity-60 cursor-not-allowed',
+                  )}
+                  disabled={!(typeof (track as any)?.audioUrl === 'string' && String((track as any).audioUrl).trim())}
+                >
+                  <div className="h-10 w-10 rounded-full bg-rose-100 text-[#E11D48] flex items-center justify-center group-hover:bg-[#E11D48] group-hover:text-white transition-colors">
+                    {playlistPlayingIndex === i ? (
+                      <Pause className="h-5 w-5" fill="currentColor" />
+                    ) : (
+                      <Play className="h-5 w-5 ml-0.5" fill="currentColor" />
+                    )}
+                  </div>
                    <div className="flex-1">
                      <div className="font-bold text-gray-900">{track.title}</div>
                      <div className="text-xs text-gray-500">{track.subtitle}</div>
@@ -558,9 +601,22 @@ export function LandingRoute() {
                    <div className="text-xs font-bold text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity">
                      {track.ctaLabel ?? 'PUTAR'}
                    </div>
-                 </div>
+                </button>
                ))}
              </div>
+             {playlistAudioUrl ? (
+               <audio
+                 ref={(el) => {
+                   playlistAudioRef.current = el
+                 }}
+                 src={playlistAudioUrl}
+                 preload="metadata"
+                 loop
+                 onPause={() => setPlaylistPlayingIndex(null)}
+                 className="hidden"
+                 autoPlay
+               />
+             ) : null}
              
              <div className="mt-8 text-center">
                <Button asChild size="lg" className="h-12 rounded-full bg-[#E11D48] font-bold shadow-lg shadow-rose-200 hover:bg-rose-700">
