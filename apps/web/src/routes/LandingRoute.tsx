@@ -136,8 +136,8 @@ function CountdownTimer() {
   }, [])
 
   return (
-    <div className="bg-[#E11D48] px-2 py-2 text-center text-[9px] sm:text-xs font-bold text-white uppercase tracking-wide leading-snug">
-      <span className="whitespace-nowrap sm:whitespace-normal">
+    <div className="bg-[#E11D48] px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-white uppercase tracking-wide leading-snug">
+      <span className="whitespace-normal">
         💝 Valentine's dalam {time.d}h {time.h}j {time.m}m {time.s}d lagi
       </span>
       <span className="hidden sm:inline"> • </span>
@@ -424,8 +424,8 @@ export function LandingRoute() {
       {/* Sticky Top Banner */}
       <div className="sticky top-0 z-50">
         <CountdownTimer />
-        <div className="border-b border-rose-100 bg-white/95 px-4 py-3 backdrop-blur-sm">
-          <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+        <div className="border-b border-rose-100 bg-white/95 px-2 sm:px-4 py-3 backdrop-blur-sm">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-3">
             <div className="flex items-center gap-2 font-serif text-xl font-bold text-[#E11D48]">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E11D48] text-white">
                 L
@@ -448,10 +448,10 @@ export function LandingRoute() {
         </div>
       </div>
 
-      <main className="mx-auto max-w-7xl px-4 pt-8 sm:pt-12 space-y-12 sm:space-y-20">
+      <main className="mx-auto max-w-7xl w-full px-2 sm:px-4 md:px-6 pt-6 sm:pt-12 space-y-12 sm:space-y-20">
         {/* HERO SECTION */}
-        <section className="grid md:grid-cols-2 gap-10 md:gap-12 items-center">
-          <div className="text-center md:text-left space-y-8">
+        <section className="grid md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 items-center">
+          <div className="text-center md:text-left space-y-6 md:space-y-8">
             <div className="flex justify-center md:justify-start gap-1 text-yellow-400 mb-2">
               <Star className="h-4 w-4 fill-current" />
               <Star className="h-4 w-4 fill-current" />
@@ -461,7 +461,7 @@ export function LandingRoute() {
               <span className="ml-2 text-xs sm:text-sm font-bold text-gray-900">2,847 pria menangis terharu</span>
             </div>
             
-            <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl font-bold leading-tight text-gray-900 tracking-tight">
+            <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-gray-900 tracking-tight">
               Valentine kali ini, <br />
               <span className="text-[#E11D48]">buat dia menangis bahagia.</span>
             </h1>
@@ -472,23 +472,23 @@ export function LandingRoute() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-              <Button asChild size="lg" className="h-14 px-8 rounded-full bg-[#E11D48] text-lg font-bold shadow-xl shadow-rose-200 hover:bg-rose-700 hover:scale-105 transition-all duration-300">
+              <Button asChild size="lg" className="h-12 sm:h-14 px-8 rounded-full bg-[#E11D48] text-base sm:text-lg font-bold shadow-xl shadow-rose-200 hover:bg-rose-700 hover:scale-105 transition-all duration-300">
                 <Link to="/config">
                   Buat Lagunya — GRATIS
-                  <span className="ml-2 text-sm font-normal line-through opacity-70">Rp 200.000</span>
+                  <span className="ml-2 text-xs sm:text-sm font-normal line-through opacity-70">Rp 200.000</span>
                 </Link>
               </Button>
             </div>
 
-            <div className="flex flex-wrap justify-center md:justify-start gap-x-6 gap-y-2 text-[11px] sm:text-xs font-bold text-gray-500 uppercase tracking-wide">
-              <span className="flex items-center gap-1"><Zap className="h-4 w-4 text-green-500" /> Pengiriman 24 jam</span>
-              <span className="flex items-center gap-1"><ShieldCheck className="h-4 w-4 text-green-500" /> Garansi Uang Kembali</span>
+            <div className="flex flex-wrap justify-center md:justify-start gap-x-4 sm:gap-x-6 gap-y-2 text-[10px] sm:text-[11px] md:text-xs font-bold text-gray-500 uppercase tracking-wide">
+              <span className="flex items-center gap-1"><Zap className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" /> Pengiriman 24 jam</span>
+              <span className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" /> Garansi Uang Kembali</span>
               <span className="flex items-center gap-1 text-[#E11D48]">11 kuota gratis tersisa!</span>
             </div>
           </div>
 
-          <div className="relative mx-auto w-full max-w-md md:max-w-full">
-             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl shadow-2xl">
+          <div className="relative mx-auto w-full max-w-full sm:max-w-md md:max-w-full min-w-0">
+             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl sm:rounded-2xl shadow-2xl">
                {/* Placeholder for Video/Image from screenshot */}
                <div className="absolute inset-0 bg-gray-900/10 z-10"></div>
                {heroVideoUrl ? (
@@ -538,8 +538,8 @@ export function LandingRoute() {
                        <Play className="h-6 w-6 text-white" fill="currentColor" />
                      </div>
                    </button>
-                   <div className="font-serif italic text-2xl">"{overlayQuote}"</div>
-                   <div className="mt-2 text-sm font-medium opacity-90 flex items-center gap-2">
+                   <div className="font-serif italic text-lg sm:text-2xl md:text-3xl leading-snug">"{overlayQuote}"</div>
+                   <div className="mt-2 text-xs sm:text-sm font-medium opacity-90 flex items-center gap-2">
                      {authorAvatarUrl ? (
                        <img src={authorAvatarUrl} className="w-6 h-6 rounded-full border border-white" />
                      ) : (
@@ -641,7 +641,7 @@ export function LandingRoute() {
         </section>
 
         {/* STATS BAR */}
-        <section className="py-8 border-y border-rose-100 bg-white/50 backdrop-blur-sm">
+        <section className="py-8 border-y border-rose-100 bg-white/50 backdrop-blur-sm -mx-2 px-2 sm:-mx-4 sm:px-4 md:-mx-6 md:px-6">
           <div className="flex flex-wrap justify-center gap-8 md:gap-24 text-center">
              {[
                { val: '99%', label: 'Menangis' },

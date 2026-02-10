@@ -85,38 +85,38 @@ export function HeroPlayerModal({
                     .then(() => setPlaying(true))
                     .catch(() => setPlaying(false))
                 }}
-                className="absolute left-4 top-4 rounded-full bg-emerald-500/90 px-4 py-2 text-white text-sm font-semibold backdrop-blur"
+                className="absolute left-3 top-3 sm:left-4 sm:top-4 rounded-full bg-emerald-500/90 px-3 py-1.5 sm:px-4 sm:py-2 text-white text-xs sm:text-sm font-semibold backdrop-blur"
               >
                 {playing ? '▮▮ ' : '▶ '} {playingBadgeText}
               </button>
 
               {/* Top Right: Corner badge */}
-              <div className="absolute right-4 top-4 rounded-full bg-rose-500/90 px-4 py-2 text-white text-sm font-semibold backdrop-blur">
+              <div className="absolute right-3 top-3 sm:right-4 sm:top-4 rounded-full bg-rose-500/90 px-3 py-1.5 sm:px-4 sm:py-2 text-white text-xs sm:text-sm font-semibold backdrop-blur">
                 {cornerBadgeText}
               </div>
 
               {/* Bottom overlay */}
-              <div className="absolute inset-x-0 bottom-0 p-6">
+              <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6">
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                <div className="relative flex items-end justify-between gap-6">
-                  <div className="max-w-[70%] text-white">
-                    <div className="font-serif italic text-3xl leading-tight">“{quote}”</div>
-                    <div className="mt-4 flex items-center gap-3">
+                <div className="relative flex items-end justify-between gap-4 sm:gap-6">
+                  <div className="max-w-[75%] sm:max-w-[70%] text-white">
+                    <div className="font-serif italic text-xl sm:text-3xl leading-tight">“{quote}”</div>
+                    <div className="mt-2 sm:mt-4 flex items-center gap-2 sm:gap-3">
                       {authorAvatarUrl ? (
-                        <img src={authorAvatarUrl} className="h-10 w-10 rounded-full border border-white/60" />
+                        <img src={authorAvatarUrl} className="h-8 w-8 sm:h-10 sm:w-10 rounded-full border border-white/60" />
                       ) : (
-                        <div className="h-10 w-10 rounded-full bg-white/20 border border-white/60" />
+                        <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-white/20 border border-white/60" />
                       )}
                       <div>
-                        <div className="font-bold">{authorName}</div>
-                        {authorSubline ? <div className="text-white/75 text-sm">{authorSubline}</div> : null}
+                        <div className="font-bold text-sm sm:text-base">{authorName}</div>
+                        {authorSubline ? <div className="text-white/75 text-xs sm:text-sm">{authorSubline}</div> : null}
                       </div>
                     </div>
                   </div>
 
                   <div className="shrink-0">
-                    <div className="rounded-xl bg-white/90 px-4 py-2 text-emerald-700 text-sm font-semibold">
-                      ✓ {verifiedBadgeText}
+                    <div className="rounded-xl bg-white/90 px-3 py-1.5 sm:px-4 sm:py-2 text-emerald-700 text-xs sm:text-sm font-semibold">
+                      ✓ <span className="hidden sm:inline">{verifiedBadgeText}</span><span className="sm:hidden">Verified</span>
                     </div>
                   </div>
                 </div>
@@ -126,7 +126,7 @@ export function HeroPlayerModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="absolute right-4 bottom-4 rounded-full bg-white/20 text-white h-10 w-10 flex items-center justify-center backdrop-blur hover:bg-white/30"
+                className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 rounded-full bg-white/20 text-white h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center backdrop-blur hover:bg-white/30"
                 aria-label="Close"
               >
                 ×
