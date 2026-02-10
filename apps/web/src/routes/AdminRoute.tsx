@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { SupportedPlaceholders, validatePlaceholders } from 'shared'
 import { LayoutDashboard, Settings as SettingsIcon, MessageSquare, Users, ShoppingBag, LogOut, Menu, ChevronLeft, ChevronRight } from 'lucide-react'
 
-import { apiGet, apiPost, apiPut } from '@/lib/http'
+import { apiGet, apiPost, apiPut, apiUpload, resolveApiUrl } from '@/lib/http'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -277,12 +277,24 @@ type PublicSiteDraft = {
       authorLocation: string
       authorAvatarUrl: string
     }
+    heroPlayer: {
+      enabled: boolean
+      playingBadgeText: string
+      cornerBadgeText: string
+      verifiedBadgeText: string
+      quote: string
+      authorName: string
+      authorSubline: string
+      authorAvatarUrl: string
+      audioUrl: string
+    }
     audioSamples: {
       nowPlaying: {
         name: string
         quote: string
         time: string
         metaText: string
+        audioUrl: string
       }
       playlist: LandingPlaylistItem[]
     }
@@ -308,12 +320,24 @@ const defaultPublicSiteDraft: PublicSiteDraft = {
       authorLocation: 'Jakarta',
       authorAvatarUrl: 'https://randomuser.me/api/portraits/women/44.jpg',
     },
+    heroPlayer: {
+      enabled: true,
+      playingBadgeText: 'Playing',
+      cornerBadgeText: "Valentine's Special",
+      verifiedBadgeText: 'Verified Purchase',
+      quote: 'He tried not to cry. He failed.',
+      authorName: 'Rachel M.',
+      authorSubline: "London • Valentine's 2025",
+      authorAvatarUrl: 'https://randomuser.me/api/portraits/women/44.jpg',
+      audioUrl: '',
+    },
     audioSamples: {
       nowPlaying: {
         name: 'Untuk Budi, Sepanjang Masa',
         quote: 'Setiap momen bersamamu Budi, dari kencan pertama yang gugup itu...',
         time: '3:24',
         metaText: 'London • Verified',
+        audioUrl: '',
       },
       playlist: [
         { title: 'Untuk Rizky, Segalanya Bagiku', subtitle: 'Country • 3:12', ctaLabel: 'PUTAR' },
@@ -369,6 +393,7 @@ function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
   const landing = cfg?.landing && typeof cfg.landing === 'object' ? cfg.landing : {}
   const heroMedia = landing?.heroMedia && typeof landing.heroMedia === 'object' ? landing.heroMedia : {}
   const heroOverlay = landing?.heroOverlay && typeof landing.heroOverlay === 'object' ? landing.heroOverlay : {}
+  const heroPlayer = landing?.heroPlayer && typeof landing.heroPlayer === 'object' ? landing.heroPlayer : {}
   const audioSamples = landing?.audioSamples && typeof landing.audioSamples === 'object' ? landing.audioSamples : {}
   const nowPlaying = audioSamples?.nowPlaying && typeof audioSamples.nowPlaying === 'object' ? audioSamples.nowPlaying : {}
 
@@ -403,12 +428,24 @@ function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
         authorLocation: asString(heroOverlay?.authorLocation, defaultPublicSiteDraft.landing.heroOverlay.authorLocation),
         authorAvatarUrl: asString(heroOverlay?.authorAvatarUrl, defaultPublicSiteDraft.landing.heroOverlay.authorAvatarUrl),
       },
+      heroPlayer: {
+        enabled: asBool(heroPlayer?.enabled, defaultPublicSiteDraft.landing.heroPlayer.enabled),
+        playingBadgeText: asString(heroPlayer?.playingBadgeText, defaultPublicSiteDraft.landing.heroPlayer.playingBadgeText),
+        cornerBadgeText: asString(heroPlayer?.cornerBadgeText, defaultPublicSiteDraft.landing.heroPlayer.cornerBadgeText),
+        verifiedBadgeText: asString(heroPlayer?.verifiedBadgeText, defaultPublicSiteDraft.landing.heroPlayer.verifiedBadgeText),
+        quote: asString(heroPlayer?.quote, defaultPublicSiteDraft.landing.heroPlayer.quote),
+        authorName: asString(heroPlayer?.authorName, defaultPublicSiteDraft.landing.heroPlayer.authorName),
+        authorSubline: asString(heroPlayer?.authorSubline, defaultPublicSiteDraft.landing.heroPlayer.authorSubline),
+        authorAvatarUrl: asString(heroPlayer?.authorAvatarUrl, defaultPublicSiteDraft.landing.heroPlayer.authorAvatarUrl),
+        audioUrl: asString(heroPlayer?.audioUrl, defaultPublicSiteDraft.landing.heroPlayer.audioUrl),
+      },
       audioSamples: {
         nowPlaying: {
           name: asString(nowPlaying?.name, defaultPublicSiteDraft.landing.audioSamples.nowPlaying.name),
           quote: asString(nowPlaying?.quote, defaultPublicSiteDraft.landing.audioSamples.nowPlaying.quote),
           time: asString(nowPlaying?.time, defaultPublicSiteDraft.landing.audioSamples.nowPlaying.time),
           metaText: asString(nowPlaying?.metaText, defaultPublicSiteDraft.landing.audioSamples.nowPlaying.metaText),
+          audioUrl: asString(nowPlaying?.audioUrl, defaultPublicSiteDraft.landing.audioSamples.nowPlaying.audioUrl),
         },
         playlist: playlist.length ? playlist : defaultPublicSiteDraft.landing.audioSamples.playlist,
       },
@@ -902,6 +939,9 @@ export function AdminRoute() {
                           <div className="space-y-3">
                             <div className="rounded-xl border bg-background p-3 space-y-2">
                               <div className="text-xs font-bold text-gray-900">Hero Media</div>
+                              <div className="text-[10px] text-muted-foreground">
+                                Catatan: bagian ini hanya untuk <span className="font-medium">gambar/video</span>. Untuk upload MP3 gunakan bagian <span className="font-medium">Hero Player</span> di bawah.
+                              </div>
 
                               <div className="flex flex-wrap gap-2">
                                 <Button
@@ -948,30 +988,105 @@ export function AdminRoute() {
                                   }
                                   placeholder="https://..."
                                 />
+                                <div className="pt-1">
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="block w-full text-[11px]"
+                                    onChange={async (e) => {
+                                      const f = e.target.files?.[0]
+                                      if (!f || !token) return
+                                      try {
+                                        setPublicCfgError(null)
+                                        const fd = new FormData()
+                                        fd.append('file', f)
+                                        const res = await apiUpload<{ ok: true; path: string }>(
+                                          '/api/admin/uploads?kind=image',
+                                          fd,
+                                          { token },
+                                        )
+                                        setPublicSiteDraft((d) => ({
+                                          ...d,
+                                          landing: {
+                                            ...d.landing,
+                                            heroMedia: { ...d.landing.heroMedia, mode: 'image', imageUrl: res.path },
+                                          },
+                                        }))
+                                      } catch (err: any) {
+                                        setPublicCfgError(err?.message ?? 'Upload gagal.')
+                                      } finally {
+                                        e.target.value = ''
+                                      }
+                                    }}
+                                  />
+                                  <div className="text-[10px] text-muted-foreground">Upload akan menghasilkan path seperti `/uploads/images/...`</div>
+                                </div>
                               </div>
 
-                              {publicSiteDraft.landing.heroMedia.mode === 'video' ? (
-                                <div className="space-y-1">
-                                  <div className="text-[10px] font-medium text-muted-foreground">Video URL</div>
-                                  <Input
-                                    className="h-8 text-xs"
-                                    value={publicSiteDraft.landing.heroMedia.videoUrl}
-                                    onChange={(e) =>
-                                      setPublicSiteDraft((d) => ({
-                                        ...d,
-                                        landing: {
-                                          ...d.landing,
-                                          heroMedia: { ...d.landing.heroMedia, videoUrl: e.target.value },
-                                        },
-                                      }))
-                                    }
-                                    placeholder="https://..."
-                                  />
-                                  <div className="text-[10px] text-muted-foreground">
-                                    Tip: gunakan link MP4 yang bisa diakses publik.
-                                  </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="text-[10px] font-medium text-muted-foreground">Video URL (MP4)</div>
+                                  {publicSiteDraft.landing.heroMedia.mode !== 'video' ? (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() =>
+                                        setPublicSiteDraft((d) => ({
+                                          ...d,
+                                          landing: { ...d.landing, heroMedia: { ...d.landing.heroMedia, mode: 'video' } },
+                                        }))
+                                      }
+                                    >
+                                      gunakan video
+                                    </Button>
+                                  ) : null}
                                 </div>
-                              ) : null}
+                                <Input
+                                  className="h-8 text-xs"
+                                  value={publicSiteDraft.landing.heroMedia.videoUrl}
+                                  onChange={(e) =>
+                                    setPublicSiteDraft((d) => ({
+                                      ...d,
+                                      landing: { ...d.landing, heroMedia: { ...d.landing.heroMedia, videoUrl: e.target.value } },
+                                    }))
+                                  }
+                                  placeholder="https://example.com/video.mp4 atau /uploads/videos/..."
+                                />
+                                <div className="pt-1">
+                                  <input
+                                    type="file"
+                                    accept="video/mp4,video/webm,video/quicktime,video/*"
+                                    className="block w-full text-[11px]"
+                                    onChange={async (e) => {
+                                      const f = e.target.files?.[0]
+                                      if (!f || !token) return
+                                      try {
+                                        setPublicCfgError(null)
+                                        const fd = new FormData()
+                                        fd.append('file', f)
+                                        const res = await apiUpload<{ ok: true; path: string }>(
+                                          '/api/admin/uploads?kind=video',
+                                          fd,
+                                          { token },
+                                        )
+                                        setPublicSiteDraft((d) => ({
+                                          ...d,
+                                          landing: {
+                                            ...d.landing,
+                                            heroMedia: { ...d.landing.heroMedia, mode: 'video', videoUrl: res.path },
+                                          },
+                                        }))
+                                      } catch (err: any) {
+                                        setPublicCfgError(err?.message ?? 'Upload gagal.')
+                                      } finally {
+                                        e.target.value = ''
+                                      }
+                                    }}
+                                  />
+                                  <div className="text-[10px] text-muted-foreground">Upload akan menghasilkan path seperti `/uploads/videos/...`</div>
+                                </div>
+                              </div>
                             </div>
 
                             <div className="rounded-xl border bg-background p-3 space-y-2">
@@ -1047,6 +1162,203 @@ export function AdminRoute() {
                                 />
                               </div>
                             </div>
+
+                            <div className="rounded-xl border bg-background p-3 space-y-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="text-xs font-bold text-gray-900">Hero Player</div>
+                                <label className="flex items-center gap-2 text-xs">
+                                  <input
+                                    type="checkbox"
+                                    checked={publicSiteDraft.landing.heroPlayer.enabled}
+                                    onChange={(e) =>
+                                      setPublicSiteDraft((d) => ({
+                                        ...d,
+                                        landing: { ...d.landing, heroPlayer: { ...d.landing.heroPlayer, enabled: e.target.checked } },
+                                      }))
+                                    }
+                                  />
+                                  enabled
+                                </label>
+                              </div>
+
+                              <div className="text-[10px] text-muted-foreground">
+                                Lagu ini diputar saat pengunjung klik tombol play di hero section landing page.
+                              </div>
+
+                              <div className="space-y-1">
+                                <div className="text-[10px] font-medium text-muted-foreground">Audio URL (MP3)</div>
+                                <Input
+                                  className="h-8 text-xs"
+                                  value={publicSiteDraft.landing.heroPlayer.audioUrl}
+                                  onChange={(e) =>
+                                    setPublicSiteDraft((d) => ({
+                                      ...d,
+                                      landing: { ...d.landing, heroPlayer: { ...d.landing.heroPlayer, audioUrl: e.target.value } },
+                                    }))
+                                  }
+                                  placeholder="/uploads/audios/... atau https://..."
+                                />
+                                <div className="pt-1 space-y-2">
+                                  <input
+                                    type="file"
+                                    accept="audio/mpeg,audio/*"
+                                    className="block w-full text-[11px]"
+                                    onChange={async (e) => {
+                                      const f = e.target.files?.[0]
+                                      if (!f || !token) return
+                                      try {
+                                        setPublicCfgError(null)
+                                        const fd = new FormData()
+                                        fd.append('file', f)
+                                        const res = await apiUpload<{ ok: true; path: string }>(
+                                          '/api/admin/uploads?kind=audio',
+                                          fd,
+                                          { token },
+                                        )
+                                        setPublicSiteDraft((d) => ({
+                                          ...d,
+                                          landing: {
+                                            ...d.landing,
+                                            heroPlayer: { ...d.landing.heroPlayer, enabled: true, audioUrl: res.path },
+                                          },
+                                        }))
+                                      } catch (err: any) {
+                                        setPublicCfgError(err?.message ?? 'Upload gagal.')
+                                      } finally {
+                                        e.target.value = ''
+                                      }
+                                    }}
+                                  />
+                                  <div className="text-[10px] text-muted-foreground">Upload akan menghasilkan path seperti `/uploads/audios/...`</div>
+                                  {publicSiteDraft.landing.heroPlayer.audioUrl.trim() ? (
+                                    <audio
+                                      className="w-full"
+                                      controls
+                                      src={resolveApiUrl(publicSiteDraft.landing.heroPlayer.audioUrl.trim())}
+                                    />
+                                  ) : null}
+                                </div>
+                              </div>
+
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                <div className="space-y-1">
+                                  <div className="text-[10px] font-medium text-muted-foreground">Playing Badge</div>
+                                  <Input
+                                    className="h-8 text-xs"
+                                    value={publicSiteDraft.landing.heroPlayer.playingBadgeText}
+                                    onChange={(e) =>
+                                      setPublicSiteDraft((d) => ({
+                                        ...d,
+                                        landing: {
+                                          ...d.landing,
+                                          heroPlayer: { ...d.landing.heroPlayer, playingBadgeText: e.target.value },
+                                        },
+                                      }))
+                                    }
+                                    placeholder="Playing"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <div className="text-[10px] font-medium text-muted-foreground">Corner Badge</div>
+                                  <Input
+                                    className="h-8 text-xs"
+                                    value={publicSiteDraft.landing.heroPlayer.cornerBadgeText}
+                                    onChange={(e) =>
+                                      setPublicSiteDraft((d) => ({
+                                        ...d,
+                                        landing: {
+                                          ...d.landing,
+                                          heroPlayer: { ...d.landing.heroPlayer, cornerBadgeText: e.target.value },
+                                        },
+                                      }))
+                                    }
+                                    placeholder="Valentine's Special"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <div className="text-[10px] font-medium text-muted-foreground">Verified Badge</div>
+                                  <Input
+                                    className="h-8 text-xs"
+                                    value={publicSiteDraft.landing.heroPlayer.verifiedBadgeText}
+                                    onChange={(e) =>
+                                      setPublicSiteDraft((d) => ({
+                                        ...d,
+                                        landing: {
+                                          ...d.landing,
+                                          heroPlayer: { ...d.landing.heroPlayer, verifiedBadgeText: e.target.value },
+                                        },
+                                      }))
+                                    }
+                                    placeholder="Verified Purchase"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <div className="text-[10px] font-medium text-muted-foreground">Avatar URL (opsional)</div>
+                                  <Input
+                                    className="h-8 text-xs"
+                                    value={publicSiteDraft.landing.heroPlayer.authorAvatarUrl}
+                                    onChange={(e) =>
+                                      setPublicSiteDraft((d) => ({
+                                        ...d,
+                                        landing: {
+                                          ...d.landing,
+                                          heroPlayer: { ...d.landing.heroPlayer, authorAvatarUrl: e.target.value },
+                                        },
+                                      }))
+                                    }
+                                    placeholder="https://..."
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="space-y-1">
+                                <div className="text-[10px] font-medium text-muted-foreground">Quote</div>
+                                <Input
+                                  className="h-8 text-xs"
+                                  value={publicSiteDraft.landing.heroPlayer.quote}
+                                  onChange={(e) =>
+                                    setPublicSiteDraft((d) => ({
+                                      ...d,
+                                      landing: { ...d.landing, heroPlayer: { ...d.landing.heroPlayer, quote: e.target.value } },
+                                    }))
+                                  }
+                                  placeholder="He tried not to cry..."
+                                />
+                              </div>
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                <div className="space-y-1">
+                                  <div className="text-[10px] font-medium text-muted-foreground">Author Name</div>
+                                  <Input
+                                    className="h-8 text-xs"
+                                    value={publicSiteDraft.landing.heroPlayer.authorName}
+                                    onChange={(e) =>
+                                      setPublicSiteDraft((d) => ({
+                                        ...d,
+                                        landing: { ...d.landing, heroPlayer: { ...d.landing.heroPlayer, authorName: e.target.value } },
+                                      }))
+                                    }
+                                    placeholder="Rachel M."
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <div className="text-[10px] font-medium text-muted-foreground">Author Subline</div>
+                                  <Input
+                                    className="h-8 text-xs"
+                                    value={publicSiteDraft.landing.heroPlayer.authorSubline}
+                                    onChange={(e) =>
+                                      setPublicSiteDraft((d) => ({
+                                        ...d,
+                                        landing: {
+                                          ...d.landing,
+                                          heroPlayer: { ...d.landing.heroPlayer, authorSubline: e.target.value },
+                                        },
+                                      }))
+                                    }
+                                    placeholder="London • Valentine's 2025"
+                                  />
+                                </div>
+                              </div>
+                            </div>
                           </div>
 
                           {/* Preview */}
@@ -1058,14 +1370,14 @@ export function AdminRoute() {
                               publicSiteDraft.landing.heroMedia.videoUrl.trim() ? (
                                 <video
                                   className="h-full w-full object-cover"
-                                  src={publicSiteDraft.landing.heroMedia.videoUrl.trim()}
+                                  src={resolveApiUrl(publicSiteDraft.landing.heroMedia.videoUrl.trim())}
                                   controls
                                   muted
                                   playsInline
                                 />
                               ) : (
                                 <img
-                                  src={publicSiteDraft.landing.heroMedia.imageUrl.trim()}
+                                  src={resolveApiUrl(publicSiteDraft.landing.heroMedia.imageUrl.trim())}
                                   alt="Hero preview"
                                   className="h-full w-full object-cover"
                                 />
@@ -1115,12 +1427,24 @@ export function AdminRoute() {
                                 authorLocation: publicSiteDraft.landing.heroOverlay.authorLocation.trim(),
                                 authorAvatarUrl: publicSiteDraft.landing.heroOverlay.authorAvatarUrl.trim() || null,
                               },
+                              heroPlayer: {
+                                enabled: publicSiteDraft.landing.heroPlayer.enabled,
+                                playingBadgeText: publicSiteDraft.landing.heroPlayer.playingBadgeText.trim(),
+                                cornerBadgeText: publicSiteDraft.landing.heroPlayer.cornerBadgeText.trim(),
+                                verifiedBadgeText: publicSiteDraft.landing.heroPlayer.verifiedBadgeText.trim(),
+                                quote: publicSiteDraft.landing.heroPlayer.quote.trim(),
+                                authorName: publicSiteDraft.landing.heroPlayer.authorName.trim(),
+                                authorSubline: publicSiteDraft.landing.heroPlayer.authorSubline.trim(),
+                                authorAvatarUrl: publicSiteDraft.landing.heroPlayer.authorAvatarUrl.trim() || null,
+                                audioUrl: publicSiteDraft.landing.heroPlayer.audioUrl.trim() || null,
+                              },
                               audioSamples: {
                                 nowPlaying: {
                                   name: publicSiteDraft.landing.audioSamples.nowPlaying.name.trim(),
                                   quote: publicSiteDraft.landing.audioSamples.nowPlaying.quote.trim(),
                                   time: publicSiteDraft.landing.audioSamples.nowPlaying.time.trim(),
                                   metaText: publicSiteDraft.landing.audioSamples.nowPlaying.metaText.trim() || null,
+                                  audioUrl: publicSiteDraft.landing.audioSamples.nowPlaying.audioUrl.trim() || null,
                                 },
                                 playlist: publicSiteDraft.landing.audioSamples.playlist.map((x) => ({
                                   title: x.title.trim(),
@@ -1234,6 +1558,70 @@ export function AdminRoute() {
                               }
                               placeholder="London • Verified"
                             />
+                          </div>
+
+                          <div className="space-y-1">
+                            <div className="text-[10px] font-medium text-muted-foreground">Audio URL (opsional)</div>
+                            <Input
+                              className="h-8 text-xs"
+                              value={publicSiteDraft.landing.audioSamples.nowPlaying.audioUrl}
+                              onChange={(e) =>
+                                setPublicSiteDraft((d) => ({
+                                  ...d,
+                                  landing: {
+                                    ...d.landing,
+                                    audioSamples: {
+                                      ...d.landing.audioSamples,
+                                      nowPlaying: { ...d.landing.audioSamples.nowPlaying, audioUrl: e.target.value },
+                                    },
+                                  },
+                                }))
+                              }
+                              placeholder="/uploads/audios/... atau https://..."
+                            />
+                            <div className="pt-1 space-y-2">
+                              <input
+                                type="file"
+                                accept="audio/*"
+                                className="block w-full text-[11px]"
+                                onChange={async (e) => {
+                                  const f = e.target.files?.[0]
+                                  if (!f || !token) return
+                                  try {
+                                    setPublicCfgError(null)
+                                    const fd = new FormData()
+                                    fd.append('file', f)
+                                    const res = await apiUpload<{ ok: true; path: string }>(
+                                      '/api/admin/uploads?kind=audio',
+                                      fd,
+                                      { token },
+                                    )
+                                    setPublicSiteDraft((d) => ({
+                                      ...d,
+                                      landing: {
+                                        ...d.landing,
+                                        audioSamples: {
+                                          ...d.landing.audioSamples,
+                                          nowPlaying: { ...d.landing.audioSamples.nowPlaying, audioUrl: res.path },
+                                        },
+                                      },
+                                    }))
+                                  } catch (err: any) {
+                                    setPublicCfgError(err?.message ?? 'Upload gagal.')
+                                  } finally {
+                                    e.target.value = ''
+                                  }
+                                }}
+                              />
+                              <div className="text-[10px] text-muted-foreground">Upload akan menghasilkan path seperti `/uploads/audios/...`</div>
+                              {publicSiteDraft.landing.audioSamples.nowPlaying.audioUrl.trim() ? (
+                                <audio
+                                  className="w-full"
+                                  controls
+                                  src={resolveApiUrl(publicSiteDraft.landing.audioSamples.nowPlaying.audioUrl.trim())}
+                                />
+                              ) : null}
+                            </div>
                           </div>
                         </div>
 
@@ -1423,12 +1811,24 @@ export function AdminRoute() {
                                 authorLocation: publicSiteDraft.landing.heroOverlay.authorLocation.trim(),
                                 authorAvatarUrl: publicSiteDraft.landing.heroOverlay.authorAvatarUrl.trim() || null,
                               },
+                              heroPlayer: {
+                                enabled: publicSiteDraft.landing.heroPlayer.enabled,
+                                playingBadgeText: publicSiteDraft.landing.heroPlayer.playingBadgeText.trim(),
+                                cornerBadgeText: publicSiteDraft.landing.heroPlayer.cornerBadgeText.trim(),
+                                verifiedBadgeText: publicSiteDraft.landing.heroPlayer.verifiedBadgeText.trim(),
+                                quote: publicSiteDraft.landing.heroPlayer.quote.trim(),
+                                authorName: publicSiteDraft.landing.heroPlayer.authorName.trim(),
+                                authorSubline: publicSiteDraft.landing.heroPlayer.authorSubline.trim(),
+                                authorAvatarUrl: publicSiteDraft.landing.heroPlayer.authorAvatarUrl.trim() || null,
+                                audioUrl: publicSiteDraft.landing.heroPlayer.audioUrl.trim() || null,
+                              },
                               audioSamples: {
                                 nowPlaying: {
                                   name: publicSiteDraft.landing.audioSamples.nowPlaying.name.trim(),
                                   quote: publicSiteDraft.landing.audioSamples.nowPlaying.quote.trim(),
                                   time: publicSiteDraft.landing.audioSamples.nowPlaying.time.trim(),
                                   metaText: publicSiteDraft.landing.audioSamples.nowPlaying.metaText.trim() || null,
+                                  audioUrl: publicSiteDraft.landing.audioSamples.nowPlaying.audioUrl.trim() || null,
                                 },
                                 playlist: publicSiteDraft.landing.audioSamples.playlist.map((x) => ({
                                   title: x.title.trim(),
@@ -1662,12 +2062,24 @@ export function AdminRoute() {
                                 authorLocation: publicSiteDraft.landing.heroOverlay.authorLocation.trim(),
                                 authorAvatarUrl: publicSiteDraft.landing.heroOverlay.authorAvatarUrl.trim() || null,
                               },
+                              heroPlayer: {
+                                enabled: publicSiteDraft.landing.heroPlayer.enabled,
+                                playingBadgeText: publicSiteDraft.landing.heroPlayer.playingBadgeText.trim(),
+                                cornerBadgeText: publicSiteDraft.landing.heroPlayer.cornerBadgeText.trim(),
+                                verifiedBadgeText: publicSiteDraft.landing.heroPlayer.verifiedBadgeText.trim(),
+                                quote: publicSiteDraft.landing.heroPlayer.quote.trim(),
+                                authorName: publicSiteDraft.landing.heroPlayer.authorName.trim(),
+                                authorSubline: publicSiteDraft.landing.heroPlayer.authorSubline.trim(),
+                                authorAvatarUrl: publicSiteDraft.landing.heroPlayer.authorAvatarUrl.trim() || null,
+                                audioUrl: publicSiteDraft.landing.heroPlayer.audioUrl.trim() || null,
+                              },
                               audioSamples: {
                                 nowPlaying: {
                                   name: publicSiteDraft.landing.audioSamples.nowPlaying.name.trim(),
                                   quote: publicSiteDraft.landing.audioSamples.nowPlaying.quote.trim(),
                                   time: publicSiteDraft.landing.audioSamples.nowPlaying.time.trim(),
                                   metaText: publicSiteDraft.landing.audioSamples.nowPlaying.metaText.trim() || null,
+                                  audioUrl: publicSiteDraft.landing.audioSamples.nowPlaying.audioUrl.trim() || null,
                                 },
                                 playlist: publicSiteDraft.landing.audioSamples.playlist.map((x) => ({
                                   title: x.title.trim(),

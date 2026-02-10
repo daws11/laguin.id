@@ -48,14 +48,26 @@ export const adminUploadsRoutes: FastifyPluginAsync = async (app) => {
     const ext = extFromMime(mime) ?? (extFromName || null)
     if (!ext) return reply.code(400).send({ error: 'unsupported_type', mime })
 
-    // Basic kind/mime validation
+    // Basic kind/mime validation (lenient).
+    // Some browsers can send empty/unknown mimetype or even "application/octet-stream" for local files.
+    // In that case, we fall back to checking the file extension.
     const mimeLower = (mime ?? '').toLowerCase()
-    // Some browsers can send empty/unknown mimetype for local files. In that case, we rely on extension.
-    if (mimeLower) {
-      if (kind === 'image' && !mimeLower.startsWith('image/')) return reply.code(400).send({ error: 'invalid_kind_mime' })
-      if (kind === 'video' && !mimeLower.startsWith('video/')) return reply.code(400).send({ error: 'invalid_kind_mime' })
-      if (kind === 'audio' && !mimeLower.startsWith('audio/')) return reply.code(400).send({ error: 'invalid_kind_mime' })
-    }
+    const allowedExts =
+      kind === 'image'
+        ? new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif'])
+        : kind === 'video'
+          ? new Set(['.mp4', '.webm', '.mov', '.m4v'])
+          : new Set(['.mp3', '.wav', '.ogg', '.webm'])
+
+    const mimeOk =
+      !mimeLower ||
+      mimeLower === 'application/octet-stream' ||
+      (kind === 'image' && mimeLower.startsWith('image/')) ||
+      (kind === 'video' && mimeLower.startsWith('video/')) ||
+      (kind === 'audio' && mimeLower.startsWith('audio/')) ||
+      allowedExts.has(ext)
+
+    if (!mimeOk) return reply.code(400).send({ error: 'invalid_kind_mime', kind, mime, ext })
 
     const __dirname = path.dirname(fileURLToPath(import.meta.url))
     const uploadsRoot = path.join(__dirname, '..', '..', 'uploads')
