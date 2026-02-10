@@ -31,6 +31,17 @@ import {
   Check
 } from 'lucide-react'
 
+type PersistedConfigDraft = {
+  v: 1
+  step: number
+  relationship: string
+  emailVerificationId: string | null
+  formValues: Partial<OrderInput>
+  updatedAt: number
+}
+
+const CONFIG_DRAFT_STORAGE_KEY = 'laguin:config_draft:v1'
+
 export function ConfigRoute() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
@@ -51,6 +62,25 @@ export function ConfigRoute() {
   const [emailVerified, setEmailVerified] = useState(false)
   const [resendCooldownSec, setResendCooldownSec] = useState(0)
 
+  const DEFAULT_ORDER_INPUT: OrderInput = {
+    yourName: undefined,
+    recipientName: '',
+    occasion: 'Valentine',
+    story: '',
+    musicPreferences: {
+      genre: 'Pop Ballad',
+      mood: '',
+      vibe: '',
+      tempo: '',
+      voiceStyle: '',
+      language: 'Indonesian',
+    },
+    whatsappNumber: '',
+    email: '',
+    emailVerificationId: '',
+    extraNotes: '',
+  }
+
   const getErrorMessage = (e: unknown, fallback: string) => {
     if (e instanceof Error && e.message) return e.message
     return fallback
@@ -60,16 +90,7 @@ export function ConfigRoute() {
     // NOTE: keep build stable across Zod typings changes between deps.
     resolver: zodResolver(OrderInputSchema as any),
     mode: 'onTouched',
-    defaultValues: {
-      recipientName: '',
-      occasion: 'Valentine',
-      story: '',
-      musicPreferences: { genre: 'Pop Ballad', mood: '', vibe: '', tempo: '', voiceStyle: '', language: 'Indonesian' },
-      whatsappNumber: '', // Main contact method
-      email: '',
-      emailVerificationId: '',
-      extraNotes: '',
-    },
+    defaultValues: DEFAULT_ORDER_INPUT,
   })
 
   const { watch, setValue, register, formState: { errors } } = form
@@ -78,6 +99,104 @@ export function ConfigRoute() {
   const language = watch('musicPreferences.language')
   const storyText = watch('story') ?? ''
   const email = (watch('email') ?? '').trim()
+
+  const didHydrateDraftRef = useRef(false)
+  const suppressOtpResetOnceRef = useRef(false)
+
+  const saveDraft = (values: Partial<OrderInput>) => {
+    if (!didHydrateDraftRef.current) return
+    try {
+      const formValues: Partial<OrderInput> = {
+        yourName: values.yourName,
+        recipientName: values.recipientName,
+        occasion: values.occasion,
+        story: values.story,
+        musicPreferences: values.musicPreferences,
+        whatsappNumber: values.whatsappNumber,
+        email: values.email,
+        extraNotes: values.extraNotes,
+        // Intentionally not persisting emailVerificationId from the form:
+        // - It is only set after OTP verification
+        // - Persisting it doesn't help without a server-side status check
+      }
+
+      const payload: PersistedConfigDraft = {
+        v: 1,
+        step,
+        relationship,
+        emailVerificationId,
+        formValues,
+        updatedAt: Date.now(),
+      }
+
+      window.localStorage.setItem(CONFIG_DRAFT_STORAGE_KEY, JSON.stringify(payload))
+    } catch {
+      // Best-effort only (private mode / quota exceeded / JSON issues)
+    }
+  }
+
+  const clearDraft = () => {
+    try {
+      window.localStorage.removeItem(CONFIG_DRAFT_STORAGE_KEY)
+    } catch {
+      // ignore
+    }
+  }
+
+  // Hydrate draft on first mount so user can continue after closing tab/browser.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(CONFIG_DRAFT_STORAGE_KEY)
+      if (!raw) {
+        didHydrateDraftRef.current = true
+        return
+      }
+      const parsed = JSON.parse(raw) as Partial<PersistedConfigDraft>
+      if (parsed.v !== 1) {
+        didHydrateDraftRef.current = true
+        return
+      }
+
+      const nextStep = Number.isFinite(parsed.step) ? Math.max(0, Math.min(3, parsed.step as number)) : 0
+      const nextRelationship = typeof parsed.relationship === 'string' && parsed.relationship ? parsed.relationship : 'Pasangan'
+      const nextEmailVerificationId = typeof parsed.emailVerificationId === 'string' ? parsed.emailVerificationId : null
+
+      const fv = (parsed.formValues ?? {}) as Partial<OrderInput>
+      const merged: OrderInput = {
+        ...DEFAULT_ORDER_INPUT,
+        ...fv,
+        musicPreferences: {
+          ...DEFAULT_ORDER_INPUT.musicPreferences,
+          ...(fv.musicPreferences ?? {}),
+        },
+        emailVerificationId: DEFAULT_ORDER_INPUT.emailVerificationId,
+      }
+
+      setStep(nextStep)
+      setRelationship(nextRelationship)
+      setEmailVerificationId(nextEmailVerificationId)
+      suppressOtpResetOnceRef.current = true
+      form.reset(merged)
+    } catch {
+      // ignore and continue with defaults
+    } finally {
+      didHydrateDraftRef.current = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Persist on any form change (best-effort).
+  useEffect(() => {
+    const sub = form.watch((values) => saveDraft(values as Partial<OrderInput>))
+    return () => sub.unsubscribe()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, step, relationship, emailVerificationId])
+
+  // Persist when non-form state changes (step/relationship/OTP start).
+  useEffect(() => {
+    saveDraft(form.getValues())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, relationship, emailVerificationId])
 
   // Derived state for dynamic titles
   const currentRecipient = recipientName || 'the lucky person'
@@ -119,6 +238,10 @@ export function ConfigRoute() {
 
   // Reset OTP state if email changes
   useEffect(() => {
+    if (suppressOtpResetOnceRef.current) {
+      suppressOtpResetOnceRef.current = false
+      return
+    }
     setEmailVerified(false)
     setOtpDigits(['', '', '', ''])
     setEmailVerificationId(null)
@@ -246,6 +369,7 @@ export function ConfigRoute() {
         ...data,
         whatsappNumber: data.whatsappNumber,
       })
+      clearDraft()
       navigate(`/checkout?orderId=${encodeURIComponent(res.orderId)}`)
     } catch (err: unknown) {
       setError(getErrorMessage(err, 'Something went wrong. Please try again.'))

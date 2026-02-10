@@ -58,7 +58,11 @@ export const kieCallbackRoutes: FastifyPluginAsync = async (app) => {
 
     const callbackType: string | null = body?.data?.callbackType ?? null
     const code: number | null = body?.code ?? null
-    const audioUrl: string | null = body?.data?.data?.[0]?.audio_url ?? null
+    const callbackItems: any[] = Array.isArray(body?.data?.data) ? body.data.data : []
+    const audioUrls: string[] = callbackItems
+      .map((x) => x?.audio_url)
+      .filter((x): x is string => typeof x === 'string' && x.length > 0)
+    const audioUrl: string | null = audioUrls[0] ?? null
 
     const currentMeta: any =
       (order.trackMetadata && typeof order.trackMetadata === 'object' ? order.trackMetadata : null) ?? {}
@@ -73,6 +77,7 @@ export const kieCallbackRoutes: FastifyPluginAsync = async (app) => {
           callbackType,
           callback: body,
           status: audioUrl ? 'SUCCESS' : currentMeta?.status,
+          tracks: audioUrls.length ? audioUrls : currentMeta?.tracks,
         } as any,
         trackUrl: order.trackUrl ?? audioUrl ?? undefined,
       },

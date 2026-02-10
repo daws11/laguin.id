@@ -12,7 +12,7 @@ const htmlTemplate = `
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMTP Debugger Tool v3 (Fix Format)</title>
+    <title>SMTP Debugger Tool v4 (Envelope Fix)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .log-entry { font-family: monospace; margin-bottom: 4px; border-bottom: 1px solid #333; padding-bottom: 2px; word-break: break-all; }
@@ -52,11 +52,11 @@ const htmlTemplate = `
                     <div class="mb-2">
                         <label class="block text-xs font-medium mb-1 text-gray-400">SMTP Username</label>
                         <input type="text" name="user" value="emailit" class="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500">
+                        <p class="text-[10px] text-gray-400 mt-1">Default: 'emailit'. Jika gagal, coba ganti dengan email Anda.</p>
                     </div>
                     <div>
                         <label class="block text-xs font-medium mb-1 text-gray-400">SMTP Password (API Key)</label>
                         <input type="password" name="pass" placeholder="secret_..." class="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500">
-                        <p class="text-[10px] text-yellow-400 mt-1">*Sangat disarankan membuat API Key BARU setelah domain verified.</p>
                     </div>
                 </div>
                 
@@ -77,7 +77,7 @@ const htmlTemplate = `
                         <input type="checkbox" id="simpleFrom" name="simpleFrom" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-500 rounded focus:ring-blue-500 focus:ring-2">
                         <label for="simpleFrom" class="ml-2 text-xs text-white font-bold">Kirim sebagai Raw Email saja (Tanpa Nama)</label>
                     </div>
-                    <p class="text-[10px] text-gray-400 mt-1 ml-6">Centang ini jika server menolak format "Nama <email>"</p>
+                    <p class="text-[10px] text-gray-400 mt-1 ml-6">Memaksa penggunaan format email murni di header.</p>
                 </div>
 
                 <div>
@@ -146,7 +146,7 @@ const htmlTemplate = `
                 return;
             }
 
-            log('--- MEMULAI DIAGNOSA V3 ---', 'info');
+            log('--- MEMULAI DIAGNOSA V4 (Strict Envelope) ---', 'info');
             log(\`Target: \${data.host}:\${data.port}\`, 'info');
             
             // Preview format
@@ -174,12 +174,7 @@ const htmlTemplate = `
                 if (result.success) {
                     log('✅ BERHASIL DIKIRIM!', 'success');
                     log(\`Server Response: \${result.info.response}\`, 'success');
-                    
-                    if (data.simpleFrom) {
-                         alert('Sukses! Ternyata server menolak format Nama. Gunakan email saja di settingan aplikasi Anda.');
-                    } else {
-                         alert('Sukses! Konfigurasi valid.');
-                    }
+                    alert('Sukses! Masalah teratasi.');
                 } else {
                     log('❌ PENGIRIMAN GAGAL', 'error');
                     log(\`Error Msg: \${result.error.message}\`, 'error');
@@ -189,9 +184,10 @@ const htmlTemplate = `
                     }
 
                     if (result.error.response && result.error.response.includes('530')) {
-                        log('💡 REKOMENDASI:', 'warn');
-                        log('1. Coba centang "Kirim sebagai Raw Email saja" dan test lagi.', 'warn');
-                        log('2. WAJIB: Buat API Key BARU di dashboard sekarang juga. Key lama mungkin expired/stale.', 'warn');
+                        log('💡 KESIMPULAN AKHIR:', 'warn');
+                        log('Jika Anda sudah membuat API Key Baru dan Domain sudah verified, namun tetap error ini:', 'warn');
+                        log('Masalahnya 99% pada API Key yang "nyangkut" di state lama.', 'warn');
+                        log('Solusi: Hapus API Key lama di dashboard -> Logout EmailIt -> Login lagi -> Buat API Key Baru.', 'warn');
                     }
                 }
             } catch (err) {
@@ -235,21 +231,29 @@ const handleRequest = async (req, res) => {
                 });
 
                 // Logic pemilihan format Sender
-                // Jika simpleFrom true, kirim email saja. Jika false, kirim format "Nama" <email>
                 const finalFrom = config.simpleFrom 
                     ? config.fromEmail 
                     : `"${config.fromName}" <${config.fromEmail}>`;
 
+                // FORCE ENVELOPE: Memastikan SMTP Command 'MAIL FROM'
+                // menggunakan email bersih, terlepas dari Header 'From'.
+                const envelopeOptions = {
+                    from: config.fromEmail, // SELALU gunakan raw email untuk envelope
+                    to: config.to
+                };
+
                 const info = await transporter.sendMail({
                     from: finalFrom,
                     to: config.to,
+                    envelope: envelopeOptions, // INI KUNCI PERBAIKANNYA
                     subject: "SMTP Debug Test - " + new Date().toLocaleTimeString(),
                     text: "Test koneksi SMTP berhasil.",
                     html: `
                         <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
                             <h2 style="color: #22c55e;">Test Berhasil! ✅</h2>
-                            <p>Email dikirim dengan format sender:</p>
-                            <pre style="background:#eee; padding:10px;">${finalFrom.replace(/</g, '&lt;')}</pre>
+                            <p>Email dikirim dengan Envelope & Header terpisah.</p>
+                            <pre style="background:#eee; padding:10px;">Header From: ${finalFrom.replace(/</g, '&lt;')}</pre>
+                            <pre style="background:#eee; padding:10px;">Envelope From: ${config.fromEmail}</pre>
                         </div>
                     `
                 });
@@ -281,7 +285,7 @@ const handleRequest = async (req, res) => {
 const server = http.createServer(handleRequest);
 server.listen(PORT, () => {
     console.log(`\n==================================================`);
-    console.log(`🚀 SMTP Debugger V3 berjalan!`);
+    console.log(`🚀 SMTP Debugger V4 berjalan!`);
     console.log(`👉 Buka browser Anda di: http://localhost:${PORT}`);
     console.log(`==================================================\n`);
 });

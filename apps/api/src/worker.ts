@@ -158,9 +158,25 @@ async function deliveryTick() {
   } catch (e: any) {
     const msg = e?.message ?? String(e)
     await addOrderEvent({ orderId, type: 'delivery_exception', message: msg })
+    // Do not permanently park the order in delivery_failed on unexpected exceptions.
+    // Schedule a retry with backoff so it can recover after transient issues or config fixes.
+    const exceptionCount = await prisma.orderEvent.count({
+      where: { orderId, type: 'delivery_exception' },
+    })
+    const delaySeconds = Math.min(60 * 2 ** Math.max(0, Math.min(exceptionCount - 1, 16)), 60 * 60)
+    const nextAt = new Date(Date.now() + delaySeconds * 1000)
     await prisma.order.update({
       where: { id: orderId },
-      data: { deliveryStatus: 'delivery_failed' },
+      data: {
+        deliveryStatus: 'delivery_pending',
+        deliveryScheduledAt: nextAt,
+      },
+    })
+    await addOrderEvent({
+      orderId,
+      type: 'delivery_retry_scheduled',
+      message: `Delivery exception; retry scheduled in ${delaySeconds}s`,
+      data: { delaySeconds, nextAt: nextAt.toISOString() } as any,
     })
   } finally {
     await unlock(lockKey)

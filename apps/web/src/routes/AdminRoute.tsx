@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { SupportedPlaceholders, validatePlaceholders } from 'shared'
 import { LayoutDashboard, Settings as SettingsIcon, MessageSquare, Users, ShoppingBag, LogOut, Menu, ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -33,7 +33,13 @@ const translations = {
     instantEnabled: 'Pengiriman instan aktif',
     deliveryDelay: 'Penundaan pengiriman (jam) (saat instan NONAKTIF)',
     whatsappGateway: 'WhatsApp Gateway',
-    whatsappGatewayDesc: 'Pilih provider WhatsApp dan konfigurasi template pengiriman link lagu.',
+    whatsappGatewayDesc:
+      'Pilih provider WhatsApp dan konfigurasi template reminder (tanpa variable) yang mengingatkan bahwa lagu sudah dikirim ke email.',
+    publicSite: 'Landing & Toast',
+    publicSiteDesc: 'Konten landing page (route /) dan toast aktivitas (format JSON).',
+    landingJson: 'Landing JSON',
+    toastJson: 'Toast JSON',
+    publicSiteUpdateHelp: 'Edit JSON lalu klik Update. Kosongkan untuk {}.',
     provider: 'Provider',
     ycloudFrom: 'YCloud From (E.164, contoh: +628123...)',
     ycloudTemplateName: 'YCloud Template Name',
@@ -70,6 +76,20 @@ const translations = {
     status: 'Status',
     songLink: 'Link Lagu',
     retryCreation: 'Coba lagi pembuatan',
+    resendDelivery: 'Resend email + WhatsApp',
+    resendEmail: 'Resend email',
+    resendWhatsApp: 'Resend WhatsApp',
+    deliveryDebug: 'Detail Pengiriman',
+    contact: 'Kontak',
+    email: 'Email',
+    phone: 'Nomor WhatsApp',
+    sunoRequest: 'Prompt ke Suno/Kie.ai',
+    sunoAuditPrompt: 'Audit prompt (music template)',
+    lyricsSent: 'Lyrics (prompt)',
+    styleSent: 'Style',
+    titleSent: 'Title',
+    modelSent: 'Model',
+    taskId: 'Task ID',
     events: 'Events (terbaru di atas)',
     selectOrder: 'Pilih pesanan untuk melihat detail',
     failedLoadAdmin: 'Gagal memuat data admin',
@@ -80,6 +100,9 @@ const translations = {
     failedLoadCustomer: 'Gagal memuat pelanggan',
     failedLoadOrder: 'Gagal memuat pesanan',
     failedRetryOrder: 'Gagal mencoba ulang pesanan',
+    failedResendDelivery: 'Gagal resend pengiriman',
+    failedResendEmail: 'Gagal resend email',
+    failedResendWhatsApp: 'Gagal resend WhatsApp',
     noSettings: 'Tidak ada pengaturan dimuat.',
     error: 'Error',
     track: 'track',
@@ -119,7 +142,13 @@ const translations = {
     instantEnabled: 'Instant delivery enabled',
     deliveryDelay: 'Delivery delay (hours) (when instant is OFF)',
     whatsappGateway: 'WhatsApp Gateway',
-    whatsappGatewayDesc: 'Select WhatsApp provider and configure the delivery template for the song link.',
+    whatsappGatewayDesc:
+      'Select WhatsApp provider and configure a reminder template (no variables) that confirms the song has been sent to the user email.',
+    publicSite: 'Landing & Toast',
+    publicSiteDesc: 'Landing page content (route /) and activity toast (JSON).',
+    landingJson: 'Landing JSON',
+    toastJson: 'Toast JSON',
+    publicSiteUpdateHelp: 'Edit JSON then click Update. Leave blank for {}.',
     provider: 'Provider',
     ycloudFrom: 'YCloud From (E.164, e.g. +15551234567)',
     ycloudTemplateName: 'YCloud Template Name',
@@ -156,6 +185,20 @@ const translations = {
     status: 'Status',
     songLink: 'Song Link',
     retryCreation: 'Retry creation',
+    resendDelivery: 'Resend email + WhatsApp',
+    resendEmail: 'Resend email',
+    resendWhatsApp: 'Resend WhatsApp',
+    deliveryDebug: 'Delivery Details',
+    contact: 'Contact',
+    email: 'Email',
+    phone: 'WhatsApp number',
+    sunoRequest: 'Prompt sent to Suno/Kie.ai',
+    sunoAuditPrompt: 'Audit prompt (music template)',
+    lyricsSent: 'Lyrics (prompt)',
+    styleSent: 'Style',
+    titleSent: 'Title',
+    modelSent: 'Model',
+    taskId: 'Task ID',
     events: 'Events (newest first)',
     selectOrder: 'Select order to view details',
     failedLoadAdmin: 'Failed to load admin data',
@@ -166,6 +209,9 @@ const translations = {
     failedLoadCustomer: 'Failed to load customer',
     failedLoadOrder: 'Failed to load order',
     failedRetryOrder: 'Failed to retry order',
+    failedResendDelivery: 'Failed to resend delivery',
+    failedResendEmail: 'Failed to resend email',
+    failedResendWhatsApp: 'Failed to resend WhatsApp',
     noSettings: 'No settings loaded.',
     error: 'Error',
     track: 'track',
@@ -204,6 +250,7 @@ type Settings = {
   paymentsEnabled: boolean
   whatsappProvider: string
   whatsappConfig: unknown | null
+  publicSiteConfig: unknown | null
   hasOpenaiKey: boolean
   hasKaiAiKey: boolean
 
@@ -212,6 +259,167 @@ type Settings = {
   ycloudTemplateName: string | null
   ycloudTemplateLangCode: string | null
   hasYcloudKey: boolean
+}
+
+type LandingPlaylistItem = { title: string; subtitle: string; ctaLabel: string }
+type ToastItem = { fullName: string; city: string; recipientName: string }
+
+type PublicSiteDraft = {
+  landing: {
+    heroMedia: {
+      mode: 'image' | 'video'
+      imageUrl: string
+      videoUrl: string
+    }
+    heroOverlay: {
+      quote: string
+      authorName: string
+      authorLocation: string
+      authorAvatarUrl: string
+    }
+    audioSamples: {
+      nowPlaying: {
+        name: string
+        quote: string
+        time: string
+        metaText: string
+      }
+      playlist: LandingPlaylistItem[]
+    }
+  }
+  activityToast: {
+    enabled: boolean
+    intervalMs: number
+    durationMs: number
+    items: ToastItem[]
+  }
+}
+
+const defaultPublicSiteDraft: PublicSiteDraft = {
+  landing: {
+    heroMedia: {
+      mode: 'image',
+      imageUrl: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=2940&auto=format&fit=crop',
+      videoUrl: '',
+    },
+    heroOverlay: {
+      quote: 'Dia menangis sebelum chorus berakhir',
+      authorName: 'Rina M.',
+      authorLocation: 'Jakarta',
+      authorAvatarUrl: 'https://randomuser.me/api/portraits/women/44.jpg',
+    },
+    audioSamples: {
+      nowPlaying: {
+        name: 'Untuk Budi, Sepanjang Masa',
+        quote: 'Setiap momen bersamamu Budi, dari kencan pertama yang gugup itu...',
+        time: '3:24',
+        metaText: 'London • Verified',
+      },
+      playlist: [
+        { title: 'Untuk Rizky, Segalanya Bagiku', subtitle: 'Country • 3:12', ctaLabel: 'PUTAR' },
+        { title: 'Untuk Dimas, 10 Tahun Bersama', subtitle: 'Acoustic • 2:58', ctaLabel: 'PUTAR' },
+        { title: 'Untuk Andi, Petualangan Kita', subtitle: 'Pop Ballad • 3:45', ctaLabel: 'PUTAR' },
+      ],
+    },
+  },
+  activityToast: {
+    enabled: true,
+    intervalMs: 10000,
+    durationMs: 4500,
+    items: [
+      { fullName: 'Abdurrahman Firdaus', city: 'Bandung', recipientName: 'Salsa' },
+      { fullName: 'Nabila Putri', city: 'Jakarta', recipientName: 'Rizky' },
+      { fullName: 'Andreas Wijaya', city: 'Surabaya', recipientName: 'Dima' },
+    ],
+  },
+}
+
+function asString(v: unknown, fallback: string) {
+  return typeof v === 'string' ? v : fallback
+}
+
+function asNumber(v: unknown, fallback: number) {
+  return typeof v === 'number' && Number.isFinite(v) ? v : fallback
+}
+
+function asBool(v: unknown, fallback: boolean) {
+  return typeof v === 'boolean' ? v : fallback
+}
+
+function safeArr<T>(v: unknown, map: (x: any) => T): T[] {
+  if (!Array.isArray(v)) return []
+  return v.map(map)
+}
+
+function clampInt(n: number, min: number, max: number) {
+  const x = Math.floor(n)
+  return Math.min(max, Math.max(min, x))
+}
+
+function moveItem<T>(arr: T[], from: number, to: number) {
+  const copy = [...arr]
+  const item = copy.splice(from, 1)[0]
+  copy.splice(to, 0, item)
+  return copy
+}
+
+function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
+  const cfg =
+    s?.publicSiteConfig && typeof s.publicSiteConfig === 'object' ? (s.publicSiteConfig as any) : {}
+  const landing = cfg?.landing && typeof cfg.landing === 'object' ? cfg.landing : {}
+  const heroMedia = landing?.heroMedia && typeof landing.heroMedia === 'object' ? landing.heroMedia : {}
+  const heroOverlay = landing?.heroOverlay && typeof landing.heroOverlay === 'object' ? landing.heroOverlay : {}
+  const audioSamples = landing?.audioSamples && typeof landing.audioSamples === 'object' ? landing.audioSamples : {}
+  const nowPlaying = audioSamples?.nowPlaying && typeof audioSamples.nowPlaying === 'object' ? audioSamples.nowPlaying : {}
+
+  const playlist = safeArr(audioSamples?.playlist, (x) => ({
+    title: asString(x?.title, ''),
+    subtitle: asString(x?.subtitle, ''),
+    ctaLabel: asString(x?.ctaLabel, 'PUTAR'),
+  })).filter((x) => x.title || x.subtitle)
+
+  const toast = cfg?.activityToast && typeof cfg.activityToast === 'object' ? cfg.activityToast : {}
+  const toastItems = safeArr(toast?.items, (x) => ({
+    fullName: asString(x?.fullName, ''),
+    city: asString(x?.city, ''),
+    recipientName: asString(x?.recipientName, ''),
+  })).filter((x) => x.fullName || x.city || x.recipientName)
+
+  const imageUrl = asString(heroMedia?.imageUrl, defaultPublicSiteDraft.landing.heroMedia.imageUrl)
+  const videoUrl = asString(heroMedia?.videoUrl, '')
+  const mode: 'image' | 'video' =
+    (heroMedia?.videoUrl && typeof heroMedia.videoUrl === 'string' && heroMedia.videoUrl.trim()) ? 'video' : 'image'
+
+  return {
+    landing: {
+      heroMedia: {
+        mode,
+        imageUrl: imageUrl.trim() ? imageUrl : defaultPublicSiteDraft.landing.heroMedia.imageUrl,
+        videoUrl: videoUrl ?? '',
+      },
+      heroOverlay: {
+        quote: asString(heroOverlay?.quote, defaultPublicSiteDraft.landing.heroOverlay.quote),
+        authorName: asString(heroOverlay?.authorName, defaultPublicSiteDraft.landing.heroOverlay.authorName),
+        authorLocation: asString(heroOverlay?.authorLocation, defaultPublicSiteDraft.landing.heroOverlay.authorLocation),
+        authorAvatarUrl: asString(heroOverlay?.authorAvatarUrl, defaultPublicSiteDraft.landing.heroOverlay.authorAvatarUrl),
+      },
+      audioSamples: {
+        nowPlaying: {
+          name: asString(nowPlaying?.name, defaultPublicSiteDraft.landing.audioSamples.nowPlaying.name),
+          quote: asString(nowPlaying?.quote, defaultPublicSiteDraft.landing.audioSamples.nowPlaying.quote),
+          time: asString(nowPlaying?.time, defaultPublicSiteDraft.landing.audioSamples.nowPlaying.time),
+          metaText: asString(nowPlaying?.metaText, defaultPublicSiteDraft.landing.audioSamples.nowPlaying.metaText),
+        },
+        playlist: playlist.length ? playlist : defaultPublicSiteDraft.landing.audioSamples.playlist,
+      },
+    },
+    activityToast: {
+      enabled: asBool(toast?.enabled, defaultPublicSiteDraft.activityToast.enabled),
+      intervalMs: clampInt(asNumber(toast?.intervalMs, defaultPublicSiteDraft.activityToast.intervalMs), 2000, 120000),
+      durationMs: clampInt(asNumber(toast?.durationMs, defaultPublicSiteDraft.activityToast.durationMs), 1000, 60000),
+      items: toastItems.length ? toastItems : defaultPublicSiteDraft.activityToast.items,
+    },
+  }
 }
 
 type CustomerListItem = {
@@ -264,6 +472,10 @@ export function AdminRoute() {
   const t = translations[lang]
 
   const [settings, setSettings] = useState<Settings | null>(null)
+  const [publicSiteDraft, setPublicSiteDraft] = useState<PublicSiteDraft>(() => buildDraftFromSettings(null))
+  const [publicCfgError, setPublicCfgError] = useState<string | null>(null)
+  const [publicCfgSavedAt, setPublicCfgSavedAt] = useState<string | null>(null)
+  const lastLoadedSettingsIdRef = useRef<string | null>(null)
   const [templates, setTemplates] = useState<PromptTemplate[]>([])
   const [customers, setCustomers] = useState<CustomerListItem[]>([])
   const [orders, setOrders] = useState<OrderListItem[]>([])
@@ -335,6 +547,16 @@ export function AdminRoute() {
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
+
+  useEffect(() => {
+    if (!settings) return
+    if (lastLoadedSettingsIdRef.current === settings.id) return
+    lastLoadedSettingsIdRef.current = settings.id
+    const draft = buildDraftFromSettings(settings)
+    setPublicSiteDraft(draft)
+    setPublicCfgError(null)
+    setPublicCfgSavedAt(null)
+  }, [settings])
 
   async function saveSettings(
     partial: Partial<Settings> & { openaiApiKey?: string; kaiAiApiKey?: string; ycloudApiKey?: string },
@@ -437,6 +659,36 @@ export function AdminRoute() {
       await openOrder(id)
     } catch (e: any) {
       setError(e?.message ?? t.failedRetryOrder)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function resendEmail(id: string) {
+    if (!token) return
+    setError(null)
+    setLoading(true)
+    try {
+      await apiPost(`/api/admin/orders/${encodeURIComponent(id)}/resend-email`, {}, { token })
+      await refreshOrders()
+      await openOrder(id)
+    } catch (e: any) {
+      setError(e?.message ?? t.failedResendEmail)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function resendWhatsApp(id: string) {
+    if (!token) return
+    setError(null)
+    setLoading(true)
+    try {
+      await apiPost(`/api/admin/orders/${encodeURIComponent(id)}/resend-whatsapp`, {}, { token })
+      await refreshOrders()
+      await openOrder(id)
+    } catch (e: any) {
+      setError(e?.message ?? t.failedResendWhatsApp)
     } finally {
       setLoading(false)
     }
@@ -621,6 +873,833 @@ export function AdminRoute() {
 
           {tab === 'settings' && (
             <div className="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 items-start">
+              {/* Card: Public Site Config (Landing + Toast) */}
+              <Card className="h-full shadow-sm md:col-span-2 lg:col-span-3">
+                <CardHeader className="p-3 pb-2 bg-muted/5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <CardTitle className="text-sm font-semibold">{t.publicSite}</CardTitle>
+                      <CardDescription className="text-[10px]">{t.publicSiteDesc}</CardDescription>
+                    </div>
+                    {publicCfgSavedAt ? (
+                      <div className="text-[10px] text-green-700 bg-green-50 border border-green-100 px-2 py-1 rounded-full">
+                        tersimpan {publicCfgSavedAt}
+                      </div>
+                    ) : null}
+                  </div>
+                </CardHeader>
+                <CardContent className="p-3 space-y-3 text-xs">
+                  {settings ? (
+                    <Tabs defaultValue="landing" className="w-full">
+                      <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="landing">Landing</TabsTrigger>
+                        <TabsTrigger value="music">Music</TabsTrigger>
+                        <TabsTrigger value="toast">Toast</TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="landing" className="mt-3 space-y-3">
+                        <div className="grid gap-3 lg:grid-cols-2 items-start">
+                          <div className="space-y-3">
+                            <div className="rounded-xl border bg-background p-3 space-y-2">
+                              <div className="text-xs font-bold text-gray-900">Hero Media</div>
+
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  type="button"
+                                  variant={publicSiteDraft.landing.heroMedia.mode === 'image' ? 'secondary' : 'outline'}
+                                  size="sm"
+                                  onClick={() =>
+                                    setPublicSiteDraft((d) => ({
+                                      ...d,
+                                      landing: { ...d.landing, heroMedia: { ...d.landing.heroMedia, mode: 'image' } },
+                                    }))
+                                  }
+                                >
+                                  Image
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant={publicSiteDraft.landing.heroMedia.mode === 'video' ? 'secondary' : 'outline'}
+                                  size="sm"
+                                  onClick={() =>
+                                    setPublicSiteDraft((d) => ({
+                                      ...d,
+                                      landing: { ...d.landing, heroMedia: { ...d.landing.heroMedia, mode: 'video' } },
+                                    }))
+                                  }
+                                >
+                                  Video
+                                </Button>
+                              </div>
+
+                              <div className="space-y-1">
+                                <div className="text-[10px] font-medium text-muted-foreground">Image URL</div>
+                                <Input
+                                  className="h-8 text-xs"
+                                  value={publicSiteDraft.landing.heroMedia.imageUrl}
+                                  onChange={(e) =>
+                                    setPublicSiteDraft((d) => ({
+                                      ...d,
+                                      landing: {
+                                        ...d.landing,
+                                        heroMedia: { ...d.landing.heroMedia, imageUrl: e.target.value },
+                                      },
+                                    }))
+                                  }
+                                  placeholder="https://..."
+                                />
+                              </div>
+
+                              {publicSiteDraft.landing.heroMedia.mode === 'video' ? (
+                                <div className="space-y-1">
+                                  <div className="text-[10px] font-medium text-muted-foreground">Video URL</div>
+                                  <Input
+                                    className="h-8 text-xs"
+                                    value={publicSiteDraft.landing.heroMedia.videoUrl}
+                                    onChange={(e) =>
+                                      setPublicSiteDraft((d) => ({
+                                        ...d,
+                                        landing: {
+                                          ...d.landing,
+                                          heroMedia: { ...d.landing.heroMedia, videoUrl: e.target.value },
+                                        },
+                                      }))
+                                    }
+                                    placeholder="https://..."
+                                  />
+                                  <div className="text-[10px] text-muted-foreground">
+                                    Tip: gunakan link MP4 yang bisa diakses publik.
+                                  </div>
+                                </div>
+                              ) : null}
+                            </div>
+
+                            <div className="rounded-xl border bg-background p-3 space-y-2">
+                              <div className="text-xs font-bold text-gray-900">Hero Overlay</div>
+                              <div className="space-y-1">
+                                <div className="text-[10px] font-medium text-muted-foreground">Quote</div>
+                                <Input
+                                  className="h-8 text-xs"
+                                  value={publicSiteDraft.landing.heroOverlay.quote}
+                                  onChange={(e) =>
+                                    setPublicSiteDraft((d) => ({
+                                      ...d,
+                                      landing: {
+                                        ...d.landing,
+                                        heroOverlay: { ...d.landing.heroOverlay, quote: e.target.value },
+                                      },
+                                    }))
+                                  }
+                                  placeholder="Dia menangis..."
+                                />
+                              </div>
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                <div className="space-y-1">
+                                  <div className="text-[10px] font-medium text-muted-foreground">Author Name</div>
+                                  <Input
+                                    className="h-8 text-xs"
+                                    value={publicSiteDraft.landing.heroOverlay.authorName}
+                                    onChange={(e) =>
+                                      setPublicSiteDraft((d) => ({
+                                        ...d,
+                                        landing: {
+                                          ...d.landing,
+                                          heroOverlay: { ...d.landing.heroOverlay, authorName: e.target.value },
+                                        },
+                                      }))
+                                    }
+                                    placeholder="Rina M."
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <div className="text-[10px] font-medium text-muted-foreground">Author Location</div>
+                                  <Input
+                                    className="h-8 text-xs"
+                                    value={publicSiteDraft.landing.heroOverlay.authorLocation}
+                                    onChange={(e) =>
+                                      setPublicSiteDraft((d) => ({
+                                        ...d,
+                                        landing: {
+                                          ...d.landing,
+                                          heroOverlay: { ...d.landing.heroOverlay, authorLocation: e.target.value },
+                                        },
+                                      }))
+                                    }
+                                    placeholder="Jakarta"
+                                  />
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="text-[10px] font-medium text-muted-foreground">Avatar URL (opsional)</div>
+                                <Input
+                                  className="h-8 text-xs"
+                                  value={publicSiteDraft.landing.heroOverlay.authorAvatarUrl}
+                                  onChange={(e) =>
+                                    setPublicSiteDraft((d) => ({
+                                      ...d,
+                                      landing: {
+                                        ...d.landing,
+                                        heroOverlay: { ...d.landing.heroOverlay, authorAvatarUrl: e.target.value },
+                                      },
+                                    }))
+                                  }
+                                  placeholder="https://..."
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Preview */}
+                          <div className="rounded-xl border bg-background p-3 space-y-2">
+                            <div className="text-xs font-bold text-gray-900">Preview</div>
+                            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl shadow-sm">
+                              <div className="absolute inset-0 bg-gray-900/10 z-10" />
+                              {publicSiteDraft.landing.heroMedia.mode === 'video' &&
+                              publicSiteDraft.landing.heroMedia.videoUrl.trim() ? (
+                                <video
+                                  className="h-full w-full object-cover"
+                                  src={publicSiteDraft.landing.heroMedia.videoUrl.trim()}
+                                  controls
+                                  muted
+                                  playsInline
+                                />
+                              ) : (
+                                <img
+                                  src={publicSiteDraft.landing.heroMedia.imageUrl.trim()}
+                                  alt="Hero preview"
+                                  className="h-full w-full object-cover"
+                                />
+                              )}
+                              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white p-6 text-center">
+                                <div className="font-serif italic text-2xl">"{publicSiteDraft.landing.heroOverlay.quote}"</div>
+                                <div className="mt-2 text-sm font-medium opacity-90 flex items-center gap-2">
+                                  {publicSiteDraft.landing.heroOverlay.authorAvatarUrl.trim() ? (
+                                    <img
+                                      src={publicSiteDraft.landing.heroOverlay.authorAvatarUrl.trim()}
+                                      className="w-6 h-6 rounded-full border border-white"
+                                    />
+                                  ) : (
+                                    <div className="w-6 h-6 rounded-full border border-white bg-white/20" />
+                                  )}
+                                  {publicSiteDraft.landing.heroOverlay.authorLocation.trim()
+                                    ? `${publicSiteDraft.landing.heroOverlay.authorName}, ${publicSiteDraft.landing.heroOverlay.authorLocation}`
+                                    : publicSiteDraft.landing.heroOverlay.authorName}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">
+                              Preview ini hanya untuk hero section, bukan seluruh landing.
+                            </div>
+                          </div>
+                        </div>
+
+                        {publicCfgError ? <div className="text-[10px] text-destructive">{publicCfgError}</div> : null}
+
+                        <Button
+                          className="w-full h-9 text-xs"
+                          disabled={loading}
+                          onClick={() => {
+                            setPublicCfgError(null)
+
+                            const nextLanding: any = {
+                              heroMedia: {
+                                imageUrl: publicSiteDraft.landing.heroMedia.imageUrl.trim(),
+                                videoUrl:
+                                  publicSiteDraft.landing.heroMedia.mode === 'video'
+                                    ? publicSiteDraft.landing.heroMedia.videoUrl.trim() || null
+                                    : null,
+                              },
+                              heroOverlay: {
+                                quote: publicSiteDraft.landing.heroOverlay.quote.trim(),
+                                authorName: publicSiteDraft.landing.heroOverlay.authorName.trim(),
+                                authorLocation: publicSiteDraft.landing.heroOverlay.authorLocation.trim(),
+                                authorAvatarUrl: publicSiteDraft.landing.heroOverlay.authorAvatarUrl.trim() || null,
+                              },
+                              audioSamples: {
+                                nowPlaying: {
+                                  name: publicSiteDraft.landing.audioSamples.nowPlaying.name.trim(),
+                                  quote: publicSiteDraft.landing.audioSamples.nowPlaying.quote.trim(),
+                                  time: publicSiteDraft.landing.audioSamples.nowPlaying.time.trim(),
+                                  metaText: publicSiteDraft.landing.audioSamples.nowPlaying.metaText.trim() || null,
+                                },
+                                playlist: publicSiteDraft.landing.audioSamples.playlist.map((x) => ({
+                                  title: x.title.trim(),
+                                  subtitle: x.subtitle.trim(),
+                                  ctaLabel: x.ctaLabel.trim() || 'PUTAR',
+                                })),
+                              },
+                            }
+
+                            const nextToast: any = {
+                              enabled: publicSiteDraft.activityToast.enabled,
+                              intervalMs: clampInt(publicSiteDraft.activityToast.intervalMs, 2000, 120000),
+                              durationMs: clampInt(publicSiteDraft.activityToast.durationMs, 1000, 60000),
+                              items: publicSiteDraft.activityToast.items.map((x) => ({
+                                fullName: x.fullName.trim(),
+                                city: x.city.trim(),
+                                recipientName: x.recipientName.trim(),
+                              })),
+                            }
+
+                            void saveSettings({
+                              publicSiteConfig: { landing: nextLanding, activityToast: nextToast } as any,
+                            })
+                            setPublicCfgSavedAt(new Date().toLocaleTimeString())
+                          }}
+                        >
+                          {t.updateSettings}
+                        </Button>
+                      </TabsContent>
+
+                      <TabsContent value="music" className="mt-3 space-y-3">
+                        <div className="rounded-xl border bg-background p-3 space-y-3">
+                          <div className="text-xs font-bold text-gray-900">Now Playing</div>
+                          <div className="grid gap-2 md:grid-cols-2">
+                            <div className="space-y-1">
+                              <div className="text-[10px] font-medium text-muted-foreground">Name</div>
+                              <Input
+                                className="h-8 text-xs"
+                                value={publicSiteDraft.landing.audioSamples.nowPlaying.name}
+                                onChange={(e) =>
+                                  setPublicSiteDraft((d) => ({
+                                    ...d,
+                                    landing: {
+                                      ...d.landing,
+                                      audioSamples: {
+                                        ...d.landing.audioSamples,
+                                        nowPlaying: { ...d.landing.audioSamples.nowPlaying, name: e.target.value },
+                                      },
+                                    },
+                                  }))
+                                }
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <div className="text-[10px] font-medium text-muted-foreground">Time</div>
+                              <Input
+                                className="h-8 text-xs"
+                                value={publicSiteDraft.landing.audioSamples.nowPlaying.time}
+                                onChange={(e) =>
+                                  setPublicSiteDraft((d) => ({
+                                    ...d,
+                                    landing: {
+                                      ...d.landing,
+                                      audioSamples: {
+                                        ...d.landing.audioSamples,
+                                        nowPlaying: { ...d.landing.audioSamples.nowPlaying, time: e.target.value },
+                                      },
+                                    },
+                                  }))
+                                }
+                                placeholder="3:24"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="text-[10px] font-medium text-muted-foreground">Quote</div>
+                            <Textarea
+                              value={publicSiteDraft.landing.audioSamples.nowPlaying.quote}
+                              onChange={(e) =>
+                                setPublicSiteDraft((d) => ({
+                                  ...d,
+                                  landing: {
+                                    ...d.landing,
+                                    audioSamples: {
+                                      ...d.landing.audioSamples,
+                                      nowPlaying: { ...d.landing.audioSamples.nowPlaying, quote: e.target.value },
+                                    },
+                                  },
+                                }))
+                              }
+                              rows={3}
+                              className="text-xs"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="text-[10px] font-medium text-muted-foreground">Meta Text (kosongkan untuk sembunyikan)</div>
+                            <Input
+                              className="h-8 text-xs"
+                              value={publicSiteDraft.landing.audioSamples.nowPlaying.metaText}
+                              onChange={(e) =>
+                                setPublicSiteDraft((d) => ({
+                                  ...d,
+                                  landing: {
+                                    ...d.landing,
+                                    audioSamples: {
+                                      ...d.landing.audioSamples,
+                                      nowPlaying: { ...d.landing.audioSamples.nowPlaying, metaText: e.target.value },
+                                    },
+                                  },
+                                }))
+                              }
+                              placeholder="London • Verified"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="rounded-xl border bg-background p-3 space-y-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="text-xs font-bold text-gray-900">Playlist</div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              onClick={() =>
+                                setPublicSiteDraft((d) => ({
+                                  ...d,
+                                  landing: {
+                                    ...d.landing,
+                                    audioSamples: {
+                                      ...d.landing.audioSamples,
+                                      playlist: [
+                                        ...d.landing.audioSamples.playlist,
+                                        { title: '', subtitle: '', ctaLabel: 'PUTAR' },
+                                      ],
+                                    },
+                                  },
+                                }))
+                              }
+                            >
+                              + tambah
+                            </Button>
+                          </div>
+
+                          <div className="space-y-2">
+                            {publicSiteDraft.landing.audioSamples.playlist.map((item, i) => (
+                              <div key={i} className="rounded-lg border p-2 bg-white space-y-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="text-[10px] font-bold text-gray-600">Item #{i + 1}</div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={i === 0}
+                                      onClick={() =>
+                                        setPublicSiteDraft((d) => ({
+                                          ...d,
+                                          landing: {
+                                            ...d.landing,
+                                            audioSamples: {
+                                              ...d.landing.audioSamples,
+                                              playlist: moveItem(d.landing.audioSamples.playlist, i, i - 1),
+                                            },
+                                          },
+                                        }))
+                                      }
+                                    >
+                                      ↑
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={i === publicSiteDraft.landing.audioSamples.playlist.length - 1}
+                                      onClick={() =>
+                                        setPublicSiteDraft((d) => ({
+                                          ...d,
+                                          landing: {
+                                            ...d.landing,
+                                            audioSamples: {
+                                              ...d.landing.audioSamples,
+                                              playlist: moveItem(d.landing.audioSamples.playlist, i, i + 1),
+                                            },
+                                          },
+                                        }))
+                                      }
+                                    >
+                                      ↓
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() =>
+                                        setPublicSiteDraft((d) => ({
+                                          ...d,
+                                          landing: {
+                                            ...d.landing,
+                                            audioSamples: {
+                                              ...d.landing.audioSamples,
+                                              playlist: d.landing.audioSamples.playlist.filter((_, idx) => idx !== i),
+                                            },
+                                          },
+                                        }))
+                                      }
+                                    >
+                                      hapus
+                                    </Button>
+                                  </div>
+                                </div>
+
+                                <div className="grid gap-2 md:grid-cols-2">
+                                  <div className="space-y-1">
+                                    <div className="text-[10px] font-medium text-muted-foreground">Title</div>
+                                    <Input
+                                      className="h-8 text-xs"
+                                      value={item.title}
+                                      onChange={(e) =>
+                                        setPublicSiteDraft((d) => ({
+                                          ...d,
+                                          landing: {
+                                            ...d.landing,
+                                            audioSamples: {
+                                              ...d.landing.audioSamples,
+                                              playlist: d.landing.audioSamples.playlist.map((x, idx) =>
+                                                idx === i ? { ...x, title: e.target.value } : x,
+                                              ),
+                                            },
+                                          },
+                                        }))
+                                      }
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <div className="text-[10px] font-medium text-muted-foreground">Subtitle</div>
+                                    <Input
+                                      className="h-8 text-xs"
+                                      value={item.subtitle}
+                                      onChange={(e) =>
+                                        setPublicSiteDraft((d) => ({
+                                          ...d,
+                                          landing: {
+                                            ...d.landing,
+                                            audioSamples: {
+                                              ...d.landing.audioSamples,
+                                              playlist: d.landing.audioSamples.playlist.map((x, idx) =>
+                                                idx === i ? { ...x, subtitle: e.target.value } : x,
+                                              ),
+                                            },
+                                          },
+                                        }))
+                                      }
+                                    />
+                                  </div>
+                                </div>
+                                <div className="space-y-1">
+                                  <div className="text-[10px] font-medium text-muted-foreground">CTA Label</div>
+                                  <Input
+                                    className="h-8 text-xs"
+                                    value={item.ctaLabel}
+                                    onChange={(e) =>
+                                      setPublicSiteDraft((d) => ({
+                                        ...d,
+                                        landing: {
+                                          ...d.landing,
+                                          audioSamples: {
+                                            ...d.landing.audioSamples,
+                                            playlist: d.landing.audioSamples.playlist.map((x, idx) =>
+                                              idx === i ? { ...x, ctaLabel: e.target.value } : x,
+                                            ),
+                                          },
+                                        },
+                                      }))
+                                    }
+                                    placeholder="PUTAR"
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {publicCfgError ? <div className="text-[10px] text-destructive">{publicCfgError}</div> : null}
+                        <Button
+                          className="w-full h-9 text-xs"
+                          disabled={loading}
+                          onClick={() => {
+                            setPublicCfgError(null)
+                            const nextLanding: any = {
+                              heroMedia: {
+                                imageUrl: publicSiteDraft.landing.heroMedia.imageUrl.trim(),
+                                videoUrl:
+                                  publicSiteDraft.landing.heroMedia.mode === 'video'
+                                    ? publicSiteDraft.landing.heroMedia.videoUrl.trim() || null
+                                    : null,
+                              },
+                              heroOverlay: {
+                                quote: publicSiteDraft.landing.heroOverlay.quote.trim(),
+                                authorName: publicSiteDraft.landing.heroOverlay.authorName.trim(),
+                                authorLocation: publicSiteDraft.landing.heroOverlay.authorLocation.trim(),
+                                authorAvatarUrl: publicSiteDraft.landing.heroOverlay.authorAvatarUrl.trim() || null,
+                              },
+                              audioSamples: {
+                                nowPlaying: {
+                                  name: publicSiteDraft.landing.audioSamples.nowPlaying.name.trim(),
+                                  quote: publicSiteDraft.landing.audioSamples.nowPlaying.quote.trim(),
+                                  time: publicSiteDraft.landing.audioSamples.nowPlaying.time.trim(),
+                                  metaText: publicSiteDraft.landing.audioSamples.nowPlaying.metaText.trim() || null,
+                                },
+                                playlist: publicSiteDraft.landing.audioSamples.playlist.map((x) => ({
+                                  title: x.title.trim(),
+                                  subtitle: x.subtitle.trim(),
+                                  ctaLabel: x.ctaLabel.trim() || 'PUTAR',
+                                })),
+                              },
+                            }
+                            const nextToast: any = {
+                              enabled: publicSiteDraft.activityToast.enabled,
+                              intervalMs: clampInt(publicSiteDraft.activityToast.intervalMs, 2000, 120000),
+                              durationMs: clampInt(publicSiteDraft.activityToast.durationMs, 1000, 60000),
+                              items: publicSiteDraft.activityToast.items.map((x) => ({
+                                fullName: x.fullName.trim(),
+                                city: x.city.trim(),
+                                recipientName: x.recipientName.trim(),
+                              })),
+                            }
+                            void saveSettings({ publicSiteConfig: { landing: nextLanding, activityToast: nextToast } as any })
+                            setPublicCfgSavedAt(new Date().toLocaleTimeString())
+                          }}
+                        >
+                          {t.updateSettings}
+                        </Button>
+                      </TabsContent>
+
+                      <TabsContent value="toast" className="mt-3 space-y-3">
+                        <div className="rounded-xl border bg-background p-3 space-y-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="text-xs font-bold text-gray-900">Activity Toast</div>
+                            <label className="flex items-center gap-2 text-xs">
+                              <input
+                                type="checkbox"
+                                checked={publicSiteDraft.activityToast.enabled}
+                                onChange={(e) =>
+                                  setPublicSiteDraft((d) => ({
+                                    ...d,
+                                    activityToast: { ...d.activityToast, enabled: e.target.checked },
+                                  }))
+                                }
+                              />
+                              enabled
+                            </label>
+                          </div>
+
+                          <div className="grid gap-2 md:grid-cols-2">
+                            <div className="space-y-1">
+                              <div className="text-[10px] font-medium text-muted-foreground">Interval (ms)</div>
+                              <Input
+                                type="number"
+                                className="h-8 text-xs"
+                                value={publicSiteDraft.activityToast.intervalMs}
+                                onChange={(e) =>
+                                  setPublicSiteDraft((d) => ({
+                                    ...d,
+                                    activityToast: { ...d.activityToast, intervalMs: Number(e.target.value) },
+                                  }))
+                                }
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <div className="text-[10px] font-medium text-muted-foreground">Duration (ms)</div>
+                              <Input
+                                type="number"
+                                className="h-8 text-xs"
+                                value={publicSiteDraft.activityToast.durationMs}
+                                onChange={(e) =>
+                                  setPublicSiteDraft((d) => ({
+                                    ...d,
+                                    activityToast: { ...d.activityToast, durationMs: Number(e.target.value) },
+                                  }))
+                                }
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-3 pt-1 border-t">
+                            <div className="text-xs font-bold text-gray-900">Items</div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              onClick={() =>
+                                setPublicSiteDraft((d) => ({
+                                  ...d,
+                                  activityToast: {
+                                    ...d.activityToast,
+                                    items: [...d.activityToast.items, { fullName: '', city: '', recipientName: '' }],
+                                  },
+                                }))
+                              }
+                            >
+                              + tambah
+                            </Button>
+                          </div>
+
+                          <div className="space-y-2">
+                            {publicSiteDraft.activityToast.items.map((it, i) => (
+                              <div key={i} className="rounded-lg border p-2 bg-white space-y-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="text-[10px] font-bold text-gray-600">Item #{i + 1}</div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={i === 0}
+                                      onClick={() =>
+                                        setPublicSiteDraft((d) => ({
+                                          ...d,
+                                          activityToast: {
+                                            ...d.activityToast,
+                                            items: moveItem(d.activityToast.items, i, i - 1),
+                                          },
+                                        }))
+                                      }
+                                    >
+                                      ↑
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={i === publicSiteDraft.activityToast.items.length - 1}
+                                      onClick={() =>
+                                        setPublicSiteDraft((d) => ({
+                                          ...d,
+                                          activityToast: {
+                                            ...d.activityToast,
+                                            items: moveItem(d.activityToast.items, i, i + 1),
+                                          },
+                                        }))
+                                      }
+                                    >
+                                      ↓
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() =>
+                                        setPublicSiteDraft((d) => ({
+                                          ...d,
+                                          activityToast: { ...d.activityToast, items: d.activityToast.items.filter((_, idx) => idx !== i) },
+                                        }))
+                                      }
+                                    >
+                                      hapus
+                                    </Button>
+                                  </div>
+                                </div>
+
+                                <div className="grid gap-2 md:grid-cols-3">
+                                  <div className="space-y-1">
+                                    <div className="text-[10px] font-medium text-muted-foreground">Full Name</div>
+                                    <Input
+                                      className="h-8 text-xs"
+                                      value={it.fullName}
+                                      onChange={(e) =>
+                                        setPublicSiteDraft((d) => ({
+                                          ...d,
+                                          activityToast: {
+                                            ...d.activityToast,
+                                            items: d.activityToast.items.map((x, idx) =>
+                                              idx === i ? { ...x, fullName: e.target.value } : x,
+                                            ),
+                                          },
+                                        }))
+                                      }
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <div className="text-[10px] font-medium text-muted-foreground">City</div>
+                                    <Input
+                                      className="h-8 text-xs"
+                                      value={it.city}
+                                      onChange={(e) =>
+                                        setPublicSiteDraft((d) => ({
+                                          ...d,
+                                          activityToast: {
+                                            ...d.activityToast,
+                                            items: d.activityToast.items.map((x, idx) =>
+                                              idx === i ? { ...x, city: e.target.value } : x,
+                                            ),
+                                          },
+                                        }))
+                                      }
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <div className="text-[10px] font-medium text-muted-foreground">Recipient Name</div>
+                                    <Input
+                                      className="h-8 text-xs"
+                                      value={it.recipientName}
+                                      onChange={(e) =>
+                                        setPublicSiteDraft((d) => ({
+                                          ...d,
+                                          activityToast: {
+                                            ...d.activityToast,
+                                            items: d.activityToast.items.map((x, idx) =>
+                                              idx === i ? { ...x, recipientName: e.target.value } : x,
+                                            ),
+                                          },
+                                        }))
+                                      }
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {publicCfgError ? <div className="text-[10px] text-destructive">{publicCfgError}</div> : null}
+                        <Button
+                          className="w-full h-9 text-xs"
+                          disabled={loading}
+                          onClick={() => {
+                            setPublicCfgError(null)
+                            const nextLanding: any = {
+                              heroMedia: {
+                                imageUrl: publicSiteDraft.landing.heroMedia.imageUrl.trim(),
+                                videoUrl:
+                                  publicSiteDraft.landing.heroMedia.mode === 'video'
+                                    ? publicSiteDraft.landing.heroMedia.videoUrl.trim() || null
+                                    : null,
+                              },
+                              heroOverlay: {
+                                quote: publicSiteDraft.landing.heroOverlay.quote.trim(),
+                                authorName: publicSiteDraft.landing.heroOverlay.authorName.trim(),
+                                authorLocation: publicSiteDraft.landing.heroOverlay.authorLocation.trim(),
+                                authorAvatarUrl: publicSiteDraft.landing.heroOverlay.authorAvatarUrl.trim() || null,
+                              },
+                              audioSamples: {
+                                nowPlaying: {
+                                  name: publicSiteDraft.landing.audioSamples.nowPlaying.name.trim(),
+                                  quote: publicSiteDraft.landing.audioSamples.nowPlaying.quote.trim(),
+                                  time: publicSiteDraft.landing.audioSamples.nowPlaying.time.trim(),
+                                  metaText: publicSiteDraft.landing.audioSamples.nowPlaying.metaText.trim() || null,
+                                },
+                                playlist: publicSiteDraft.landing.audioSamples.playlist.map((x) => ({
+                                  title: x.title.trim(),
+                                  subtitle: x.subtitle.trim(),
+                                  ctaLabel: x.ctaLabel.trim() || 'PUTAR',
+                                })),
+                              },
+                            }
+                            const nextToast: any = {
+                              enabled: publicSiteDraft.activityToast.enabled,
+                              intervalMs: clampInt(publicSiteDraft.activityToast.intervalMs, 2000, 120000),
+                              durationMs: clampInt(publicSiteDraft.activityToast.durationMs, 1000, 60000),
+                              items: publicSiteDraft.activityToast.items.map((x) => ({
+                                fullName: x.fullName.trim(),
+                                city: x.city.trim(),
+                                recipientName: x.recipientName.trim(),
+                              })),
+                            }
+                            void saveSettings({ publicSiteConfig: { landing: nextLanding, activityToast: nextToast } as any })
+                            setPublicCfgSavedAt(new Date().toLocaleTimeString())
+                          }}
+                        >
+                          {t.updateSettings}
+                        </Button>
+                      </TabsContent>
+                    </Tabs>
+                  ) : (
+                    <p className="text-muted-foreground">{loading ? t.loadingShort : t.noSettings}</p>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Card 1: Creation & Delivery */}
               <Card className="h-full shadow-sm">
                 <CardHeader className="p-3 pb-2 bg-muted/5">
@@ -998,9 +2077,10 @@ export function AdminRoute() {
                     </CardHeader>
                     <CardContent className="p-4 pt-0 space-y-3 text-sm">
                       <Tabs defaultValue="userInput" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2">
+                        <TabsList className="grid w-full grid-cols-3">
                           <TabsTrigger value="userInput">{t.userInput}</TabsTrigger>
                           <TabsTrigger value="overview">{t.overview}</TabsTrigger>
+                          <TabsTrigger value="deliveryDebug">{t.deliveryDebug}</TabsTrigger>
                         </TabsList>
                         
                         <TabsContent value="overview" className="space-y-3">
@@ -1027,6 +2107,17 @@ export function AdminRoute() {
                             {t.retryCreation}
                           </Button>
 
+                          {selectedOrder.deliveryStatus === 'delivery_pending' ? (
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button className="w-full" disabled={loading} onClick={() => void resendEmail(selectedOrder.id)}>
+                                {t.resendEmail}
+                              </Button>
+                              <Button className="w-full" disabled={loading} onClick={() => void resendWhatsApp(selectedOrder.id)}>
+                                {t.resendWhatsApp}
+                              </Button>
+                            </div>
+                          ) : null}
+
                           <div className="space-y-2">
                             <div className="font-medium">{t.events}</div>
                             <div className="max-h-64 overflow-auto rounded-md border bg-muted p-2 text-xs leading-snug">
@@ -1041,6 +2132,84 @@ export function AdminRoute() {
                               ))}
                             </div>
                           </div>
+                        </TabsContent>
+
+                        <TabsContent value="deliveryDebug" className="space-y-3 mt-2">
+                          {(() => {
+                            const customer = selectedOrder.customer ?? {}
+                            const meta =
+                              selectedOrder.trackMetadata && typeof selectedOrder.trackMetadata === 'object'
+                                ? (selectedOrder.trackMetadata as any)
+                                : null
+                            const sunoPayload = {
+                              customMode: true,
+                              instrumental: false,
+                              model: meta?.model ?? null,
+                              title: meta?.title ?? null,
+                              style: meta?.style ?? selectedOrder.moodDescription ?? null,
+                              prompt: selectedOrder.lyricsText ?? null,
+                            }
+                            return (
+                              <>
+                                <div className="rounded-md border p-2 space-y-2">
+                                  <div className="font-medium">{t.contact}</div>
+                                  <div className="grid gap-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-muted-foreground">{t.email}</span>
+                                      <span className="font-medium">{customer.email ?? '-'}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-muted-foreground">{t.phone}</span>
+                                      <span className="font-medium">{customer.whatsappNumber ?? '-'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="rounded-md border p-2 space-y-2">
+                                  <div className="font-medium">{t.sunoRequest}</div>
+                                  <div className="grid gap-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-muted-foreground">{t.taskId}</span>
+                                      <span className="font-medium">{meta?.taskId ?? '-'}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-muted-foreground">{t.modelSent}</span>
+                                      <span className="font-medium">{meta?.model ?? '-'}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-muted-foreground">{t.titleSent}</span>
+                                      <span className="font-medium">{meta?.title ?? '-'}</span>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <div className="text-[10px] font-medium text-muted-foreground">{t.styleSent}</div>
+                                      <div className="whitespace-pre-wrap rounded-md border bg-muted p-2 text-xs">
+                                        {meta?.style ?? selectedOrder.moodDescription ?? '-'}
+                                      </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <div className="text-[10px] font-medium text-muted-foreground">{t.lyricsSent}</div>
+                                      <div className="whitespace-pre-wrap rounded-md border bg-muted p-2 text-xs">
+                                        {selectedOrder.lyricsText ?? '-'}
+                                      </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <div className="text-[10px] font-medium text-muted-foreground">Payload (derived)</div>
+                                      <div className="whitespace-pre-wrap rounded-md border bg-muted p-2 text-[11px] font-mono">
+                                        {JSON.stringify(sunoPayload, null, 2)}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="rounded-md border p-2 space-y-2">
+                                  <div className="font-medium">{t.sunoAuditPrompt}</div>
+                                  <div className="whitespace-pre-wrap rounded-md border bg-muted p-2 text-xs">
+                                    {meta?.prompt ?? '-'}
+                                  </div>
+                                </div>
+                              </>
+                            )
+                          })()}
                         </TabsContent>
                         
                         <TabsContent value="userInput" className="space-y-3 mt-2">

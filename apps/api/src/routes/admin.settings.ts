@@ -11,6 +11,7 @@ const UpdateSchema = z.object({
   paymentsEnabled: z.boolean().optional(),
   whatsappProvider: z.string().min(1).optional(),
   whatsappConfig: z.unknown().optional(),
+  publicSiteConfig: z.unknown().optional(),
 
   openaiApiKey: z.string().min(1).optional(),
   kaiAiApiKey: z.string().min(1).optional(),
@@ -34,6 +35,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       paymentsEnabled: s.paymentsEnabled,
       whatsappProvider: s.whatsappProvider,
       whatsappConfig: s.whatsappConfig,
+      publicSiteConfig: (s as any).publicSiteConfig ?? null,
       hasOpenaiKey: Boolean(maybeDecrypt(s.openaiApiKeyEnc)),
       hasKaiAiKey: Boolean(maybeDecrypt(s.kaiAiApiKeyEnc)),
       ycloudFrom: typeof ycloud.from === 'string' ? ycloud.from : null,
@@ -71,6 +73,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       paymentsEnabled: parsed.data.paymentsEnabled,
       whatsappProvider: parsed.data.whatsappProvider,
       whatsappConfig: mergedWhatsappConfig,
+      publicSiteConfig: parsed.data.publicSiteConfig,
     }
 
     if (parsed.data.openaiApiKey) data.openaiApiKeyEnc = encryptString(parsed.data.openaiApiKey)
@@ -90,6 +93,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       paymentsEnabled: updated.paymentsEnabled,
       whatsappProvider: updated.whatsappProvider,
       whatsappConfig: updated.whatsappConfig,
+      publicSiteConfig: (updated as any).publicSiteConfig ?? null,
       hasOpenaiKey: Boolean(maybeDecrypt(updated.openaiApiKeyEnc)),
       hasKaiAiKey: Boolean(maybeDecrypt(updated.kaiAiApiKeyEnc)),
       ycloudFrom: typeof ycloud.from === 'string' ? ycloud.from : null,

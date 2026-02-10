@@ -96,7 +96,7 @@ export async function createSunoTaskWithKieAi(params: KieSunoGenerateParams): Pr
 export async function getSunoTaskWithKieAi(params: {
   apiKey: string
   taskId: string
-}): Promise<{ status: string; trackUrl: string | null; metadata: unknown }> {
+}): Promise<{ status: string; trackUrl: string | null; trackUrls: string[]; metadata: unknown }> {
   const baseUrl = getKieBaseUrl()
   const url = new URL(`${baseUrl}/api/v1/generate/record-info`)
   url.searchParams.set('taskId', params.taskId)
@@ -118,8 +118,9 @@ export async function getSunoTaskWithKieAi(params: {
 
   const status = json.data?.status ?? 'UNKNOWN'
   const sunoData = json.data?.response?.sunoData ?? []
-  const trackUrl = sunoData[0]?.audioUrl ?? null
+  const trackUrls = sunoData.map((x) => x.audioUrl).filter((x): x is string => typeof x === 'string' && x.length > 0)
+  const trackUrl = trackUrls[0] ?? null
 
-  return { status, trackUrl, metadata: json }
+  return { status, trackUrl, trackUrls, metadata: json }
 }
 

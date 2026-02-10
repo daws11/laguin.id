@@ -49,6 +49,19 @@ DATABASE_URL="postgresql://valentine:valentine@127.0.0.1:5432/valentine?schema=p
 
 - **`ADMIN_JWT_SECRET`**, **`ENCRYPTION_KEY`**, **`ADMIN_PASSWORD`** wajib diganti untuk produksi.
 
+- **Email verification (Resend)**:
+  - Set **`EMAIL_PROVIDER="resend"`** (recommended)
+  - Set **`RESEND_API_KEY`** dari dashboard Resend
+  - Set **`RESEND_FROM`**:
+    - Dev cepat: `"onboarding@resend.dev"`
+    - Produksi: gunakan sender dari domain yang sudah diverifikasi di Resend
+  - (Rollback) set **`EMAIL_PROVIDER="smtp"`** untuk kembali ke SMTP via `SMTP_*`
+
+- **WhatsApp delivery (YCloud template)**:
+  - Konfigurasi WhatsApp gateway dilakukan via **Admin Panel → Settings → WhatsApp Gateway**.
+  - Set **`ycloudTemplateName`** ke **template reminder** yang mengingatkan bahwa lagu sudah dikirim ke email.
+    - Disarankan: template **tanpa variable** (reminder-only).
+
 Catatan keamanan:
 
 - Jangan pernah commit `apps/api/.env` (berisi secret).

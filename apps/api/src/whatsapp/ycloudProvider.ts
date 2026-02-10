@@ -30,12 +30,24 @@ export class YCloudWhatsAppProvider implements WhatsAppProvider {
   name = 'ycloud'
 
   async send(input: WhatsAppSendInput): Promise<WhatsAppSendResult> {
-    // In this app, `input.message` is expected to be the track URL (link).
-    const trackUrl = input.message
-    if (!trackUrl || trackUrl.trim().length === 0) return { ok: false, provider: this.name, error: 'missing_track_url' }
+    // In this app:
+    // - If `input.message` is a non-empty string, it is treated as the track URL (link) and injected as 1 BODY variable.
+    // - If `input.message` is empty/whitespace, we send the template with no variables (reminder-only).
+    const message = input.message ?? ''
+    const trackUrl = message.trim()
 
     const settings = await getOrCreateSettings()
     const cfg = getYCloudConfigFromSettings(settings as any)
+
+    const components =
+      trackUrl.length > 0
+        ? [
+            {
+              type: 'body',
+              parameters: [{ type: 'text', text: trackUrl }],
+            },
+          ]
+        : []
 
     const payload = {
       from: cfg.from,
@@ -44,13 +56,7 @@ export class YCloudWhatsAppProvider implements WhatsAppProvider {
       template: {
         name: cfg.templateName,
         language: { code: cfg.templateLangCode },
-        // Simplest template: BODY has 1 text variable (the link).
-        components: [
-          {
-            type: 'body',
-            parameters: [{ type: 'text', text: trackUrl }],
-          },
-        ],
+        ...(components.length > 0 ? { components } : {}),
       },
       // Helpful for reconciliation in YCloud dashboard/webhooks.
       externalId: `order:${(input as any).orderId ?? ''}`,

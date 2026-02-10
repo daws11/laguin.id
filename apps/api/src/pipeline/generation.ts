@@ -276,7 +276,7 @@ export async function processOrderGeneration(orderId: string) {
       await addOrderEvent({ orderId: order.id, type: 'music_task_submitted', data: { taskId, model } })
       return { ok: true, pending: true, taskId }
     } else {
-      const { status, trackUrl, metadata } = await getSunoTaskWithKieAi({ apiKey, taskId: existingTaskId })
+      const { status, trackUrl, trackUrls, metadata } = await getSunoTaskWithKieAi({ apiKey, taskId: existingTaskId })
       await prisma.order.update({
         where: { id: order.id },
         data: {
@@ -285,6 +285,7 @@ export async function processOrderGeneration(orderId: string) {
             taskId: existingTaskId,
             status,
             kie: metadata,
+            tracks: Array.isArray(trackUrls) && trackUrls.length ? trackUrls : currentMeta?.tracks,
           } as any,
         },
       })
@@ -296,7 +297,16 @@ export async function processOrderGeneration(orderId: string) {
 
       await prisma.order.update({
         where: { id: order.id },
-        data: { trackUrl },
+        data: {
+          trackUrl,
+          trackMetadata: {
+            ...currentMeta,
+            taskId: existingTaskId,
+            status,
+            kie: metadata,
+            tracks: Array.isArray(trackUrls) && trackUrls.length ? trackUrls : currentMeta?.tracks,
+          } as any,
+        },
       })
       await addOrderEvent({ orderId: order.id, type: 'music_generated', data: { taskId: existingTaskId, status } })
     }

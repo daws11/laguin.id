@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client'
 
 import { prisma } from '../lib/prisma'
 import { addOrderEvent } from '../lib/events'
+import { deliverCompletedOrder, sendSongEmailForOrder, sendWhatsAppReminderForOrder } from '../delivery/deliver'
 
 const ListQuerySchema = z.object({
   status: z.enum(['created', 'processing', 'completed', 'failed']).optional(),
@@ -115,6 +116,81 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     })
     
     return { ok: true, orderId: updated.id, status: updated.status }
+  })
+
+  app.post('/orders/:id/resend-delivery', async (req, reply) => {
+    const params = ParamsIdSchema.safeParse(req.params)
+    if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
+
+    const order = await prisma.order.findUnique({
+      where: { id: params.data.id },
+      include: { customer: true },
+    })
+    if (!order) return reply.code(404).send({ error: 'not_found' })
+
+    if (order.deliveryStatus !== 'delivery_failed') {
+      return reply.code(400).send({ error: 'invalid_state', message: `deliveryStatus=${order.deliveryStatus}` })
+    }
+    if (order.status !== 'completed') {
+      return reply.code(400).send({ error: 'invalid_state', message: `status=${order.status}` })
+    }
+    if (!order.trackUrl) {
+      return reply.code(400).send({ error: 'invalid_state', message: 'Missing trackUrl' })
+    }
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        // make it eligible for worker if immediate send fails and schedules retry
+        deliveryStatus: 'delivery_pending',
+        deliveryScheduledAt: new Date(),
+        deliveredAt: null,
+      },
+    })
+    await addOrderEvent({
+      orderId: order.id,
+      type: 'admin_resend_delivery',
+      message: 'Admin triggered resend: email + WhatsApp reminder.',
+    })
+
+    const result = await deliverCompletedOrder(order.id, { forceEmail: true, forceWhatsApp: true })
+    return { ok: true, orderId: order.id, result }
+  })
+
+  app.post('/orders/:id/resend-email', async (req, reply) => {
+    const params = ParamsIdSchema.safeParse(req.params)
+    if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
+
+    const order = await prisma.order.findUnique({ where: { id: params.data.id } })
+    if (!order) return reply.code(404).send({ error: 'not_found' })
+    if (order.status !== 'completed') return reply.code(400).send({ error: 'invalid_state', message: `status=${order.status}` })
+    if (order.deliveryStatus === 'delivered') return reply.code(400).send({ error: 'invalid_state', message: 'already_delivered' })
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { deliveryStatus: 'delivery_pending', deliveryScheduledAt: new Date(), deliveredAt: null },
+    })
+    await addOrderEvent({ orderId: order.id, type: 'admin_resend_email', message: 'Admin triggered resend email.' })
+    const result = await sendSongEmailForOrder(order.id, { force: true })
+    return { ok: true, orderId: order.id, result }
+  })
+
+  app.post('/orders/:id/resend-whatsapp', async (req, reply) => {
+    const params = ParamsIdSchema.safeParse(req.params)
+    if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
+
+    const order = await prisma.order.findUnique({ where: { id: params.data.id } })
+    if (!order) return reply.code(404).send({ error: 'not_found' })
+    if (order.status !== 'completed') return reply.code(400).send({ error: 'invalid_state', message: `status=${order.status}` })
+    if (order.deliveryStatus === 'delivered') return reply.code(400).send({ error: 'invalid_state', message: 'already_delivered' })
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { deliveryStatus: 'delivery_pending', deliveryScheduledAt: new Date(), deliveredAt: null },
+    })
+    await addOrderEvent({ orderId: order.id, type: 'admin_resend_whatsapp', message: 'Admin triggered resend WhatsApp reminder.' })
+    const result = await sendWhatsAppReminderForOrder(order.id, { force: true })
+    return { ok: true, orderId: order.id, result }
   })
 }
 

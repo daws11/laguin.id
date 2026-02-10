@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Star,
@@ -10,11 +10,94 @@ import {
   Music,
 } from 'lucide-react'
 
+import { apiGet } from '@/lib/http'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { ActivityToast, type ActivityToastConfig } from '@/components/activity-toast/ActivityToast'
+import { HeroPlayerInline } from './HeroPlayerInline.tsx'
 
 // --- Components ---
+
+type PublicSiteConfig = {
+  landing?: {
+    heroMedia?: { imageUrl?: string; videoUrl?: string | null }
+    heroOverlay?: {
+      quote?: string
+      authorName?: string
+      authorLocation?: string
+      authorAvatarUrl?: string | null
+    }
+    heroPlayer?: {
+      enabled?: boolean
+      playingBadgeText?: string
+      cornerBadgeText?: string
+      verifiedBadgeText?: string
+      quote?: string
+      authorName?: string
+      authorSubline?: string
+      authorAvatarUrl?: string | null
+      audioUrl?: string | null
+    }
+    audioSamples?: {
+      nowPlaying?: { name?: string; quote?: string; time?: string; metaText?: string | null; audioUrl?: string | null }
+      playlist?: Array<{ title?: string; subtitle?: string; ctaLabel?: string }>
+    }
+  }
+  activityToast?: ActivityToastConfig
+}
+
+type PublicSettingsResponse = { publicSiteConfig: PublicSiteConfig | null }
+
+const defaultPublicSiteConfig: PublicSiteConfig = {
+  landing: {
+    heroMedia: {
+      imageUrl: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=2940&auto=format&fit=crop',
+      videoUrl: null,
+    },
+    heroOverlay: {
+      quote: 'Dia menangis sebelum chorus berakhir',
+      authorName: 'Rina M.',
+      authorLocation: 'Jakarta',
+      authorAvatarUrl: 'https://randomuser.me/api/portraits/women/44.jpg',
+    },
+    heroPlayer: {
+      enabled: true,
+      playingBadgeText: 'Playing',
+      cornerBadgeText: "Valentine's Special",
+      verifiedBadgeText: 'Verified Purchase',
+      quote: 'He tried not to cry. He failed.',
+      authorName: 'Rachel M.',
+      authorSubline: "London • Valentine's 2025",
+      authorAvatarUrl: 'https://randomuser.me/api/portraits/women/44.jpg',
+      audioUrl: null,
+    },
+    audioSamples: {
+      nowPlaying: {
+        name: 'Untuk Budi, Sepanjang Masa',
+        quote: 'Setiap momen bersamamu Budi, dari kencan pertama yang gugup itu...',
+        time: '3:24',
+        metaText: 'London • Verified',
+        audioUrl: null,
+      },
+      playlist: [
+        { title: 'Untuk Rizky, Segalanya Bagiku', subtitle: 'Country • 3:12', ctaLabel: 'PUTAR' },
+        { title: 'Untuk Dimas, 10 Tahun Bersama', subtitle: 'Acoustic • 2:58', ctaLabel: 'PUTAR' },
+        { title: 'Untuk Andi, Petualangan Kita', subtitle: 'Pop Ballad • 3:45', ctaLabel: 'PUTAR' },
+      ],
+    },
+  },
+  activityToast: {
+    enabled: true,
+    intervalMs: 10000,
+    durationMs: 4500,
+    items: [
+      { fullName: 'Abdurrahman Firdaus', city: 'Bandung', recipientName: 'Salsa' },
+      { fullName: 'Nabila Putri', city: 'Jakarta', recipientName: 'Rizky' },
+      { fullName: 'Andreas Wijaya', city: 'Surabaya', recipientName: 'Dima' },
+    ],
+  },
+}
 
 function CountdownTimer() {
   // Mocked time: "29d 14h 32m 45s" style from screenshot, dynamic for feel
@@ -54,13 +137,43 @@ function CountdownTimer() {
 function AudioPlayerCard({
   name,
   quote,
+  metaText,
+  audioUrl,
   time = '3:24',
 }: {
   name: string
   quote: string
+  metaText?: string | null
+  audioUrl?: string | null
   time?: string
 }) {
   const [playing, setPlaying] = useState(false)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [posSec, setPosSec] = useState(0)
+  const [durSec, setDurSec] = useState<number | null>(null)
+
+  useEffect(() => {
+    setPlaying(false)
+    setPosSec(0)
+    setDurSec(null)
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+    }
+  }, [audioUrl])
+
+  const progressPct = useMemo(() => {
+    const dur = durSec && durSec > 0 ? durSec : null
+    if (!dur) return playing ? 50 : 10
+    return Math.min(100, Math.max(0, (posSec / dur) * 100))
+  }, [durSec, posSec, playing])
+
+  function fmt(sec: number) {
+    const s = Math.max(0, Math.floor(sec))
+    const mm = String(Math.floor(s / 60)).padStart(1, '0')
+    const ss = String(s % 60).padStart(2, '0')
+    return `${mm}:${ss}`
+  }
 
   return (
     <div className="relative overflow-hidden rounded-xl bg-white p-4 shadow-sm border border-gray-100">
@@ -78,7 +191,20 @@ function AudioPlayerCard({
 
       <div className="flex items-center gap-3">
         <button
-          onClick={() => setPlaying(!playing)}
+          onClick={() => {
+            if (!audioUrl) return
+            const a = audioRef.current
+            if (!a) return
+            if (playing) {
+              a.pause()
+              setPlaying(false)
+              return
+            }
+            a.play()
+              .then(() => setPlaying(true))
+              .catch(() => setPlaying(false))
+          }}
+          disabled={!audioUrl}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E11D48] text-white transition-transform active:scale-95"
         >
           {playing ? <Pause className="h-4 w-4" fill="currentColor" /> : <Play className="h-4 w-4" fill="currentColor" />}
@@ -86,21 +212,49 @@ function AudioPlayerCard({
         <div className="flex-1 space-y-1">
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
             <div
-              className={cn("h-full bg-[#E11D48] transition-all duration-1000", playing ? "w-1/2" : "w-[10%]")}
+              className={cn("h-full bg-[#E11D48] transition-all duration-300")}
+              style={{ width: `${progressPct}%` }}
             />
           </div>
           <div className="flex justify-between text-[10px] text-gray-400 font-medium">
-            <span>{playing ? '1:42' : '0:00'}</span>
-            <span>{time}</span>
+            <span>{fmt(posSec)}</span>
+            <span>{durSec ? fmt(durSec) : time}</span>
           </div>
         </div>
       </div>
+
+      {audioUrl ? (
+        <audio
+          ref={(el) => {
+            audioRef.current = el
+          }}
+          src={audioUrl}
+          preload="metadata"
+          loop
+          onTimeUpdate={(e) => {
+            const a = e.currentTarget
+            setPosSec(a.currentTime || 0)
+          }}
+          onLoadedMetadata={(e) => {
+            const a = e.currentTarget
+            const d = Number.isFinite(a.duration) ? a.duration : null
+            setDurSec(d && d > 0 ? d : null)
+          }}
+          onEnded={() => setPlaying(false)}
+          onPause={() => setPlaying(false)}
+          className="hidden"
+        />
+      ) : (
+        <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+          Upload lagu dulu di Admin agar bisa diputar.
+        </div>
+      )}
 
       <div className="mt-3 flex items-center gap-2 border-t border-gray-50 pt-3">
         <div className="h-6 w-6 rounded-full bg-gray-200" /> {/* Avatar placeholder */}
         <div className="text-xs">
           <span className="font-bold block">{name}</span>
-          <span className="text-gray-500 text-[10px]">London • Verified</span>
+          {metaText ? <span className="text-gray-500 text-[10px]">{metaText}</span> : null}
         </div>
         <div className="ml-auto flex text-yellow-400">
           <Star className="h-3 w-3 fill-current" />
@@ -117,8 +271,132 @@ function AudioPlayerCard({
 // --- Main Page ---
 
 export function LandingRoute() {
+  const [publicSiteConfig, setPublicSiteConfig] = useState<PublicSiteConfig | null>(null)
+  const [heroOpen, setHeroOpen] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    apiGet<PublicSettingsResponse>('/api/public/settings')
+      .then((res) => {
+        if (cancelled) return
+        const cfg = res?.publicSiteConfig
+        if (cfg && typeof cfg === 'object') setPublicSiteConfig(cfg)
+        else setPublicSiteConfig(null)
+      })
+      .catch(() => {
+        if (!cancelled) setPublicSiteConfig(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const apiBase = import.meta.env.VITE_API_BASE_URL ?? ''
+  const resolveAsset = (v: string) => {
+    const s = (v ?? '').trim()
+    if (!s) return ''
+    if (/^https?:\/\//i.test(s)) return s
+    return apiBase + s
+  }
+
+  const site = (publicSiteConfig ?? defaultPublicSiteConfig) as PublicSiteConfig
+  const landing = site.landing ?? defaultPublicSiteConfig.landing!
+  const heroMedia = landing.heroMedia ?? defaultPublicSiteConfig.landing!.heroMedia!
+  const heroOverlay = landing.heroOverlay ?? defaultPublicSiteConfig.landing!.heroOverlay!
+  const audioSamples = landing.audioSamples ?? defaultPublicSiteConfig.landing!.audioSamples!
+  const heroPlayer = landing.heroPlayer ?? defaultPublicSiteConfig.landing!.heroPlayer!
+
+  const heroImageUrl =
+    typeof heroMedia.imageUrl === 'string' && heroMedia.imageUrl.trim()
+      ? resolveAsset(heroMedia.imageUrl)
+      : defaultPublicSiteConfig.landing!.heroMedia!.imageUrl!
+  const heroVideoUrl =
+    typeof heroMedia.videoUrl === 'string' && heroMedia.videoUrl.trim() ? resolveAsset(heroMedia.videoUrl) : null
+
+  const overlayQuote =
+    typeof heroOverlay.quote === 'string' && heroOverlay.quote.trim()
+      ? heroOverlay.quote
+      : defaultPublicSiteConfig.landing!.heroOverlay!.quote!
+  const authorName =
+    typeof heroOverlay.authorName === 'string' && heroOverlay.authorName.trim()
+      ? heroOverlay.authorName
+      : defaultPublicSiteConfig.landing!.heroOverlay!.authorName!
+  const authorLocation =
+    typeof heroOverlay.authorLocation === 'string' && heroOverlay.authorLocation.trim()
+      ? heroOverlay.authorLocation
+      : defaultPublicSiteConfig.landing!.heroOverlay!.authorLocation!
+  const authorAvatarUrl =
+    typeof heroOverlay.authorAvatarUrl === 'string' && heroOverlay.authorAvatarUrl.trim()
+      ? resolveAsset(heroOverlay.authorAvatarUrl)
+      : null
+
+  const nowPlaying = audioSamples.nowPlaying ?? defaultPublicSiteConfig.landing!.audioSamples!.nowPlaying!
+  const nowPlayingName =
+    typeof nowPlaying.name === 'string' && nowPlaying.name.trim()
+      ? nowPlaying.name
+      : defaultPublicSiteConfig.landing!.audioSamples!.nowPlaying!.name!
+  const nowPlayingQuote =
+    typeof nowPlaying.quote === 'string' && nowPlaying.quote.trim()
+      ? nowPlaying.quote
+      : defaultPublicSiteConfig.landing!.audioSamples!.nowPlaying!.quote!
+  const nowPlayingTime =
+    typeof nowPlaying.time === 'string' && nowPlaying.time.trim()
+      ? nowPlaying.time
+      : defaultPublicSiteConfig.landing!.audioSamples!.nowPlaying!.time!
+  const nowPlayingMetaTextRaw = (nowPlaying as any).metaText
+  const nowPlayingMetaText =
+    typeof nowPlayingMetaTextRaw === 'string'
+      ? nowPlayingMetaTextRaw.trim() || null
+      : (defaultPublicSiteConfig.landing!.audioSamples!.nowPlaying! as any).metaText ?? null
+  const nowPlayingAudioUrlRaw = (nowPlaying as any).audioUrl
+  const nowPlayingAudioUrl =
+    typeof nowPlayingAudioUrlRaw === 'string' && nowPlayingAudioUrlRaw.trim() ? resolveAsset(nowPlayingAudioUrlRaw) : null
+
+  const heroPlayerEnabled = Boolean((heroPlayer as any)?.enabled)
+  const heroPlayerAudioUrlRaw = (heroPlayer as any)?.audioUrl
+  const heroPlayerAudioUrl =
+    typeof heroPlayerAudioUrlRaw === 'string' && heroPlayerAudioUrlRaw.trim()
+      ? resolveAsset(heroPlayerAudioUrlRaw)
+      : nowPlayingAudioUrl
+  const heroPlayerQuote =
+    typeof (heroPlayer as any)?.quote === 'string' && String((heroPlayer as any).quote).trim()
+      ? String((heroPlayer as any).quote).trim()
+      : overlayQuote
+  const heroPlayerAuthorName =
+    typeof (heroPlayer as any)?.authorName === 'string' && String((heroPlayer as any).authorName).trim()
+      ? String((heroPlayer as any).authorName).trim()
+      : authorName
+  const heroPlayerAuthorSubline =
+    typeof (heroPlayer as any)?.authorSubline === 'string' ? String((heroPlayer as any).authorSubline).trim() : ''
+  const heroPlayerAvatarRaw = (heroPlayer as any)?.authorAvatarUrl
+  const heroPlayerAvatarUrl =
+    typeof heroPlayerAvatarRaw === 'string' && heroPlayerAvatarRaw.trim() ? resolveAsset(heroPlayerAvatarRaw) : authorAvatarUrl
+  const heroPlayingBadgeText =
+    typeof (heroPlayer as any)?.playingBadgeText === 'string' && String((heroPlayer as any).playingBadgeText).trim()
+      ? String((heroPlayer as any).playingBadgeText).trim()
+      : 'Playing'
+  const heroCornerBadgeText =
+    typeof (heroPlayer as any)?.cornerBadgeText === 'string' && String((heroPlayer as any).cornerBadgeText).trim()
+      ? String((heroPlayer as any).cornerBadgeText).trim()
+      : "Valentine's Special"
+  const heroVerifiedBadgeText =
+    typeof (heroPlayer as any)?.verifiedBadgeText === 'string' && String((heroPlayer as any).verifiedBadgeText).trim()
+      ? String((heroPlayer as any).verifiedBadgeText).trim()
+      : 'Verified Purchase'
+
+  const playlist =
+    Array.isArray(audioSamples.playlist) && audioSamples.playlist.length > 0
+      ? audioSamples.playlist
+      : defaultPublicSiteConfig.landing!.audioSamples!.playlist!
+
+  const toastConfig = (site.activityToast && typeof site.activityToast === 'object'
+    ? site.activityToast
+    : defaultPublicSiteConfig.activityToast) as ActivityToastConfig
+
   return (
     <div className="min-h-screen bg-[#FFF5F7] font-sans pb-32">
+      <ActivityToast config={toastConfig} />
+
       {/* Sticky Top Banner */}
       <div className="sticky top-0 z-50">
         <CountdownTimer />
@@ -189,23 +467,64 @@ export function LandingRoute() {
              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl shadow-2xl">
                {/* Placeholder for Video/Image from screenshot */}
                <div className="absolute inset-0 bg-gray-900/10 z-10"></div>
-               <img 
-                 src="https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=2940&auto=format&fit=crop" 
-                 alt="Couple kissing" 
-                 className="h-full w-full object-cover"
-               />
-               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white p-6 text-center">
-                 <div className="h-16 w-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4 cursor-pointer hover:scale-110 transition-transform">
-                   <div className="h-12 w-12 rounded-full bg-[#E11D48] flex items-center justify-center pl-1 shadow-lg">
-                     <Play className="h-6 w-6 text-white" fill="currentColor" />
+               {heroVideoUrl ? (
+                 <video
+                   className="h-full w-full object-cover"
+                   src={heroVideoUrl}
+                   autoPlay
+                   muted
+                   loop
+                   playsInline
+                 />
+               ) : (
+                 <img
+                   src={heroImageUrl}
+                   alt="Couple kissing"
+                   className="h-full w-full object-cover"
+                 />
+               )}
+               {heroOpen && heroPlayerEnabled ? (
+                 <div className="absolute inset-0 z-20">
+                   <HeroPlayerInline
+                     onClose={() => setHeroOpen(false)}
+                     videoUrl={heroVideoUrl}
+                     imageUrl={heroImageUrl}
+                     audioUrl={heroPlayerAudioUrl}
+                     playingBadgeText={heroPlayingBadgeText}
+                     cornerBadgeText={heroCornerBadgeText}
+                     verifiedBadgeText={heroVerifiedBadgeText}
+                     quote={heroPlayerQuote}
+                     authorName={heroPlayerAuthorName}
+                     authorSubline={heroPlayerAuthorSubline}
+                     authorAvatarUrl={heroPlayerAvatarUrl}
+                   />
+                 </div>
+               ) : (
+                 <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white p-6 text-center">
+                   <button
+                     type="button"
+                     onClick={() => {
+                       if (!heroPlayerEnabled) return
+                       setHeroOpen(true)
+                     }}
+                     className="h-16 w-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4 hover:scale-110 transition-transform"
+                     aria-label="Play hero song"
+                   >
+                     <div className="h-12 w-12 rounded-full bg-[#E11D48] flex items-center justify-center pl-1 shadow-lg">
+                       <Play className="h-6 w-6 text-white" fill="currentColor" />
+                     </div>
+                   </button>
+                   <div className="font-serif italic text-2xl">"{overlayQuote}"</div>
+                   <div className="mt-2 text-sm font-medium opacity-90 flex items-center gap-2">
+                     {authorAvatarUrl ? (
+                       <img src={authorAvatarUrl} className="w-6 h-6 rounded-full border border-white" />
+                     ) : (
+                       <div className="w-6 h-6 rounded-full border border-white bg-white/20" />
+                     )}
+                     {authorLocation ? `${authorName}, ${authorLocation}` : authorName}
                    </div>
                  </div>
-                 <div className="font-serif italic text-2xl">"Dia menangis sebelum chorus berakhir"</div>
-                 <div className="mt-2 text-sm font-medium opacity-90 flex items-center gap-2">
-                   <img src="https://randomuser.me/api/portraits/women/44.jpg" className="w-6 h-6 rounded-full border border-white" />
-                   Rina M., Jakarta
-                 </div>
-               </div>
+               )}
              </div>
           </div>
         </section>
@@ -220,26 +539,24 @@ export function LandingRoute() {
 
           <div className="bg-white rounded-3xl p-6 md:p-10 shadow-xl border border-rose-100/50">
              <AudioPlayerCard 
-               name="Untuk Budi, Sepanjang Masa" 
-               quote="Setiap momen bersamamu Budi, dari kencan pertama yang gugup itu..." 
-               time="3:24"
+               name={nowPlayingName}
+               quote={nowPlayingQuote}
+               metaText={nowPlayingMetaText}
+               audioUrl={nowPlayingAudioUrl}
+               time={nowPlayingTime}
              />
              <div className="mt-8 space-y-4">
-               {[
-                 { title: "Untuk Rizky, Segalanya Bagiku", genre: "Country • 3:12", playing: false },
-                 { title: "Untuk Dimas, 10 Tahun Bersama", genre: "Acoustic • 2:58", playing: false },
-                 { title: "Untuk Andi, Petualangan Kita", genre: "Pop Ballad • 3:45", playing: false },
-               ].map((track, i) => (
+               {playlist.map((track, i) => (
                  <div key={i} className="flex items-center gap-4 p-4 rounded-xl hover:bg-rose-50 transition-colors cursor-pointer group">
                    <div className="h-10 w-10 rounded-full bg-rose-100 text-[#E11D48] flex items-center justify-center group-hover:bg-[#E11D48] group-hover:text-white transition-colors">
                      <Play className="h-5 w-5 ml-0.5" fill="currentColor" />
                    </div>
                    <div className="flex-1">
                      <div className="font-bold text-gray-900">{track.title}</div>
-                     <div className="text-xs text-gray-500">{track.genre}</div>
+                     <div className="text-xs text-gray-500">{track.subtitle}</div>
                    </div>
                    <div className="text-xs font-bold text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                     PUTAR
+                     {track.ctaLabel ?? 'PUTAR'}
                    </div>
                  </div>
                ))}
