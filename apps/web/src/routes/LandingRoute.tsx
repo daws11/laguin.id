@@ -61,9 +61,9 @@ const defaultPublicSiteConfig: PublicSiteConfig = {
     },
     heroOverlay: {
       quote: 'Dia menangis sebelum chorus berakhir',
-      authorName: 'Rina M.',
+      authorName: 'Rina',
       authorLocation: 'Jakarta',
-      authorAvatarUrl: 'https://randomuser.me/api/portraits/women/44.jpg',
+      authorAvatarUrl: 'https://images.unsplash.com/photo-1530254541043-129f4c372200?w=200&h=200&fit=crop',
     },
     heroPlayer: {
       enabled: true,
@@ -71,9 +71,9 @@ const defaultPublicSiteConfig: PublicSiteConfig = {
       cornerBadgeText: "Valentine's Special",
       verifiedBadgeText: 'Verified Purchase',
       quote: 'He tried not to cry. He failed.',
-      authorName: 'Rachel M.',
+      authorName: 'Rachel',
       authorSubline: "London • Valentine's 2025",
-      authorAvatarUrl: 'https://randomuser.me/api/portraits/women/44.jpg',
+      authorAvatarUrl: 'https://images.unsplash.com/photo-1530254541043-129f4c372200?w=200&h=200&fit=crop',
       audioUrl: null,
     },
     audioSamples: {
@@ -174,6 +174,10 @@ function HighlightedTitle({ title }: { title: string }) {
   )
 }
 
+const LANDING_AUDIO_EVENT = 'landing-audio-playing'
+const SOURCE_HERO = 'hero'
+const SOURCE_SAMPLES = 'samples'
+
 type TrackItem = {
   title: string
   subtitle: string
@@ -239,6 +243,24 @@ function FeaturedAudioPlayer({
       onAutoPlayDone?.()
     }
   }, [autoPlay, hasAudio, onAutoPlayDone])
+
+  // Pause when hero player starts (only one audio at a time)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ source: string }>).detail
+      if (detail?.source === SOURCE_HERO) {
+        const a = audioRef.current
+        if (a) a.pause()
+        setPlaying(false)
+      }
+    }
+    window.addEventListener(LANDING_AUDIO_EVENT, handler)
+    return () => window.removeEventListener(LANDING_AUDIO_EVENT, handler)
+  }, [])
+
+  const dispatchPlaying = () => {
+    window.dispatchEvent(new CustomEvent(LANDING_AUDIO_EVENT, { detail: { source: SOURCE_SAMPLES } }))
+  }
 
   const handlePlayPause = () => {
     if (!hasAudio) return
@@ -354,7 +376,7 @@ function FeaturedAudioPlayer({
           }}
           onEnded={() => setPlaying(false)}
           onPause={() => setPlaying(false)}
-          onPlay={() => setPlaying(true)}
+          onPlay={() => { dispatchPlaying(); setPlaying(true) }}
           className="hidden"
         />
       )}
@@ -629,9 +651,9 @@ export function LandingRoute() {
             {/* Social proof badge */}
             <div className="inline-flex items-center gap-3 rounded-full border border-gray-200 bg-white px-4 py-2.5 shadow-sm">
               <div className="flex -space-x-2">
-                <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />
-                <img src="https://randomuser.me/api/portraits/women/65.jpg" alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />
-                <img src="https://randomuser.me/api/portraits/women/32.jpg" alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />
+                <img src="https://images.unsplash.com/photo-1530254541043-129f4c372200?w=100&h=100&fit=crop" alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />
+                <img src="https://images.unsplash.com/photo-1562904403-a5106bef8319?w=100&h=100&fit=crop" alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />
+                <img src="https://images.unsplash.com/photo-1630758664435-72a78888fb9d?w=100&h=100&fit=crop" alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />
               </div>
               <span className="text-sm font-medium text-gray-900">2,847 pria menangis terharu</span>
               <div className="flex gap-0.5 text-amber-400">
@@ -693,7 +715,7 @@ export function LandingRoute() {
             {/* Urgency message */}
             <div className="inline-flex items-center gap-2 rounded-full bg-rose-50/80 border border-rose-100 px-4 py-2">
               <span className="h-2 w-2 rounded-full bg-[#E11D48]" />
-              <span className="text-sm font-medium text-[#E11D48]">Hanya 12 kuota gratis tersisa</span>
+              <span className="text-sm font-medium text-[#E11D48]">11 kuota gratis tersisa</span>
             </div>
           </div>
 
@@ -930,9 +952,9 @@ export function LandingRoute() {
                  "Suami saya itu mantan TNI, orangnya keras. 12 tahun nikah, <strong className="bg-white/20 px-1 rounded">GAK PERNAH nangis.</strong> Eh, pas denger lagu ini, dia langsung mewek bahkan sebelum masuk reff."
                </p>
                <div className="flex items-center gap-3">
-                 <img src="https://randomuser.me/api/portraits/women/65.jpg" className="w-10 h-10 rounded-full border-2 border-white/50" />
+                 <img src="https://images.unsplash.com/photo-1562904403-a5106bef8319?w=100&h=100&fit=crop" alt="" className="w-10 h-10 rounded-full border-2 border-white/50 object-cover" />
                  <div>
-                   <div className="font-bold">Rina M.</div>
+                   <div className="font-bold">Rina</div>
                    <div className="text-xs opacity-80">Jakarta • Feb 2025</div>
                  </div>
                </div>
@@ -952,9 +974,9 @@ export function LandingRoute() {
                  </div>
                </div>
                <div className="mt-6 flex items-center gap-3 pt-6 border-t border-white/10">
-                 <img src="https://randomuser.me/api/portraits/women/32.jpg" className="w-10 h-10 rounded-full border-2 border-white/50" />
+                 <img src="https://images.unsplash.com/photo-1630758664435-72a78888fb9d?w=100&h=100&fit=crop" alt="" className="w-10 h-10 rounded-full border-2 border-white/50 object-cover" />
                  <div>
-                   <div className="font-bold">Sinta L.</div>
+                   <div className="font-bold">Sinta</div>
                    <div className="text-xs opacity-80">WhatsApp • Kemarin</div>
                  </div>
                </div>
@@ -965,12 +987,12 @@ export function LandingRoute() {
                  {[1,2,3,4,5].map(i => <Star key={i} className="h-4 w-4 fill-current" />)}
                </div>
                <p className="font-medium text-gray-800 text-lg mb-6 leading-relaxed">
-                 "Dia terpaksa <strong className="text-[#E11D48]">minggirin mobil</strong> — katanya burem kena air mata. 15 tahun nikah, akhirnya bisa bikin dia nangis juga 😂"
+                 "Doi terpaksa <strong className="text-[#E11D48]">minggirin mobil</strong> — katanya burem kena air mata. 15 tahun nikah, akhirnya bisa bikin doi nangis juga 😂"
                </p>
                <div className="flex items-center gap-3">
-                 <img src="https://randomuser.me/api/portraits/women/12.jpg" className="w-10 h-10 rounded-full border-2 border-gray-100" />
+                 <img src="https://images.unsplash.com/photo-1613447895590-97f008b7fff3?w=100&h=100&fit=crop" alt="" className="w-10 h-10 rounded-full border-2 border-gray-100 object-cover" />
                  <div>
-                   <div className="font-bold text-gray-900">Ema T.</div>
+                   <div className="font-bold text-gray-900">Ema</div>
                    <div className="text-xs text-gray-500">Surabaya • Jan 2025</div>
                  </div>
                </div>
@@ -1083,6 +1105,9 @@ export function LandingRoute() {
             <a href="#" className="hover:text-gray-600">Ketentuan</a>
             <a href="#" className="hover:text-gray-600">Kontak</a>
           </div>
+          <p className="mt-8 max-w-2xl text-[10px] sm:text-xs text-gray-400 leading-relaxed">
+            <strong className="text-gray-500">Disclaimer:</strong> Laguin.id menyediakan layanan musik digital yang dipersonalisasi. Seluruh lagu dibuat secara khusus berdasarkan informasi yang diberikan oleh pelanggan. Tidak terdapat pengiriman produk fisik. Kualitas dan hasil akhir dapat bervariasi bergantung pada kelengkapan serta keakuratan informasi yang disampaikan. Layanan ini tidak berafiliasi dengan, tidak disponsori, dan tidak didukung oleh Facebook, Inc. atau Meta Platforms, Inc.
+          </p>
         </div>
       </footer>
 

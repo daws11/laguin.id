@@ -322,9 +322,9 @@ const defaultPublicSiteDraft: PublicSiteDraft = {
     },
     heroOverlay: {
       quote: 'Dia menangis sebelum chorus berakhir',
-      authorName: 'Rina M.',
+      authorName: 'Rina',
       authorLocation: 'Jakarta',
-      authorAvatarUrl: 'https://randomuser.me/api/portraits/women/44.jpg',
+      authorAvatarUrl: 'https://images.unsplash.com/photo-1530254541043-129f4c372200?w=200&h=200&fit=crop',
     },
     heroPlayer: {
       enabled: true,
@@ -332,9 +332,9 @@ const defaultPublicSiteDraft: PublicSiteDraft = {
       cornerBadgeText: "Valentine's Special",
       verifiedBadgeText: 'Verified Purchase',
       quote: 'He tried not to cry. He failed.',
-      authorName: 'Rachel M.',
+      authorName: 'Rachel',
       authorSubline: "London • Valentine's 2025",
-      authorAvatarUrl: 'https://randomuser.me/api/portraits/women/44.jpg',
+      authorAvatarUrl: 'https://images.unsplash.com/photo-1530254541043-129f4c372200?w=200&h=200&fit=crop',
       audioUrl: '',
     },
     audioSamples: {
@@ -1157,7 +1157,7 @@ export function AdminRoute() {
                                         },
                                       }))
                                     }
-                                    placeholder="Rina M."
+                                    placeholder="Rina"
                                   />
                                 </div>
                                 <div className="space-y-1">
@@ -1371,7 +1371,7 @@ export function AdminRoute() {
                                         landing: { ...d.landing, heroPlayer: { ...d.landing.heroPlayer, authorName: e.target.value } },
                                       }))
                                     }
-                                    placeholder="Rachel M."
+                                    placeholder="Rachel"
                                   />
                                 </div>
                                 <div className="space-y-1">

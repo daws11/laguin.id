@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 
+const LANDING_AUDIO_EVENT = 'landing-audio-playing'
+const SOURCE_HERO = 'hero'
+const SOURCE_SAMPLES = 'samples'
+
 type Props = {
   onClose: () => void
   videoUrl: string | null
@@ -47,6 +51,23 @@ export function HeroPlayerInline({
       .then(() => setPlaying(true))
       .catch(() => setPlaying(false))
   }, [audioUrl])
+
+  // Pause when samples player starts (only one audio at a time)
+  useEffect(() => {
+    const handler = (e: CustomEvent<{ source: string }>) => {
+      if (e.detail?.source === SOURCE_SAMPLES) {
+        const a = audioRef.current
+        if (a) a.pause()
+        setPlaying(false)
+      }
+    }
+    window.addEventListener(LANDING_AUDIO_EVENT, handler as EventListener)
+    return () => window.removeEventListener(LANDING_AUDIO_EVENT, handler as EventListener)
+  }, [])
+
+  const dispatchPlaying = () => {
+    window.dispatchEvent(new CustomEvent(LANDING_AUDIO_EVENT, { detail: { source: SOURCE_HERO } }))
+  }
 
   return (
     <div className="relative h-full w-full">
@@ -155,6 +176,7 @@ export function HeroPlayerInline({
           src={audioUrl}
           preload="auto"
           loop
+          onPlay={dispatchPlaying}
           onEnded={() => setPlaying(false)}
           onPause={() => setPlaying(false)}
         />

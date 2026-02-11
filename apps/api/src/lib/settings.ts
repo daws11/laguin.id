@@ -10,9 +10,9 @@ const defaultPublicSiteConfig = {
     },
     heroOverlay: {
       quote: 'Dia menangis sebelum chorus berakhir',
-      authorName: 'Rina M.',
+      authorName: 'Rina',
       authorLocation: 'Jakarta',
-      authorAvatarUrl: 'https://randomuser.me/api/portraits/women/44.jpg',
+      authorAvatarUrl: 'https://images.unsplash.com/photo-1530254541043-129f4c372200?w=200&h=200&fit=crop',
     },
     heroPlayer: {
       enabled: true,
@@ -20,9 +20,9 @@ const defaultPublicSiteConfig = {
       cornerBadgeText: "Valentine's Special",
       verifiedBadgeText: 'Verified Purchase',
       quote: 'He tried not to cry. He failed.',
-      authorName: 'Rachel M.',
+      authorName: 'Rachel',
       authorSubline: "London • Valentine's 2025",
-      authorAvatarUrl: 'https://randomuser.me/api/portraits/women/44.jpg',
+      authorAvatarUrl: 'https://images.unsplash.com/photo-1530254541043-129f4c372200?w=200&h=200&fit=crop',
       audioUrl: null,
     },
     audioSamples: {
