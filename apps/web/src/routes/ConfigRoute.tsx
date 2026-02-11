@@ -28,7 +28,11 @@ import {
   PartyPopper,
   Mail,
   Loader2,
-  Check
+  Check,
+  Megaphone,
+  Gift,
+  Award,
+  ArrowDown
 } from 'lucide-react'
 
 type PersistedConfigDraft = {
@@ -87,14 +91,30 @@ export function ConfigRoute() {
 
   useEffect(() => {
     let cancelled = false
-    apiGet<{ emailOtpEnabled?: boolean; agreementEnabled?: boolean }>('/api/public/settings')
+    apiGet<{ emailOtpEnabled?: boolean; agreementEnabled?: boolean; publicSiteConfig?: any }>('/api/public/settings')
       .then((res) => {
         if (cancelled) return
         setEmailOtpEnabled(res?.emailOtpEnabled ?? true)
         setAgreementEnabled(res?.agreementEnabled ?? false)
+        
+        // Resolve hero video URL
+        const landing = res?.publicSiteConfig?.landing
+        const heroMedia = landing?.heroMedia
+        const rawVideoUrl = heroMedia?.videoUrl
+        if (typeof rawVideoUrl === 'string' && rawVideoUrl.trim()) {
+           const s = rawVideoUrl.trim()
+           const apiBase = import.meta.env.VITE_API_BASE_URL ?? ''
+           const resolved = /^https?:\/\//i.test(s) ? s : apiBase + s
+           setHeroVideoUrl(resolved)
+        }
+
+        setSettingsLoaded(true)
       })
       .catch(() => {
-        if (!cancelled) setEmailOtpEnabled(true)
+        if (!cancelled) {
+          setEmailOtpEnabled(true)
+          setSettingsLoaded(true)
+        }
       })
     return () => { cancelled = true }
   }, [])
@@ -102,7 +122,9 @@ export function ConfigRoute() {
   // Email verification (OTP) state for checkout step
   const [emailOtpEnabled, setEmailOtpEnabled] = useState(true)
   const [agreementEnabled, setAgreementEnabled] = useState(false)
+  const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [agreementAccepted, setAgreementAccepted] = useState(false)
+  const [heroVideoUrl, setHeroVideoUrl] = useState<string | null>(null)
   const [emailVerificationId, setEmailVerificationId] = useState<string | null>(null)
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', ''])
   const otpRefs = useRef<Array<HTMLInputElement | null>>([])
@@ -209,7 +231,7 @@ export function ConfigRoute() {
         return
       }
 
-      const nextStep = Number.isFinite(parsed.step) ? Math.max(0, Math.min(3, parsed.step as number)) : 0
+      const nextStep = Number.isFinite(parsed.step) ? Math.max(0, Math.min(4, parsed.step as number)) : 0
       const nextRelationship = typeof parsed.relationship === 'string' && parsed.relationship ? parsed.relationship : 'Pasangan'
       const nextEmailVerificationId = typeof parsed.emailVerificationId === 'string' ? parsed.emailVerificationId : null
 
@@ -272,22 +294,36 @@ export function ConfigRoute() {
           : { label: 'Sempurna!', pct: 100, color: 'bg-green-600', text: 'text-green-700' }
 
   const handleNext = async () => {
+    // Step 0 = announcement, no validation
+    if (step === 0) {
+      setStep(1)
+      window.scrollTo(0, 0)
+      return
+    }
     let fieldsToValidate: Path<OrderInput>[] = []
-    if (step === 0) fieldsToValidate = ['recipientName']
-    if (step === 1) fieldsToValidate = ['musicPreferences.genre', 'musicPreferences.voiceStyle']
-    if (step === 2) fieldsToValidate = ['story']
+    if (step === 1) fieldsToValidate = ['recipientName']
+    if (step === 2) fieldsToValidate = ['musicPreferences.genre', 'musicPreferences.voiceStyle']
+    if (step === 3) fieldsToValidate = ['story']
 
     const isStepValid = await form.trigger(fieldsToValidate)
     if (isStepValid) {
-      setStep((prev) => Math.min(prev + 1, 3))
+      setStep((prev) => Math.min(prev + 1, 4))
       window.scrollTo(0, 0)
     }
   }
 
   const handleBack = () => {
-    setStep((prev) => Math.max(prev - 1, 0))
+    const minStep = agreementEnabled ? 0 : 1
+    setStep((prev) => Math.max(prev - 1, minStep))
     window.scrollTo(0, 0)
   }
+
+  // Redirect if on step 0 but agreement is disabled
+  useEffect(() => {
+    if (settingsLoaded && !agreementEnabled && step === 0) {
+      setStep(1)
+    }
+  }, [settingsLoaded, agreementEnabled, step])
 
   // Reset OTP state if email changes
   useEffect(() => {
@@ -473,7 +509,7 @@ export function ConfigRoute() {
             Laguin.id
           </div>
           <div className="text-right">
-             <span className="text-xs text-gray-400 line-through">Rp 200.000</span>{' '}
+             <span className="text-xs text-gray-400 line-through">Rp 497.000</span>{' '}
              <span className="text-lg font-bold text-[#E11D48]">GRATIS</span>{' '}
              <Badge variant="destructive" className="ml-1 text-[10px] px-1 py-0 h-5">11 sisa</Badge>
           </div>
@@ -481,19 +517,107 @@ export function ConfigRoute() {
         {/* Progress Bar inside Header */}
         <div className="px-4 pb-2">
            <div className="flex gap-1 h-1">
-             {[0, 1, 2, 3].map((i) => (
+             {[0, 1, 2, 3, 4]
+               .filter((i) => agreementEnabled || i > 0)
+               .map((i) => (
                <div key={i} className={`flex-1 rounded-full transition-all duration-300 ${i < step ? 'bg-green-500' : i === step ? 'bg-[#E11D48]' : 'bg-gray-200'}`} />
              ))}
            </div>
-           {step > 0 && <div className="mt-1 text-center text-[10px] font-medium text-gray-400">Lagu untuk {currentRecipient}</div>}
+           {step === 0 && <div className="mt-1 text-center text-[10px] font-medium text-gray-400">Pengumuman</div>}
+           {step > 1 && <div className="mt-1 text-center text-[10px] font-medium text-gray-400">Lagu untuk {currentRecipient}</div>}
         </div>
       </header>
 
       <main className="mx-auto max-w-md px-4 py-8">
         <form onSubmit={form.handleSubmit(onSubmit)}>
           
-          {/* STEP 0: WHO IS IT FOR? */}
+          {/* STEP 0: ANNOUNCEMENT - halaman pengumuman */}
           {step === 0 && (
+            <div className="flex flex-col items-center justify-start animate-in fade-in slide-in-from-bottom-4 duration-500 pb-4">
+              <Card className="w-full overflow-hidden border-rose-200 bg-white shadow-xl">
+                {/* Header */}
+                <div className="bg-[#E11D48] px-3 py-2.5 flex items-center justify-center gap-2 text-white shadow-sm">
+                  <Megaphone className="h-4 w-4 shrink-0" />
+                  <span className="text-xs font-bold uppercase tracking-wide">Kado Valentine Paling Romantis</span>
+                </div>
+
+                <CardContent className="p-0">
+                  <div className="p-4 text-center space-y-3">
+                    <h2 className="text-base font-bold text-gray-900 leading-snug mx-auto max-w-[280px]">
+                      Rekam emosi mereka saat mendengar lagu untuk menang <span className="text-[#E11D48]">Rp 3.000.000!</span>
+                    </h2>
+                    
+                    {/* Video Container - Optimized size */}
+                    <div className="relative mx-auto rounded-lg overflow-hidden bg-gray-100 shadow-md ring-1 ring-gray-200 w-[140px] aspect-[9/16] sm:w-[160px]">
+                       {heroVideoUrl ? (
+                         <video 
+                           src={heroVideoUrl} 
+                           autoPlay 
+                           loop 
+                           muted 
+                           playsInline
+                           className="w-full h-full object-cover"
+                         />
+                       ) : (
+                         <div className="flex items-center justify-center h-full text-gray-400 text-[10px]">Video preview</div>
+                       )}
+                    </div>
+                  </div>
+
+                  {/* How it works - Compact Timeline */}
+                  <div className="bg-gradient-to-b from-rose-50/80 to-white px-5 py-4 border-t border-rose-100">
+                    <h3 className="text-sm font-bold text-gray-900 mb-3 text-center uppercase tracking-wider text-[10px] text-rose-500">Cara Ikutan</h3>
+                    
+                    <div className="space-y-0">
+                      {/* Step 1 */}
+                      <div className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className="w-6 h-6 rounded-full bg-[#E11D48] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm ring-2 ring-white">1</div>
+                          <div className="w-0.5 h-full bg-rose-200 min-h-[20px]"></div>
+                        </div>
+                        <div className="pb-4 pt-0.5">
+                          <p className="font-bold text-sm text-gray-800 leading-none">Buat Lagu Gratis</p>
+                          <p className="text-[11px] text-gray-500 mt-1 leading-tight">Biasanya Rp 497.000 (Hemat 100%).</p>
+                        </div>
+                      </div>
+
+                      {/* Step 2 */}
+                      <div className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className="w-6 h-6 rounded-full bg-[#E11D48] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm ring-2 ring-white">2</div>
+                          <div className="w-0.5 h-full bg-rose-200 min-h-[20px]"></div>
+                        </div>
+                        <div className="pb-4 pt-0.5">
+                          <p className="font-bold text-sm text-gray-800 leading-none">Rekam Video Reaksinya</p>
+                          <div className="text-[11px] text-gray-500 mt-1 space-y-0.5 leading-tight">
+                            <p>• Format portrait (9:16)</p>
+                            <p>• Pastikan suara lagu terdengar</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Step 3 */}
+                      <div className="flex gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className="w-6 h-6 rounded-full bg-[#E11D48] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm ring-2 ring-white">3</div>
+                        </div>
+                        <div className="pt-0.5">
+                          <p className="font-bold text-sm text-gray-800 leading-none">Kirim & Menang</p>
+                          <p className="text-[11px] text-gray-500 mt-1 leading-tight">
+                            Kirim ke WhatsApp kami dalam 24 jam.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <p className="text-center text-[10px] text-gray-400 mt-3 animate-pulse">Scroll ke bawah untuk mulai 👇</p>
+            </div>
+          )}
+
+          {/* STEP 1: WHO IS IT FOR? */}
+          {step === 1 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="text-center space-y-2">
                 <Heart className="mx-auto h-8 w-8 text-rose-400 fill-rose-100" />
@@ -537,8 +661,8 @@ export function ConfigRoute() {
             </div>
           )}
 
-          {/* STEP 1: VIBE */}
-          {step === 1 && (
+          {/* STEP 2: VIBE */}
+          {step === 2 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="text-center space-y-2">
                 <Music className="mx-auto h-8 w-8 text-rose-400" />
@@ -599,8 +723,8 @@ export function ConfigRoute() {
             </div>
           )}
 
-          {/* STEP 2: STORY */}
-          {step === 2 && (
+          {/* STEP 3: STORY */}
+          {step === 3 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="text-center space-y-2">
                 <PenLine className="mx-auto h-8 w-8 text-rose-400" />
@@ -655,8 +779,8 @@ export function ConfigRoute() {
             </div>
           )}
 
-          {/* STEP 3: REVIEW / CHECKOUT */}
-          {step === 3 && (
+          {/* STEP 4: REVIEW / CHECKOUT */}
+          {step === 4 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="text-center space-y-2">
                 <PartyPopper className="mx-auto h-8 w-8 text-yellow-500" />
@@ -810,7 +934,7 @@ export function ConfigRoute() {
                        </span>
                      </label>
                      <p className="text-xs font-semibold text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-100">
-                       Hadiah sebesar Rp 5.000.000 akan diberikan kepada pemenang dengan video reaksi terbaik.
+                       Hadiah sebesar Rp 3.000.000 akan diberikan kepada pemenang dengan video reaksi terbaik.
                      </p>
                    </div>
                  ) : null}
@@ -840,7 +964,7 @@ export function ConfigRoute() {
                      <div className="flex justify-between items-center pt-1">
                        <span className="text-gray-500">Total</span>
                        <div className="flex items-center gap-2">
-                         <span className="text-gray-400 line-through text-xs">Rp 200.000</span>
+                         <span className="text-gray-400 line-through text-xs">Rp 497.000</span>
                          <span className="font-bold text-[#E11D48] text-xl">GRATIS</span>
                        </div>
                      </div>
@@ -856,7 +980,7 @@ export function ConfigRoute() {
                      </div>
                      <div className="flex gap-2">
                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-200 text-[10px] font-bold text-green-700">2</div>
-                       <span>Kamu menerimanya via WhatsApp <span className="font-bold">dalam 24 jam</span></span>
+                       <span>Dikirim via email & notifikasi WhatsApp <span className="font-bold">dalam 24 jam</span></span>
                      </div>
                      <div className="flex gap-2">
                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-200 text-[10px] font-bold text-green-700">3</div>
@@ -876,14 +1000,14 @@ export function ConfigRoute() {
           {/* BOTTOM NAV / CTA */}
           <div className="fixed inset-x-0 bottom-0 z-50 bg-white border-t border-gray-100 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
              <div className="mx-auto max-w-md flex flex-col gap-2">
-               {step === 3 && (
+               {step === 4 && (
                  <div className="text-center text-[10px] text-gray-500 flex justify-center items-center gap-1">
                    <Timer className="h-3 w-3" /> Cerita tersimpan selama 9:56 — selesaikan checkout untuk menyimpannya
                  </div>
                )}
                
                <div className="flex gap-3">
-                 {step > 0 && (
+                 {step > (agreementEnabled ? 0 : 1) && (
                    <Button 
                      type="button" 
                      variant="outline" 
@@ -899,16 +1023,17 @@ export function ConfigRoute() {
                  <Button 
                    type="submit" 
                    className="h-12 w-full rounded-xl bg-[#E11D48] text-base font-bold text-white shadow-lg shadow-rose-200 hover:bg-rose-700 active:scale-95 transition-all"
-                   onClick={step < 3 ? (e) => { e.preventDefault(); handleNext(); } : undefined}
+                   onClick={step < 4 ? (e) => { e.preventDefault(); handleNext(); } : undefined}
                   disabled={
                     loading ||
-                    (step === 3 && emailOtpEnabled && !emailVerified) ||
-                    (step === 3 && agreementEnabled && !agreementAccepted)
+                    (step === 4 && emailOtpEnabled && !emailVerified) ||
+                    (step === 4 && agreementEnabled && !agreementAccepted)
                   }
                  >
-                   {step === 0 ? 'Pilih vibenya ->' : 
-                    step === 1 ? 'Tambahkan ceritamu ->' : 
-                    step === 2 ? 'Hampir selesai! ->' : 
+                   {step === 0 ? 'Mulai Buat Lagu ->' : 
+                    step === 1 ? 'Pilih vibenya ->' : 
+                    step === 2 ? 'Tambahkan ceritamu ->' : 
+                    step === 3 ? 'Hampir selesai! ->' : 
                     loading ? 'Memproses...' : (agreementEnabled && !agreementAccepted ? 'Centang persetujuan' : emailOtpEnabled ? (emailVerified ? 'Ke checkout — GRATIS' : 'Verifikasi email dulu') : 'Ke checkout — GRATIS')}
                  </Button>
                </div>

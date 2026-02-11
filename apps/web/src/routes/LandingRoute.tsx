@@ -146,7 +146,7 @@ function CountdownTimer() {
       </span>
       <span className="hidden sm:inline"> • </span>
       <span className="block sm:inline mt-0.5 sm:mt-0">
-        <span className="line-through opacity-70">Rp 200rb</span> <span className="text-white">GRATIS</span> (100 pertama)
+        <span className="line-through opacity-70">Rp 497rb</span> <span className="text-white">GRATIS</span> (100 pertama)
       </span>
     </div>
   )
@@ -171,38 +171,6 @@ function HighlightedTitle({ title }: { title: string }) {
       <span className="text-[#E11D48]">{parsed.name}</span>
       {parsed.after}
     </>
-  )
-}
-
-function HighlightedQuote({ quote, title }: { quote: string; title: string }) {
-  const parsed = parseHighlightName(title)
-  if (!parsed) return <span>{quote}</span>
-  const idx = quote.indexOf(parsed.name)
-  if (idx < 0) return <span>{quote}</span>
-  return (
-    <>
-      {quote.slice(0, idx)}
-      <span className="text-[#E11D48] font-medium">{parsed.name}</span>
-      {quote.slice(idx + parsed.name.length)}
-    </>
-  )
-}
-
-/** Simple CSS waveform bars */
-function AudioWaveform({ playing }: { playing: boolean }) {
-  return (
-    <div className="flex items-center justify-center gap-0.5 h-8 py-2">
-      {[3, 6, 4, 8, 5, 7, 4, 6, 5, 4, 7, 5, 6, 4, 5].map((h, i) => (
-        <div
-          key={i}
-          className={cn(
-            'w-0.5 rounded-full bg-rose-200 transition-all duration-150',
-            playing && 'bg-rose-400'
-          )}
-          style={{ height: `${h}px` }}
-        />
-      ))}
-    </div>
   )
 }
 
@@ -320,22 +288,6 @@ function FeaturedAudioPlayer({
         </div>
       </div>
 
-      {/* Quote bar */}
-      <div className="rounded-lg bg-rose-50/80 border border-rose-100 px-4 py-3">
-        <p className="text-sm text-gray-700 italic">
-          &ldquo;
-          {track.quote ? (
-            <HighlightedQuote quote={track.quote} title={track.title} />
-          ) : (
-            <span className="text-gray-400">Pilih lagu untuk mendengar cuplikan...</span>
-          )}
-          &rdquo;
-        </p>
-      </div>
-
-      {/* Waveform */}
-      <AudioWaveform playing={playing} />
-
       {/* Progress bar */}
       <div className="space-y-1">
         <div className="h-1 w-full overflow-hidden rounded-full bg-gray-100">
@@ -417,7 +369,7 @@ const FAQ_ITEMS = [
   { q: "Bagaimana dia menerima lagunya?", a: "Kamu menerima link download via email. Putar untuknya secara langsung, kirim via WhatsApp, atau jadikan kejutan! Ini file MP3 yang bisa diputar di mana saja." },
   { q: "Berapa lama prosesnya?", a: "Dalam 24 jam! Biasanya lebih cepat. Kamu akan dapat notifikasi email saat sudah siap." },
   { q: "Kalau aku gak suka gimana?", a: "Revisi gratis tanpa batas sampai kamu suka. Masih gak puas? Refund penuh, tanpa tanya-tanya. 💕" },
-  { q: "Benarkah GRATIS?", a: "Ya! Spesial untuk 100 orang pertama (normalnya Rp 200.000). Tanpa biaya tersembunyi. Satu kesempatan, hadiah tak terlupakan." },
+  { q: "Benarkah GRATIS?", a: "Ya! Spesial untuk 100 orang pertama (normalnya Rp 497.000). Tanpa biaya tersembunyi. Satu kesempatan, hadiah tak terlupakan." },
 ]
 
 export function LandingRoute() {
@@ -659,7 +611,7 @@ export function LandingRoute() {
                 💝 Spesial Valentine
               </div>
               <div className="leading-tight">
-                <span className="text-xs text-gray-400 line-through">Rp 200.000</span>{' '}
+                <span className="text-xs text-gray-400 line-through">Rp 497.000</span>{' '}
                 <span className="text-base sm:text-lg font-bold text-[#E11D48]">GRATIS</span>
                 <Badge variant="destructive" className="ml-1 h-5 px-1 py-0 text-[10px] align-middle">
                   11 kuota gratis tersisa!
@@ -717,7 +669,7 @@ export function LandingRoute() {
                 </Link>
               </Button>
               <div className="flex items-baseline gap-2">
-                <span className="text-base text-gray-400 line-through">Rp 200.000</span>
+                <span className="text-base text-gray-400 line-through">Rp 497.000</span>
                 <span className="text-xl font-bold text-[#E11D48]">GRATIS</span>
               </div>
             </div>
@@ -947,7 +899,7 @@ export function LandingRoute() {
                  </div>
                  <div className="space-y-1">
                    <h3 className="text-2xl font-bold text-gray-900">Lagu Personal Untuknya</h3>
-                   <div className="text-[#E11D48] font-bold text-3xl">GRATIS <span className="text-gray-300 line-through text-lg font-normal">Rp 200.000</span></div>
+                   <div className="text-[#E11D48] font-bold text-3xl">GRATIS <span className="text-gray-300 line-through text-lg font-normal">Rp 497.000</span></div>
                  </div>
                  <ul className="text-left space-y-3 text-gray-600 bg-rose-50 p-6 rounded-2xl w-full">
                    <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[#E11D48]" /> <strong>Namanya</strong> dalam lirik</li>
@@ -1106,7 +1058,7 @@ export function LandingRoute() {
              <Button asChild size="lg" className="h-16 px-12 rounded-full bg-[#E11D48] text-xl font-bold shadow-2xl shadow-rose-300 hover:bg-rose-700 hover:scale-105 transition-all">
                <Link to="/config">
                  Buat Lagunya — GRATIS
-                 <span className="ml-2 text-sm font-normal line-through opacity-70">Rp 200.000</span>
+                 <span className="ml-2 text-sm font-normal line-through opacity-70">Rp 497.000</span>
                </Link>
              </Button>
            </div>

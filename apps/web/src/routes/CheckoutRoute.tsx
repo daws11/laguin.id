@@ -207,7 +207,7 @@ export function CheckoutRoute() {
                     <div>
                       <p className="font-bold text-[#E11D48]">Pesanan Berhasil Diterima</p>
                       <p className="opacity-90 mt-1">
-                        Pesanan kamu sedang diproses. Kami akan mengirimkannya melalui email dan memberitahu Anda via WhatsApp ketika sudah selesai.
+                        Pesanan kamu sedang diproses. Lagu akan dikirim via email dan akan diberitahukan via WhatsApp setelah selesai.
                       </p>
                     </div>
                   </div>
