@@ -649,14 +649,14 @@ export function LandingRoute() {
         <section ref={heroRef} aria-labelledby="hero-title" className="grid md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 items-center">
           <div className="text-center md:text-left space-y-5 md:space-y-6">
             {/* Social proof badge */}
-            <div className="inline-flex items-center gap-3 rounded-full border border-gray-200 bg-white px-4 py-2.5 shadow-sm">
-              <div className="flex -space-x-2">
+            <div className="inline-flex flex-nowrap items-center gap-2 sm:gap-3 rounded-full border border-gray-200 bg-white px-3 sm:px-4 py-2.5 shadow-sm">
+              <div className="flex shrink-0 -space-x-2">
                 <img src="https://images.unsplash.com/photo-1530254541043-129f4c372200?w=100&h=100&fit=crop" alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />
                 <img src="https://images.unsplash.com/photo-1562904403-a5106bef8319?w=100&h=100&fit=crop" alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />
                 <img src="https://images.unsplash.com/photo-1630758664435-72a78888fb9d?w=100&h=100&fit=crop" alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />
               </div>
-              <span className="text-sm font-medium text-gray-900">2,847 pria menangis terharu</span>
-              <div className="flex gap-0.5 text-amber-400">
+              <span className="shrink-0 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">2,847 pria menangis terharu</span>
+              <div className="flex shrink-0 gap-0.5 text-amber-400">
                 <Star className="h-4 w-4 fill-current" />
                 <Star className="h-4 w-4 fill-current" />
                 <Star className="h-4 w-4 fill-current" />
