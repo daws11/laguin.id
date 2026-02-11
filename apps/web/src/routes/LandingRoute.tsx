@@ -288,6 +288,21 @@ export function LandingRoute() {
   const [heroOpen, setHeroOpen] = useState(false)
   const [playlistPlayingIndex, setPlaylistPlayingIndex] = useState<number | null>(null)
   const playlistAudioRef = useRef<HTMLAudioElement | null>(null)
+  const [showMobileCta, setShowMobileCta] = useState(false)
+  const heroRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Use a fixed threshold to ensure it shows reliably
+      // Hero section is usually > 500px, so 400px is a safe "scrolled past" point
+      setShowMobileCta(window.scrollY > 400)
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll() // Check initial state
+
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -450,7 +465,7 @@ export function LandingRoute() {
 
       <main className="mx-auto max-w-7xl w-full px-2 sm:px-4 md:px-6 pt-6 sm:pt-12 space-y-12 sm:space-y-20">
         {/* HERO SECTION */}
-        <section className="grid md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 items-center">
+        <section ref={heroRef} className="grid md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 items-center">
           <div className="text-center md:text-left space-y-6 md:space-y-8">
             <div className="flex justify-center md:justify-start gap-1 text-yellow-400 mb-2">
               <Star className="h-4 w-4 fill-current" />
@@ -895,7 +910,12 @@ export function LandingRoute() {
       </footer>
 
       {/* STICKY BOTTOM CTA (Mobile Only) */}
-      <div className="md:hidden fixed inset-x-0 bottom-0 z-50 bg-white border-t border-gray-100 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div 
+        className={cn(
+          "md:hidden fixed inset-x-0 bottom-0 z-[999] bg-white border-t border-gray-100 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] transition-transform duration-300 transform",
+          showMobileCta ? "translate-y-0" : "translate-y-full"
+        )}
+      >
         <div className="mx-auto max-w-md space-y-2">
            <div className="flex justify-center gap-4 text-[10px] font-bold text-gray-500 uppercase tracking-wide">
              <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-green-500" /> 24 jam</span>

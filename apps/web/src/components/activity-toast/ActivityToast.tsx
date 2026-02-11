@@ -211,6 +211,8 @@ export function ActivityToast({ config }: { config?: ActivityToastConfig | null 
   return (
     <div
       className={cn(
+        // Sembunyikan di layar kecil; tampilkan dari sm (640px) ke atas
+        'hidden sm:block',
         // Fix overlap: z-index higher than header (z-50), and push top down to clear header height (~100-110px on mobile).
         'fixed z-[100] right-3 top-[110px] md:right-auto md:top-auto md:left-6 md:bottom-6',
         // Avoid toast causing horizontal scroll on tiny screens.
