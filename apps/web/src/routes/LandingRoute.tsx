@@ -283,6 +283,14 @@ function AudioPlayerCard({
 
 // --- Main Page ---
 
+const FAQ_ITEMS = [
+  { q: "Dia bukan tipe yang emosional...", a: "Itu yang MEREKA SEMUA katakan! 98% menangis — mantan militer, ayah yang kaku, pacar 'aku gak main perasaan'. Semakin tangguh mereka, semakin dalam jatuhnya. 😉" },
+  { q: "Bagaimana dia menerima lagunya?", a: "Kamu menerima link download via email. Putar untuknya secara langsung, kirim via WhatsApp, atau jadikan kejutan! Ini file MP3 yang bisa diputar di mana saja." },
+  { q: "Berapa lama prosesnya?", a: "Dalam 24 jam! Biasanya lebih cepat. Kamu akan dapat notifikasi email saat sudah siap." },
+  { q: "Kalau aku gak suka gimana?", a: "Revisi gratis tanpa batas sampai kamu suka. Masih gak puas? Refund penuh, tanpa tanya-tanya. 💕" },
+  { q: "Benarkah GRATIS?", a: "Ya! Spesial untuk 100 orang pertama (normalnya Rp 200.000). Tanpa biaya tersembunyi. Satu kesempatan, hadiah tak terlupakan." },
+]
+
 export function LandingRoute() {
   const [publicSiteConfig, setPublicSiteConfig] = useState<PublicSiteConfig | null>(null)
   const [heroOpen, setHeroOpen] = useState(false)
@@ -302,6 +310,62 @@ export function LandingRoute() {
     handleScroll() // Check initial state
 
     return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // JSON-LD structured data for SEO (Organization, Service, FAQ)
+  useEffect(() => {
+    const organization = {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      '@id': 'https://laguin.id/#organization',
+      name: 'Laguin.id',
+      url: 'https://laguin.id',
+      description: 'Lagu Valentine personal dengan namanya di lirik. Buat dia menangis bahagia.',
+      foundingDate: '2024',
+      sameAs: [],
+    }
+    const service = {
+      '@context': 'https://schema.org',
+      '@type': 'Service',
+      name: 'Lagu Valentine Personal',
+      description: 'Lagu personal dengan namanya di lirik. Cerita & kenangan kalian ditenun jadi musik profesional. Kualitas studio, dikirim 24 jam.',
+      provider: { '@id': 'https://laguin.id/#organization' },
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'IDR',
+        availability: 'https://schema.org/InStock',
+      },
+    }
+    const faqPage = {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: FAQ_ITEMS.map(({ q, a }) => ({
+        '@type': 'Question',
+        name: q,
+        acceptedAnswer: { '@type': 'Answer', text: a.replace(/😉|💕/g, '') },
+      })),
+    }
+    const scriptOrg = document.createElement('script')
+    scriptOrg.type = 'application/ld+json'
+    scriptOrg.textContent = JSON.stringify(organization)
+    scriptOrg.id = 'ld-organization'
+    const scriptSvc = document.createElement('script')
+    scriptSvc.type = 'application/ld+json'
+    scriptSvc.textContent = JSON.stringify(service)
+    scriptSvc.id = 'ld-service'
+    const scriptFaq = document.createElement('script')
+    scriptFaq.type = 'application/ld+json'
+    scriptFaq.textContent = JSON.stringify(faqPage)
+    scriptFaq.id = 'ld-faq'
+    document.head.appendChild(scriptOrg)
+    document.head.appendChild(scriptSvc)
+    document.head.appendChild(scriptFaq)
+    return () => {
+      document.getElementById('ld-organization')?.remove()
+      document.getElementById('ld-service')?.remove()
+      document.getElementById('ld-faq')?.remove()
+    }
   }, [])
 
   useEffect(() => {
@@ -465,7 +529,7 @@ export function LandingRoute() {
 
       <main className="mx-auto max-w-7xl w-full px-2 sm:px-4 md:px-6 pt-6 sm:pt-12 space-y-12 sm:space-y-20">
         {/* HERO SECTION */}
-        <section ref={heroRef} className="grid md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 items-center">
+        <section ref={heroRef} aria-labelledby="hero-title" className="grid md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 items-center">
           <div className="text-center md:text-left space-y-6 md:space-y-8">
             <div className="flex justify-center md:justify-start gap-1 text-yellow-400 mb-2">
               <Star className="h-4 w-4 fill-current" />
@@ -476,7 +540,7 @@ export function LandingRoute() {
               <span className="ml-2 text-xs sm:text-sm font-bold text-gray-900">2,847 pria menangis terharu</span>
             </div>
             
-            <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-gray-900 tracking-tight">
+            <h1 id="hero-title" className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-gray-900 tracking-tight">
               Valentine kali ini, <br />
               <span className="text-[#E11D48]">buat dia menangis bahagia.</span>
             </h1>
@@ -518,8 +582,9 @@ export function LandingRoute() {
                ) : (
                  <img
                    src={heroImageUrl}
-                   alt="Couple kissing"
+                   alt="Pasangan merayakan Valentine - Lagu personal Laguin.id dengan nama di lirik, hadiah yang tak terlupakan"
                    className="h-full w-full object-cover"
+                   loading="eager"
                  />
                )}
                {heroOpen && heroPlayerEnabled ? (
@@ -569,10 +634,10 @@ export function LandingRoute() {
         </section>
 
         {/* AUDIO SAMPLES SECTION */}
-        <section className="space-y-8 max-w-4xl mx-auto">
+        <section aria-labelledby="audio-samples-title" className="space-y-8 max-w-4xl mx-auto">
           <div className="text-center space-y-2">
             <div className="text-[#E11D48] text-sm font-bold uppercase tracking-wider">Contoh Nyata</div>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">Dengar <span className="text-[#E11D48] italic">namanya</span> di lagu asli</h2>
+            <h2 id="audio-samples-title" className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">Dengar <span className="text-[#E11D48] italic">namanya</span> di lagu asli</h2>
             <p className="text-gray-500">Lagu asli yang kami buat. Nama asli. Air mata asli.</p>
           </div>
 
@@ -672,9 +737,9 @@ export function LandingRoute() {
         </section>
 
         {/* COMPARISON SECTION */}
-        <section className="space-y-10 text-center max-w-5xl mx-auto">
+        <section aria-labelledby="comparison-title" className="space-y-10 text-center max-w-5xl mx-auto">
           <div className="space-y-2">
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">
+            <h2 id="comparison-title" className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">
               Kado yang akan dia <span className="text-gray-400 line-through decoration-rose-500">lupakan</span> vs. yang akan dia <span className="text-[#E11D48] italic">putar ulang</span>
             </h2>
           </div>
@@ -796,10 +861,10 @@ export function LandingRoute() {
         </section>
 
         {/* HOW IT WORKS */}
-        <section className="space-y-10">
+        <section aria-labelledby="how-it-works-title" className="space-y-10">
           <div className="text-center space-y-2">
             <h2 className="text-[#E11D48] text-sm font-bold uppercase tracking-wider">Proses Mudah</h2>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">Tiga langkah menuju <span className="text-[#E11D48] italic">tangis bahagia</span></h2>
+            <h2 id="how-it-works-title" className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">Tiga langkah menuju <span className="text-[#E11D48] italic">tangis bahagia</span></h2>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
@@ -851,16 +916,10 @@ export function LandingRoute() {
         </section>
 
         {/* FAQ */}
-        <section className="space-y-10 max-w-3xl mx-auto pb-8">
-          <h2 className="text-center font-serif text-3xl font-bold text-gray-900">Pertanyaan <span className="text-[#E11D48] italic">Cepat</span></h2>
+        <section aria-labelledby="faq-title" className="space-y-10 max-w-3xl mx-auto pb-8">
+          <h2 id="faq-title" className="text-center font-serif text-3xl font-bold text-gray-900">Pertanyaan <span className="text-[#E11D48] italic">Cepat</span></h2>
           <div className="space-y-4">
-             {[
-               { q: "Dia bukan tipe yang emosional...", a: "Itu yang MEREKA SEMUA katakan! 98% menangis — mantan militer, ayah yang kaku, pacar 'aku gak main perasaan'. Semakin tangguh mereka, semakin dalam jatuhnya. 😉" },
-               { q: "Bagaimana dia menerima lagunya?", a: "Kamu menerima link download via email. Putar untuknya secara langsung, kirim via WhatsApp, atau jadikan kejutan! Ini file MP3 yang bisa diputar di mana saja." },
-               { q: "Berapa lama prosesnya?", a: "Dalam 24 jam! Biasanya lebih cepat. Kamu akan dapat notifikasi email saat sudah siap." },
-               { q: "Kalau aku gak suka gimana?", a: "Revisi gratis tanpa batas sampai kamu suka. Masih gak puas? Refund penuh, tanpa tanya-tanya. 💕" },
-               { q: "Benarkah GRATIS?", a: "Ya! Spesial untuk 100 orang pertama (normalnya Rp 200.000). Tanpa biaya tersembunyi. Satu kesempatan, hadiah tak terlupakan." },
-             ].map((faq, i) => (
+             {FAQ_ITEMS.map((faq, i) => (
                <div key={i} className="group rounded-2xl border border-gray-100 bg-white p-6 hover:shadow-md transition-all cursor-default">
                  <h3 className="font-bold text-gray-900 text-lg mb-2 flex justify-between items-center">
                    {faq.q}
