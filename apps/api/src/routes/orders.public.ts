@@ -25,7 +25,7 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
     const emailOtpEnabled = settings.emailOtpEnabled ?? true
     const agreementEnabled = settings.agreementEnabled ?? false
 
-    if (agreementEnabled && !input.agreementAccepted) {
+    if (agreementEnabled && !(input as { agreementAccepted?: boolean }).agreementAccepted) {
       return reply.code(400).send({ error: 'Centang persetujuan untuk melanjutkan.' })
     }
 
