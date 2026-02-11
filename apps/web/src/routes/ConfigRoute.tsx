@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Controller, useForm, type Path } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -50,9 +50,21 @@ export function ConfigRoute() {
   const [error, setError] = useState<string | null>(null)
   const [relationship, setRelationship] = useState('Pasangan')
   const storyTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const [instantEnabled, setInstantEnabled] = useState<boolean | null>(null)
+  const [deliveryDelayHours, setDeliveryDelayHours] = useState<number | null>(null)
 
   // Countdown timer logic to match LandingRoute
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, mins: 0 })
+
+  const deliveryEta = useMemo(() => {
+    if (instantEnabled) {
+      return { label: '10–30 menit', sentenceLower: 'dalam 10–30 menit', short: '10–30 menit' }
+    }
+    const hRaw = deliveryDelayHours
+    const h = typeof hRaw === 'number' && Number.isFinite(hRaw) && hRaw > 0 ? hRaw : 24
+    const hText = Number.isInteger(h) ? String(h) : String(h)
+    return { label: `Dalam ${hText} jam`, sentenceLower: `dalam ${hText} jam`, short: `${hText} jam` }
+  }, [deliveryDelayHours, instantEnabled])
 
   useEffect(() => {
     // Target date: February 14, 2026 (or next Feb 14)
@@ -88,11 +100,19 @@ export function ConfigRoute() {
 
   useEffect(() => {
     let cancelled = false
-    apiGet<{ emailOtpEnabled?: boolean; agreementEnabled?: boolean; publicSiteConfig?: any }>('/api/public/settings')
+    apiGet<{
+      emailOtpEnabled?: boolean
+      agreementEnabled?: boolean
+      publicSiteConfig?: any
+      instantEnabled?: boolean
+      deliveryDelayHours?: number
+    }>('/api/public/settings')
       .then((res) => {
         if (cancelled) return
         setEmailOtpEnabled(res?.emailOtpEnabled ?? true)
         setAgreementEnabled(res?.agreementEnabled ?? false)
+        setInstantEnabled(typeof res?.instantEnabled === 'boolean' ? res.instantEnabled : null)
+        setDeliveryDelayHours(typeof res?.deliveryDelayHours === 'number' ? res.deliveryDelayHours : null)
         
         // Resolve hero video URL
         const landing = res?.publicSiteConfig?.landing
@@ -120,7 +140,7 @@ export function ConfigRoute() {
   const [emailOtpEnabled, setEmailOtpEnabled] = useState(true)
   const [agreementEnabled, setAgreementEnabled] = useState(false)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
-  const [agreementAccepted, setAgreementAccepted] = useState(false)
+  const [agreementAccepted, setAgreementAccepted] = useState(true)
   const [heroVideoUrl, setHeroVideoUrl] = useState<string | null>(null)
   const [emailVerificationId, setEmailVerificationId] = useState<string | null>(null)
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', ''])
@@ -495,7 +515,7 @@ export function ConfigRoute() {
     <div className="min-h-screen bg-[#FFF5F7] font-sans text-gray-900 pb-32">
       {/* Top Banner */}
       <div className="bg-[#E11D48] px-4 py-2 text-center text-xs font-bold text-white uppercase tracking-wide">
-        🎁 {timeLeft.days} hari {timeLeft.hours} jam {timeLeft.mins} menit menuju Valentine • Dikirim dalam 24 jam
+        🎁 {timeLeft.days} hari {timeLeft.hours} jam {timeLeft.mins} menit menuju Valentine • Dikirim {deliveryEta.sentenceLower}
       </div>
 
       {/* Header */}
@@ -968,7 +988,7 @@ export function ConfigRoute() {
                    </div>
                      <div className="flex justify-between">
                        <span className="text-gray-500">Pengiriman</span>
-                       <span className="font-bold text-green-600 flex items-center gap-1"><Zap className="h-3 w-3" /> Dalam 24 jam</span>
+                      <span className="font-bold text-green-600 flex items-center gap-1"><Zap className="h-3 w-3" /> {deliveryEta.label}</span>
                      </div>
                      <Separator />
                      <div className="flex justify-between items-center pt-1">
@@ -990,7 +1010,7 @@ export function ConfigRoute() {
                      </div>
                      <div className="flex gap-2">
                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-200 text-[10px] font-bold text-green-700">2</div>
-                       <span>Dikirim via email & notifikasi WhatsApp <span className="font-bold">dalam 24 jam</span></span>
+                      <span>Dikirim via email & notifikasi WhatsApp <span className="font-bold">{deliveryEta.sentenceLower}</span></span>
                      </div>
                      <div className="flex gap-2">
                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-200 text-[10px] font-bold text-green-700">3</div>
@@ -1001,7 +1021,7 @@ export function ConfigRoute() {
 
                  <div className="flex justify-center gap-4 text-[10px] text-gray-400">
                    <div className="flex items-center gap-1"><ShieldCheck className="h-3 w-3" /> Checkout aman</div>
-                   <div className="flex items-center gap-1"><Clock className="h-3 w-3" /> Pengiriman 24 jam</div>
+                  <div className="flex items-center gap-1"><Clock className="h-3 w-3" /> Pengiriman {deliveryEta.short}</div>
                  </div>
               </div>
             </div>

@@ -1,3 +1,5 @@
+const SITE_URL = process.env.SITE_URL ?? 'https://laguin.id'
+const LOGO_URL = `${SITE_URL}/logo.png`
 
 export const emailStyles = {
   primaryColor: '#E11D48',
@@ -116,8 +118,7 @@ const baseEmailLayout = (content: string) => `
     <div class="container">
       <div class="header">
         <div class="logo">
-          <span style="display:inline-block;width:32px;height:32px;background-color:#E11D48;color:white;border-radius:50%;text-align:center;line-height:32px;margin-right:8px;">L</span>
-          Laguin.id
+          <img src="${LOGO_URL}" alt="Laguin.id - Lagumu, Ceritamu" style="height:32px;width:auto;display:inline-block;vertical-align:middle;" />
         </div>
       </div>
       <div class="content">

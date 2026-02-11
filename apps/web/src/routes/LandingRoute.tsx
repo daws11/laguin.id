@@ -51,7 +51,11 @@ type PublicSiteConfig = {
   activityToast?: ActivityToastConfig
 }
 
-type PublicSettingsResponse = { publicSiteConfig: PublicSiteConfig | null }
+type PublicSettingsResponse = {
+  publicSiteConfig: PublicSiteConfig | null
+  instantEnabled?: boolean
+  deliveryDelayHours?: number
+}
 
 const defaultPublicSiteConfig: PublicSiteConfig = {
   landing: {
@@ -386,13 +390,7 @@ function FeaturedAudioPlayer({
 
 // --- Main Page ---
 
-const FAQ_ITEMS = [
-  { q: "Dia bukan tipe yang emosional...", a: "Itu yang MEREKA SEMUA katakan! 98% menangis — mantan militer, ayah yang kaku, pacar 'aku gak main perasaan'. Semakin tangguh mereka, semakin dalam jatuhnya. 😉" },
-  { q: "Bagaimana dia menerima lagunya?", a: "Kamu menerima link download via email. Putar untuknya secara langsung, kirim via WhatsApp, atau jadikan kejutan! Ini file MP3 yang bisa diputar di mana saja." },
-  { q: "Berapa lama prosesnya?", a: "Dalam 24 jam! Biasanya lebih cepat. Kamu akan dapat notifikasi email saat sudah siap." },
-  { q: "Kalau aku gak suka gimana?", a: "Revisi gratis tanpa batas sampai kamu suka. Masih gak puas? Refund penuh, tanpa tanya-tanya. 💕" },
-  { q: "Benarkah GRATIS?", a: "Ya! Spesial untuk 100 orang pertama (normalnya Rp 497.000). Tanpa biaya tersembunyi. Satu kesempatan, hadiah tak terlupakan." },
-]
+type FaqItem = { q: string; a: string }
 
 export function LandingRoute() {
   const [publicSiteConfig, setPublicSiteConfig] = useState<PublicSiteConfig | null>(null)
@@ -401,6 +399,36 @@ export function LandingRoute() {
   const [autoPlayOnSelect, setAutoPlayOnSelect] = useState(false)
   const [showMobileCta, setShowMobileCta] = useState(false)
   const heroRef = useRef<HTMLElement>(null)
+  const [instantEnabled, setInstantEnabled] = useState<boolean | null>(null)
+  const [deliveryDelayHours, setDeliveryDelayHours] = useState<number | null>(null)
+
+  const deliveryEta = useMemo(() => {
+    if (instantEnabled) {
+      return { label: '10–30 menit', sentenceLower: 'dalam 10–30 menit', short: '10–30 menit' }
+    }
+    const hRaw = deliveryDelayHours
+    const h = typeof hRaw === 'number' && Number.isFinite(hRaw) && hRaw > 0 ? hRaw : 24
+    const hText = Number.isInteger(h) ? String(h) : String(h)
+    return { label: `Dalam ${hText} jam`, sentenceLower: `dalam ${hText} jam`, short: `${hText} jam` }
+  }, [deliveryDelayHours, instantEnabled])
+
+  const faqItems = useMemo<FaqItem[]>(() => {
+    const etaAnswerStart = instantEnabled ? '10–30 menit' : deliveryEta.label
+    const etaAnswer = `${etaAnswerStart}! Kamu akan dapat notifikasi email saat sudah siap.`
+    return [
+      {
+        q: "Dia bukan tipe yang emosional...",
+        a: "Itu yang MEREKA SEMUA katakan! 98% menangis — mantan militer, ayah yang kaku, pacar 'aku gak main perasaan'. Semakin tangguh mereka, semakin dalam jatuhnya. 😉",
+      },
+      {
+        q: "Bagaimana dia menerima lagunya?",
+        a: 'Kamu menerima link download via email. Putar untuknya secara langsung, kirim via WhatsApp, atau jadikan kejutan! Ini file MP3 yang bisa diputar di mana saja.',
+      },
+      { q: 'Berapa lama prosesnya?', a: etaAnswer },
+      { q: 'Kalau aku gak suka gimana?', a: 'Revisi gratis tanpa batas sampai kamu suka. Masih gak puas? Refund penuh, tanpa tanya-tanya. 💕' },
+      { q: 'Benarkah GRATIS?', a: 'Ya! Spesial untuk 100 orang pertama (normalnya Rp 497.000). Tanpa biaya tersembunyi. Satu kesempatan, hadiah tak terlupakan.' },
+    ]
+  }, [deliveryEta.label, instantEnabled])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -431,7 +459,7 @@ export function LandingRoute() {
       '@context': 'https://schema.org',
       '@type': 'Service',
       name: 'Lagu Valentine Personal',
-      description: 'Lagu personal dengan namanya di lirik. Cerita & kenangan kalian ditenun jadi musik profesional. Kualitas studio, dikirim 24 jam.',
+      description: `Lagu personal dengan namanya di lirik. Cerita & kenangan kalian ditenun jadi musik profesional. Kualitas studio, dikirim ${deliveryEta.sentenceLower}.`,
       provider: { '@id': 'https://laguin.id/#organization' },
       offers: {
         '@type': 'Offer',
@@ -443,7 +471,7 @@ export function LandingRoute() {
     const faqPage = {
       '@context': 'https://schema.org',
       '@type': 'FAQPage',
-      mainEntity: FAQ_ITEMS.map(({ q, a }) => ({
+      mainEntity: faqItems.map(({ q, a }) => ({
         '@type': 'Question',
         name: q,
         acceptedAnswer: { '@type': 'Answer', text: a.replace(/😉|💕/g, '') },
@@ -469,7 +497,7 @@ export function LandingRoute() {
       document.getElementById('ld-service')?.remove()
       document.getElementById('ld-faq')?.remove()
     }
-  }, [])
+  }, [deliveryEta.sentenceLower, faqItems])
 
   useEffect(() => {
     let cancelled = false
@@ -479,6 +507,8 @@ export function LandingRoute() {
         const cfg = res?.publicSiteConfig
         if (cfg && typeof cfg === 'object') setPublicSiteConfig(cfg)
         else setPublicSiteConfig(null)
+        setInstantEnabled(typeof res?.instantEnabled === 'boolean' ? res.instantEnabled : null)
+        setDeliveryDelayHours(typeof res?.deliveryDelayHours === 'number' ? res.deliveryDelayHours : null)
       })
       .catch(() => {
         if (!cancelled) setPublicSiteConfig(null)
@@ -622,12 +652,9 @@ export function LandingRoute() {
         <CountdownTimer />
         <div className="border-b border-rose-100 bg-white/95 px-2 sm:px-4 py-3 backdrop-blur-sm">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-3">
-            <div className="flex items-center gap-2 font-serif text-xl font-bold text-[#E11D48]">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E11D48] text-white">
-                L
-              </div>
-              Laguin.id
-            </div>
+            <Link to="/" className="flex items-center gap-2">
+              <img src="/logo.png" alt="Laguin.id - Lagumu, Ceritamu" className="h-10 w-auto object-contain" />
+            </Link>
             <div className="text-right flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3">
               <div className="hidden md:block text-xs font-medium text-rose-600 bg-rose-50 px-3 py-1 rounded-full">
                 💝 Spesial Valentine
@@ -679,7 +706,7 @@ export function LandingRoute() {
             <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-lg mx-auto md:mx-0 text-center md:text-left">
               Sebuah <strong className="text-gray-900">lagu</strong> personal dengan{' '}
               <strong className="text-gray-900">namanya</strong> di dalam lirik, menceritakan{' '}
-              <strong className="text-gray-900">kisah kalian</strong>. Kualitas studio. Dikirim dalam 24 jam.
+              <strong className="text-gray-900">kisah kalian</strong>. Kualitas studio. Dikirim {deliveryEta.sentenceLower}.
             </p>
 
             {/* CTA + Pricing row */}
@@ -927,7 +954,7 @@ export function LandingRoute() {
                    <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[#E11D48]" /> <strong>Namanya</strong> dalam lirik</li>
                    <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[#E11D48]" /> Cerita & kenangan kalian</li>
                    <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[#E11D48]" /> Audio kualitas studio</li>
-                   <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[#E11D48]" /> Dikirim dalam 24 jam</li>
+                   <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[#E11D48]" /> Dikirim {deliveryEta.sentenceLower}</li>
                  </ul>
                  <div className="font-bold text-[#E11D48] uppercase tracking-widest text-sm">Diputar Selamanya ✅</div>
                </div>
@@ -1011,7 +1038,7 @@ export function LandingRoute() {
             {[
               { step: 1, icon: '✍️', title: 'Ceritakan kisahmu', desc: 'Beritahu kami namanya, kenangan kalian, dan hal-hal lucu.' },
               { step: 2, icon: '🎵', title: 'Kami buatkan', desc: 'Namanya ditenun menjadi lirik & musik profesional oleh komposer kami.' },
-              { step: 3, icon: '😭', title: 'Lihat dia terharu', desc: 'Dikirim dalam 24 jam via WhatsApp. Dia akan menyimpannya selamanya.' },
+              { step: 3, icon: '😭', title: 'Lihat dia terharu', desc: `Dikirim ${deliveryEta.sentenceLower} via WhatsApp. Dia akan menyimpannya selamanya.` },
             ].map((s) => (
               <div key={s.step} className="flex flex-col items-center text-center gap-4 rounded-3xl border border-gray-100 bg-white p-8 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-3xl font-bold text-rose-500 shadow-sm">
@@ -1049,7 +1076,7 @@ export function LandingRoute() {
               <div className="flex flex-wrap justify-center gap-6 text-sm font-bold text-green-700 pt-2">
                  <span className="flex items-center gap-1"><Check className="h-4 w-4" /> Revisi gratis</span>
                  <span className="flex items-center gap-1"><Check className="h-4 w-4" /> Refund penuh</span>
-                 <span className="flex items-center gap-1"><Check className="h-4 w-4" /> Pengiriman 24 jam</span>
+                 <span className="flex items-center gap-1"><Check className="h-4 w-4" /> Pengiriman {deliveryEta.short}</span>
               </div>
             </div>
           </div>
@@ -1059,7 +1086,7 @@ export function LandingRoute() {
         <section aria-labelledby="faq-title" className="space-y-10 max-w-3xl mx-auto pb-8">
           <h2 id="faq-title" className="text-center font-serif text-3xl font-bold text-gray-900">Pertanyaan <span className="text-[#E11D48] italic">Cepat</span></h2>
           <div className="space-y-4">
-             {FAQ_ITEMS.map((faq, i) => (
+             {faqItems.map((faq, i) => (
                <div key={i} className="group rounded-2xl border border-gray-100 bg-white p-6 hover:shadow-md transition-all cursor-default">
                  <h3 className="font-bold text-gray-900 text-lg mb-2 flex justify-between items-center">
                    {faq.q}
@@ -1095,10 +1122,9 @@ export function LandingRoute() {
       {/* FOOTER LINKS */}
       <footer className="border-t border-gray-100 bg-white py-12 text-center text-sm text-gray-400">
         <div className="mx-auto max-w-7xl px-4 flex flex-col items-center gap-4">
-          <div className="flex items-center gap-2 font-serif text-xl font-bold text-gray-300">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-400">L</div>
-            Laguin.id
-          </div>
+          <Link to="/" className="flex items-center gap-2">
+            <img src="/logo.png" alt="Laguin.id - Lagumu, Ceritamu" className="h-10 w-auto object-contain opacity-70" />
+          </Link>
           <p>Membuat pria menangis sejak 2024 💕</p>
           <div className="flex gap-6 pt-4">
             <a href="#" className="hover:text-gray-600">Privasi</a>
@@ -1120,7 +1146,7 @@ export function LandingRoute() {
       >
         <div className="mx-auto max-w-md space-y-2">
            <div className="flex justify-center gap-4 text-[10px] font-bold text-gray-500 uppercase tracking-wide">
-             <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-green-500" /> 24 jam</span>
+             <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-green-500" /> {deliveryEta.short}</span>
              <span className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-green-500" /> Garansi</span>
            </div>
            <Button asChild size="lg" className="w-full h-14 rounded-xl bg-[#E11D48] text-lg font-bold shadow-lg shadow-rose-200 hover:bg-rose-700 active:scale-95 transition-all">
