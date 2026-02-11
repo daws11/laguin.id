@@ -30,7 +30,7 @@ export const OrderInputSchema = z.object({
   whatsappNumber: z.string().min(6), // Made required for WhatsApp flow
   email: z.string().email(),
   emailVerificationId: z.string().optional(),
-  occasion: z.string().min(1),
+  occasion: z.string(),
   story: z.string().min(1),
   musicPreferences: MusicPreferencesSchema,
   extraNotes: z.string().optional(),

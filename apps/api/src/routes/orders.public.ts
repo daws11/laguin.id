@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { prisma } from '../lib/prisma'
 import { addOrderEvent } from '../lib/events'
 import { getOrCreateSettings } from '../lib/settings'
+import { normalizeEmail, normalizeWhatsappNumber } from '../lib/normalize'
 
 const ParamsSchema = z.object({ id: z.string().min(1) })
 
@@ -20,6 +21,8 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
 
     const input = parsed.data
     const customerName = input.yourName ?? input.recipientName
+    const emailLower = normalizeEmail(input.email)
+    const whatsappNumber = normalizeWhatsappNumber(input.whatsappNumber)
 
     const settings = await getOrCreateSettings()
     const emailOtpEnabled = settings.emailOtpEnabled ?? true
@@ -41,7 +44,7 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       if (!verification) {
         return reply.code(400).send({ error: 'Email belum terverifikasi. Kirim OTP dulu.' })
       }
-      if (verification.email.toLowerCase() !== input.email.toLowerCase()) {
+      if (verification.email !== emailLower) {
         return reply.code(400).send({ error: 'Email tidak cocok dengan OTP verifikasi.' })
       }
       if (!verification.verifiedAt) {
@@ -52,23 +55,63 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
-    const customer = await prisma.customer.upsert({
-      where: { whatsappNumber: input.whatsappNumber },
-      create: {
-        name: customerName,
-        whatsappNumber: input.whatsappNumber,
-        email: input.email,
-      },
-      update: {
-        name: customerName,
-        email: input.email,
-      },
+    // Lifetime one-time registration:
+    // - WhatsApp number may only register once
+    // - Email may only register once (case-insensitive)
+    if (!whatsappNumber) {
+      return reply.code(400).send({ error: 'Nomor WhatsApp tidak valid.' })
+    }
+    if (!emailLower) {
+      return reply.code(400).send({ error: 'Email tidak valid.' })
+    }
+
+    const existingByWhatsapp = await prisma.customer.findUnique({
+      where: { whatsappNumber },
+      select: { id: true },
     })
+    if (existingByWhatsapp) {
+      return reply
+        .code(409)
+        .send({ error: 'Nomor WhatsApp sudah terdaftar. Setiap nomor WhatsApp hanya bisa mendaftar sekali.' })
+    }
+
+    const existingByEmail = await prisma.customer.findFirst({
+      where: { emailLower },
+      select: { id: true },
+    })
+    if (existingByEmail) {
+      return reply.code(409).send({ error: 'Email sudah terdaftar. Setiap email hanya bisa mendaftar sekali.' })
+    }
+
+    const normalizedInput = {
+      ...input,
+      email: input.email.trim(),
+      whatsappNumber,
+    }
+
+    let customer: { id: string }
+    try {
+      customer = await prisma.customer.create({
+        data: {
+          name: customerName,
+          whatsappNumber,
+          email: normalizedInput.email,
+          emailLower,
+        },
+        select: { id: true },
+      })
+    } catch (e: any) {
+      // Race-safety: if two requests pass the checks concurrently.
+      if (e?.code === 'P2002') {
+        return reply.code(409).send({ error: 'Email atau nomor WhatsApp sudah terdaftar.' })
+      }
+      throw e
+    }
 
     const order = await prisma.order.create({
       data: {
         customerId: customer.id,
-        inputPayload: input,
+        inputPayload: normalizedInput,
         status: 'created',
         deliveryStatus: 'delivery_pending',
         paymentStatus: 'free',

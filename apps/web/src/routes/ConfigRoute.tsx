@@ -154,7 +154,7 @@ export function ConfigRoute() {
   const DEFAULT_ORDER_INPUT: OrderInput = {
     yourName: undefined,
     recipientName: '',
-    occasion: 'Valentine',
+    occasion: '',
     story: '',
     musicPreferences: {
       genre: 'Pop Ballad',
@@ -790,7 +790,7 @@ export function ConfigRoute() {
                   }}
                   rows={6} 
                   placeholder="Mulai ketik ceritamu di sini..." 
-                  maxLength={500}
+                  maxLength={1000}
                   className="rounded-xl border-gray-300 text-base shadow-sm focus-visible:ring-[#E11D48] resize-none p-4"
                 />
                 <div className="flex justify-between text-xs">
@@ -803,7 +803,7 @@ export function ConfigRoute() {
                     </div>
                     {storyQuality.label}
                   </div>
-                  <span className="text-gray-400">{storyText.length} / 500 chars</span>
+                  <span className="text-gray-400">{storyText.length} / 1000 chars</span>
                 </div>
               </div>
             </div>

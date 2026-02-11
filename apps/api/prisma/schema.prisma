@@ -68,6 +68,10 @@ model Customer {
   name          String
   whatsappNumber String  @unique
   email         String?
+  // Normalized (trimmed + lowercased) email used for uniqueness checks.
+  // NOTE: Existing legacy rows may keep `email` but have a synthetic `emailLower` suffix
+  //       to satisfy uniqueness without breaking delivery for historical orders.
+  emailLower    String?  @unique
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
