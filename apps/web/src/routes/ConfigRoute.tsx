@@ -29,10 +29,7 @@ import {
   Mail,
   Loader2,
   Check,
-  Megaphone,
-  Gift,
-  Award,
-  ArrowDown
+  Megaphone
 } from 'lucide-react'
 
 type PersistedConfigDraft = {
