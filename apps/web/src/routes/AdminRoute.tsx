@@ -31,6 +31,8 @@ const translations = {
     creationDelivery: 'Pembuatan & Pengiriman',
     creationDeliveryDesc: 'Mengontrol pengiriman WhatsApp instan vs tertunda.',
     instantEnabled: 'Pengiriman instan aktif',
+    emailOtpEnabled: 'Verifikasi OTP email',
+    agreementEnabled: 'Agreement di checkout',
     deliveryDelay: 'Penundaan pengiriman (jam) (saat instan NONAKTIF)',
     whatsappGateway: 'WhatsApp Gateway',
     whatsappGatewayDesc:
@@ -140,6 +142,8 @@ const translations = {
     creationDelivery: 'Creation & Delivery',
     creationDeliveryDesc: 'Controls instant vs delayed WhatsApp delivery.',
     instantEnabled: 'Instant delivery enabled',
+    emailOtpEnabled: 'Email OTP verification',
+    agreementEnabled: 'Checkout agreement',
     deliveryDelay: 'Delivery delay (hours) (when instant is OFF)',
     whatsappGateway: 'WhatsApp Gateway',
     whatsappGatewayDesc:
@@ -248,6 +252,8 @@ type Settings = {
   instantEnabled: boolean
   deliveryDelayHours: number | null
   paymentsEnabled: boolean
+  emailOtpEnabled: boolean
+  agreementEnabled: boolean
   whatsappProvider: string
   whatsappConfig: unknown | null
   publicSiteConfig: unknown | null
@@ -2369,6 +2375,24 @@ export function AdminRoute() {
                           onChange={(e) => setSettings((s) => (s ? { ...s, instantEnabled: e.target.checked } : s))}
                         />
                       </label>
+                      <label className="flex items-center justify-between gap-2 rounded border p-1.5 bg-background cursor-pointer hover:bg-muted/40 transition-colors">
+                        <span className="font-medium">{t.emailOtpEnabled}</span>
+                        <input
+                          type="checkbox"
+                          className="h-3.5 w-3.5 rounded border-gray-300 text-primary focus:ring-primary"
+                          checked={settings.emailOtpEnabled ?? true}
+                          onChange={(e) => setSettings((s) => (s ? { ...s, emailOtpEnabled: e.target.checked } : s))}
+                        />
+                      </label>
+                      <label className="flex items-center justify-between gap-2 rounded border p-1.5 bg-background cursor-pointer hover:bg-muted/40 transition-colors">
+                        <span className="font-medium">{t.agreementEnabled}</span>
+                        <input
+                          type="checkbox"
+                          className="h-3.5 w-3.5 rounded border-gray-300 text-primary focus:ring-primary"
+                          checked={settings.agreementEnabled ?? false}
+                          onChange={(e) => setSettings((s) => (s ? { ...s, agreementEnabled: e.target.checked } : s))}
+                        />
+                      </label>
                       <div className="space-y-0.5">
                         <div className="text-[10px] font-medium text-muted-foreground">{t.deliveryDelay}</div>
                         <Input
@@ -2386,6 +2410,8 @@ export function AdminRoute() {
                         onClick={() =>
                           void saveSettings({
                             instantEnabled: settings.instantEnabled,
+                            emailOtpEnabled: settings.emailOtpEnabled ?? true,
+                            agreementEnabled: settings.agreementEnabled ?? false,
                             deliveryDelayHours: settings.deliveryDelayHours ?? 24,
                           })
                         }

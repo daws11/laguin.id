@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Controller, useForm, type Path } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { OrderInputSchema, type OrderInput } from 'shared'
-import { apiPost } from '@/lib/http'
+import { apiGet, apiPost } from '@/lib/http'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -85,7 +85,24 @@ export function ConfigRoute() {
     return () => clearInterval(timer)
   }, [])
 
+  useEffect(() => {
+    let cancelled = false
+    apiGet<{ emailOtpEnabled?: boolean; agreementEnabled?: boolean }>('/api/public/settings')
+      .then((res) => {
+        if (cancelled) return
+        setEmailOtpEnabled(res?.emailOtpEnabled ?? true)
+        setAgreementEnabled(res?.agreementEnabled ?? false)
+      })
+      .catch(() => {
+        if (!cancelled) setEmailOtpEnabled(true)
+      })
+    return () => { cancelled = true }
+  }, [])
+
   // Email verification (OTP) state for checkout step
+  const [emailOtpEnabled, setEmailOtpEnabled] = useState(true)
+  const [agreementEnabled, setAgreementEnabled] = useState(false)
+  const [agreementAccepted, setAgreementAccepted] = useState(false)
   const [emailVerificationId, setEmailVerificationId] = useState<string | null>(null)
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', ''])
   const otpRefs = useRef<Array<HTMLInputElement | null>>([])
@@ -417,19 +434,21 @@ export function ConfigRoute() {
   }
 
   const onSubmit = async (data: OrderInput) => {
-    // Email must be verified before we create draft order (per flow)
-    if (!emailVerified || !data.emailVerificationId) {
+    if (emailOtpEnabled && (!emailVerified || !data.emailVerificationId)) {
       setError('Verifikasi email dulu sebelum lanjut ke checkout.')
+      return
+    }
+    if (agreementEnabled && !agreementAccepted) {
+      setError('Centang persetujuan di atas untuk melanjutkan.')
       return
     }
     setLoading(true)
     setError(null)
     try {
-      // API call to create draft order
-      const res = await apiPost<{ orderId: string }>('/api/orders/draft', {
-        ...data,
-        whatsappNumber: data.whatsappNumber,
-      })
+      const payload = { ...data, whatsappNumber: data.whatsappNumber }
+      if (!emailOtpEnabled) delete (payload as Record<string, unknown>).emailVerificationId
+      if (agreementEnabled) (payload as Record<string, unknown>).agreementAccepted = true
+      const res = await apiPost<{ orderId: string }>('/api/orders/draft', payload)
       clearDraft()
       navigate(`/checkout?orderId=${encodeURIComponent(res.orderId)}`)
     } catch (err: unknown) {
@@ -695,85 +714,106 @@ export function ConfigRoute() {
                     {errors.email && <p className="text-xs text-[#E11D48]">{errors.email.message}</p>}
                  </div>
 
-                 <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
-                   <div className="flex items-center justify-between gap-3">
-                     <div className="text-sm font-bold text-gray-900">Verifikasi Email</div>
-                     {emailVerified ? (
-                       <div className="inline-flex items-center gap-1 text-xs font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-1 rounded-full">
-                         <Check className="h-3.5 w-3.5" /> Terverifikasi
-                       </div>
-                     ) : null}
-                   </div>
+                 {emailOtpEnabled ? (
+                   <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
+                     <div className="flex items-center justify-between gap-3">
+                       <div className="text-sm font-bold text-gray-900">Verifikasi Email</div>
+                       {emailVerified ? (
+                         <div className="inline-flex items-center gap-1 text-xs font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-1 rounded-full">
+                           <Check className="h-3.5 w-3.5" /> Terverifikasi
+                         </div>
+                       ) : null}
+                     </div>
 
-                   <div className="flex gap-3">
-                     <Button
-                       type="button"
-                       variant="outline"
-                       className="h-11 rounded-xl border-gray-200"
-                       onClick={() => void sendEmailOtp()}
-                      disabled={
-                        otpSending ||
-                        otpVerifying ||
-                        !email ||
-                        Boolean(errors.email) ||
-                        resendCooldownSec > 0 ||
-                        emailVerified ||
-                        hasEnteredOtp
-                      }
-                     >
-                       {otpSending ? (
-                         <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Mengirim...</span>
-                      ) : emailVerified ? (
-                        'Email terverifikasi'
-                      ) : hasEnteredOtp ? (
-                        'Verifikasi kode di bawah'
-                       ) : resendCooldownSec > 0 ? (
-                         `Kirim ulang (${resendCooldownSec}s)`
-                       ) : (
-                         'Kirim kode verifikasi'
-                       )}
-                     </Button>
-                   </div>
-
-                   {emailVerificationId && !emailVerified ? (
-                     <div className="space-y-3">
-                       <div className="text-xs text-gray-500">
-                         Masukkan 4 digit kode OTP yang kami kirim ke <span className="font-semibold text-gray-800">{email}</span>
-                       </div>
-                       <div className="flex gap-2 justify-center">
-                         {[0, 1, 2, 3].map((i) => (
-                           <Input
-                             key={i}
-                             ref={(el) => { otpRefs.current[i] = el }}
-                             value={otpDigits[i] ?? ''}
-                             onChange={(e) => handleOtpChange(i, e.target.value)}
-                             onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                             onPaste={i === 0 ? handleOtpPaste : undefined}
-                             inputMode="numeric"
-                             pattern="[0-9]*"
-                             type="tel"
-                             maxLength={1}
-                             className="h-12 w-12 text-center text-lg font-bold rounded-xl border-gray-300 shadow-sm focus-visible:ring-[#E11D48]"
-                           />
-                         ))}
-                       </div>
+                     <div className="flex gap-3">
                        <Button
                          type="button"
-                         className="h-11 w-full rounded-xl bg-gray-900 text-white hover:bg-gray-800"
-                         onClick={() => void verifyEmailOtp()}
-                         disabled={otpVerifying || otpDigits.some((d) => !d)}
+                         variant="outline"
+                         className="h-11 rounded-xl border-gray-200"
+                         onClick={() => void sendEmailOtp()}
+                         disabled={
+                           otpSending ||
+                           otpVerifying ||
+                           !email ||
+                           Boolean(errors.email) ||
+                           resendCooldownSec > 0 ||
+                           emailVerified ||
+                           hasEnteredOtp
+                         }
                        >
-                         {otpVerifying ? (
-                           <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Memverifikasi...</span>
+                         {otpSending ? (
+                           <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Mengirim...</span>
+                         ) : emailVerified ? (
+                           'Email terverifikasi'
+                         ) : hasEnteredOtp ? (
+                           'Verifikasi kode di bawah'
+                         ) : resendCooldownSec > 0 ? (
+                           `Kirim ulang (${resendCooldownSec}s)`
                          ) : (
-                           'Verifikasi kode'
+                           'Kirim kode verifikasi'
                          )}
                        </Button>
                      </div>
-                   ) : null}
 
-                   {otpError ? <p className="text-xs text-[#E11D48]">{otpError}</p> : null}
-                 </div>
+                     {emailVerificationId && !emailVerified ? (
+                       <div className="space-y-3">
+                         <div className="text-xs text-gray-500">
+                           Masukkan 4 digit kode OTP yang kami kirim ke <span className="font-semibold text-gray-800">{email}</span>
+                         </div>
+                         <div className="flex gap-2 justify-center">
+                           {[0, 1, 2, 3].map((i) => (
+                             <Input
+                               key={i}
+                               ref={(el) => { otpRefs.current[i] = el }}
+                               value={otpDigits[i] ?? ''}
+                               onChange={(e) => handleOtpChange(i, e.target.value)}
+                               onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                               onPaste={i === 0 ? handleOtpPaste : undefined}
+                               inputMode="numeric"
+                               pattern="[0-9]*"
+                               type="tel"
+                               maxLength={1}
+                               className="h-12 w-12 text-center text-lg font-bold rounded-xl border-gray-300 shadow-sm focus-visible:ring-[#E11D48]"
+                             />
+                           ))}
+                         </div>
+                         <Button
+                           type="button"
+                           className="h-11 w-full rounded-xl bg-gray-900 text-white hover:bg-gray-800"
+                           onClick={() => void verifyEmailOtp()}
+                           disabled={otpVerifying || otpDigits.some((d) => !d)}
+                         >
+                           {otpVerifying ? (
+                             <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Memverifikasi...</span>
+                           ) : (
+                             'Verifikasi kode'
+                           )}
+                         </Button>
+                       </div>
+                     ) : null}
+
+                     {otpError ? <p className="text-xs text-[#E11D48]">{otpError}</p> : null}
+                   </div>
+                 ) : null}
+
+                 {agreementEnabled ? (
+                   <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
+                     <label className="flex items-start gap-3 cursor-pointer">
+                       <input
+                         type="checkbox"
+                         checked={agreementAccepted}
+                         onChange={(e) => setAgreementAccepted(e.target.checked)}
+                         className="mt-1 h-4 w-4 rounded border-gray-300 text-[#E11D48] focus:ring-[#E11D48]"
+                       />
+                       <span className="text-sm text-gray-700">
+                         Saya menyetujui untuk mengirimkan rekaman reaksi dan respons emosional penerima lagu kepada Laguin.id, untuk keperluan promosi dan peningkatan layanan.
+                       </span>
+                     </label>
+                     <p className="text-xs font-semibold text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-100">
+                       Hadiah sebesar Rp 5.000.000 akan diberikan kepada pemenang dengan video reaksi terbaik.
+                     </p>
+                   </div>
+                 ) : null}
 
                  <Card className="overflow-hidden border-gray-200 shadow-sm">
                    <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 flex items-center gap-2">
@@ -860,12 +900,16 @@ export function ConfigRoute() {
                    type="submit" 
                    className="h-12 w-full rounded-xl bg-[#E11D48] text-base font-bold text-white shadow-lg shadow-rose-200 hover:bg-rose-700 active:scale-95 transition-all"
                    onClick={step < 3 ? (e) => { e.preventDefault(); handleNext(); } : undefined}
-                  disabled={loading || (step === 3 && !emailVerified)}
+                  disabled={
+                    loading ||
+                    (step === 3 && emailOtpEnabled && !emailVerified) ||
+                    (step === 3 && agreementEnabled && !agreementAccepted)
+                  }
                  >
                    {step === 0 ? 'Pilih vibenya ->' : 
                     step === 1 ? 'Tambahkan ceritamu ->' : 
                     step === 2 ? 'Hampir selesai! ->' : 
-                    loading ? 'Memproses...' : emailVerified ? 'Ke checkout — GRATIS' : 'Verifikasi email dulu'}
+                    loading ? 'Memproses...' : (agreementEnabled && !agreementAccepted ? 'Centang persetujuan' : emailOtpEnabled ? (emailVerified ? 'Ke checkout — GRATIS' : 'Verifikasi email dulu') : 'Ke checkout — GRATIS')}
                  </Button>
                </div>
              </div>

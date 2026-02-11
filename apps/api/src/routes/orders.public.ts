@@ -4,6 +4,7 @@ import { z } from 'zod'
 
 import { prisma } from '../lib/prisma'
 import { addOrderEvent } from '../lib/events'
+import { getOrCreateSettings } from '../lib/settings'
 
 const ParamsSchema = z.object({ id: z.string().min(1) })
 
@@ -20,21 +21,35 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
     const input = parsed.data
     const customerName = input.yourName ?? input.recipientName
 
-    // Enforce that email has been verified (OTP) before creating draft order.
-    const verification = await prisma.emailVerification.findUnique({
-      where: { id: input.emailVerificationId },
-    })
-    if (!verification) {
-      return reply.code(400).send({ error: 'Email belum terverifikasi. Kirim OTP dulu.' })
+    const settings = await getOrCreateSettings()
+    const emailOtpEnabled = settings.emailOtpEnabled ?? true
+    const agreementEnabled = settings.agreementEnabled ?? false
+
+    if (agreementEnabled && !input.agreementAccepted) {
+      return reply.code(400).send({ error: 'Centang persetujuan untuk melanjutkan.' })
     }
-    if (verification.email.toLowerCase() !== input.email.toLowerCase()) {
-      return reply.code(400).send({ error: 'Email tidak cocok dengan OTP verifikasi.' })
-    }
-    if (!verification.verifiedAt) {
-      return reply.code(400).send({ error: 'Email belum terverifikasi. Masukkan OTP yang benar.' })
-    }
-    if (verification.expiresAt.getTime() < Date.now()) {
-      return reply.code(400).send({ error: 'OTP sudah kadaluarsa. Kirim ulang kode verifikasi.' })
+
+    if (emailOtpEnabled) {
+      // Enforce that email has been verified (OTP) before creating draft order.
+      const verificationId = input.emailVerificationId
+      if (!verificationId) {
+        return reply.code(400).send({ error: 'Email belum terverifikasi. Kirim OTP dulu.' })
+      }
+      const verification = await prisma.emailVerification.findUnique({
+        where: { id: verificationId },
+      })
+      if (!verification) {
+        return reply.code(400).send({ error: 'Email belum terverifikasi. Kirim OTP dulu.' })
+      }
+      if (verification.email.toLowerCase() !== input.email.toLowerCase()) {
+        return reply.code(400).send({ error: 'Email tidak cocok dengan OTP verifikasi.' })
+      }
+      if (!verification.verifiedAt) {
+        return reply.code(400).send({ error: 'Email belum terverifikasi. Masukkan OTP yang benar.' })
+      }
+      if (verification.expiresAt.getTime() < Date.now()) {
+        return reply.code(400).send({ error: 'OTP sudah kadaluarsa. Kirim ulang kode verifikasi.' })
+      }
     }
 
     const customer = await prisma.customer.upsert({

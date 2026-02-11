@@ -7,6 +7,8 @@ export const publicSettingsRoutes: FastifyPluginAsync = async (app) => {
     const s = await getOrCreateSettings()
     return {
       publicSiteConfig: s.publicSiteConfig ?? null,
+      emailOtpEnabled: s.emailOtpEnabled ?? true,
+      agreementEnabled: s.agreementEnabled ?? false,
     }
   })
 }

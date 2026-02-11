@@ -29,11 +29,12 @@ export const OrderInputSchema = z.object({
   recipientName: z.string().min(1),
   whatsappNumber: z.string().min(6), // Made required for WhatsApp flow
   email: z.string().email(),
-  emailVerificationId: z.string().min(1),
+  emailVerificationId: z.string().optional(),
   occasion: z.string().min(1),
   story: z.string().min(1),
   musicPreferences: MusicPreferencesSchema,
   extraNotes: z.string().optional(),
+  agreementAccepted: z.boolean().optional(),
 })
 export type OrderInput = z.infer<typeof OrderInputSchema>
 

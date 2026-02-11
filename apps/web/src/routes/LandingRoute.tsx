@@ -8,6 +8,10 @@ import {
   ShieldCheck,
   Zap,
   Music,
+  ChevronRight,
+  SkipBack,
+  SkipForward,
+  Heart,
 } from 'lucide-react'
 
 import { apiGet } from '@/lib/http'
@@ -148,39 +152,109 @@ function CountdownTimer() {
   )
 }
 
-function AudioPlayerCard({
-  name,
-  quote,
-  metaText,
-  audioUrl,
-  time = '3:24',
-}: {
-  name: string
+/** Extract name from title like "Untuk Budi, Sepanjang Masa" -> "Budi" for highlighting */
+function parseHighlightName(title: string): { before: string; name: string; after: string } | null {
+  const m = title.match(/^(Untuk|For|To)\s+(\w+)(.*)$/)
+  if (!m) return null
+  const prefix = m[1] + ' '
+  const name = m[2]
+  const after = m[3] || ''
+  return { before: prefix, name, after }
+}
+
+function HighlightedTitle({ title }: { title: string }) {
+  const parsed = parseHighlightName(title)
+  if (!parsed) return <span>{title}</span>
+  return (
+    <>
+      {parsed.before}
+      <span className="text-[#E11D48]">{parsed.name}</span>
+      {parsed.after}
+    </>
+  )
+}
+
+function HighlightedQuote({ quote, title }: { quote: string; title: string }) {
+  const parsed = parseHighlightName(title)
+  if (!parsed) return <span>{quote}</span>
+  const idx = quote.indexOf(parsed.name)
+  if (idx < 0) return <span>{quote}</span>
+  return (
+    <>
+      {quote.slice(0, idx)}
+      <span className="text-[#E11D48] font-medium">{parsed.name}</span>
+      {quote.slice(idx + parsed.name.length)}
+    </>
+  )
+}
+
+/** Simple CSS waveform bars */
+function AudioWaveform({ playing }: { playing: boolean }) {
+  return (
+    <div className="flex items-center justify-center gap-0.5 h-8 py-2">
+      {[3, 6, 4, 8, 5, 7, 4, 6, 5, 4, 7, 5, 6, 4, 5].map((h, i) => (
+        <div
+          key={i}
+          className={cn(
+            'w-0.5 rounded-full bg-rose-200 transition-all duration-150',
+            playing && 'bg-rose-400'
+          )}
+          style={{ height: `${h}px` }}
+        />
+      ))}
+    </div>
+  )
+}
+
+type TrackItem = {
+  title: string
+  subtitle: string
   quote: string
-  metaText?: string | null
-  audioUrl?: string | null
-  time?: string
+  time: string
+  audioUrl: string | null
+}
+
+function FeaturedAudioPlayer({
+  track,
+  allTracks,
+  selectedIndex,
+  onSelectTrack,
+  verifiedBadgeText = 'Verified',
+  autoPlay,
+  onAutoPlayDone,
+}: {
+  track: TrackItem
+  allTracks: TrackItem[]
+  selectedIndex: number
+  onSelectTrack: (index: number) => void
+  verifiedBadgeText?: string
+  autoPlay?: boolean
+  onAutoPlayDone?: () => void
 }) {
   const [playing, setPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [posSec, setPosSec] = useState(0)
   const [durSec, setDurSec] = useState<number | null>(null)
+  const currentIndex = selectedIndex ?? 0
 
   useEffect(() => {
     setPlaying(false)
     setPosSec(0)
     setDurSec(null)
+  }, [selectedIndex])
+
+  useEffect(() => {
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current.currentTime = 0
     }
-  }, [audioUrl])
+  }, [track.audioUrl])
 
   const progressPct = useMemo(() => {
     const dur = durSec && durSec > 0 ? durSec : null
-    if (!dur) return playing ? 50 : 10
+    if (!dur) return 0
     return Math.min(100, Math.max(0, (posSec / dur) * 100))
-  }, [durSec, posSec, playing])
+  }, [durSec, posSec])
 
   function fmt(sec: number) {
     const s = Math.max(0, Math.floor(sec))
@@ -189,94 +263,149 @@ function AudioPlayerCard({
     return `${mm}:${ss}`
   }
 
+  const hasAudio = Boolean(track.audioUrl)
+
+  useEffect(() => {
+    if (autoPlay && hasAudio && audioRef.current) {
+      audioRef.current.play().then(() => setPlaying(true)).catch(() => {})
+      onAutoPlayDone?.()
+    }
+  }, [autoPlay, hasAudio, onAutoPlayDone])
+
+  const handlePlayPause = () => {
+    if (!hasAudio) return
+    const a = audioRef.current
+    if (!a) return
+    if (playing) {
+      a.pause()
+      setPlaying(false)
+    } else {
+      a.play().then(() => setPlaying(true)).catch(() => setPlaying(false))
+    }
+  }
+
+  const handlePrev = () => {
+    const prev = currentIndex - 1
+    if (prev >= 0) onSelectTrack(prev)
+  }
+
+  const handleNext = () => {
+    const next = currentIndex + 1
+    if (next < allTracks.length) onSelectTrack(next)
+  }
+
   return (
-    <div className="relative overflow-hidden rounded-xl bg-white p-4 shadow-sm border border-gray-100">
-      <div className="mb-3 flex items-start justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-100 text-rose-600">
-            <Music className="h-4 w-4" />
-          </div>
-          <div>
-            <div className="text-xs font-bold uppercase text-rose-500">Sedang Diputar</div>
-            <div className="text-sm font-bold text-gray-900">"{quote}"</div>
+    <div className="space-y-5">
+      {/* Song info header */}
+      <div className="flex items-start gap-4">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#E11D48]/90 text-rose-100">
+          <Heart className="h-6 w-6" fill="currentColor" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-gray-900 text-lg">
+            <HighlightedTitle title={track.title} />
+          </h3>
+          <p className="text-sm text-gray-500 mt-0.5">{track.subtitle}</p>
+          <div className="flex items-center gap-2 mt-2">
+            <div className="flex text-amber-400">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Star key={i} className="h-3.5 w-3.5 fill-current" />
+              ))}
+            </div>
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+              <Check className="h-3 w-3" />
+              {verifiedBadgeText}
+            </span>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
+      {/* Quote bar */}
+      <div className="rounded-lg bg-rose-50/80 border border-rose-100 px-4 py-3">
+        <p className="text-sm text-gray-700 italic">
+          &ldquo;
+          {track.quote ? (
+            <HighlightedQuote quote={track.quote} title={track.title} />
+          ) : (
+            <span className="text-gray-400">Pilih lagu untuk mendengar cuplikan...</span>
+          )}
+          &rdquo;
+        </p>
+      </div>
+
+      {/* Waveform */}
+      <AudioWaveform playing={playing} />
+
+      {/* Progress bar */}
+      <div className="space-y-1">
+        <div className="h-1 w-full overflow-hidden rounded-full bg-gray-100">
+          <div
+            className="h-full bg-rose-300 transition-all duration-150"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+        <div className="flex justify-between text-xs text-gray-500">
+          <span>{fmt(posSec)}</span>
+          <span>{durSec ? fmt(durSec) : track.time}</span>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="flex items-center justify-center gap-6">
         <button
-          onClick={() => {
-            if (!audioUrl) return
-            const a = audioRef.current
-            if (!a) return
-            if (playing) {
-              a.pause()
-              setPlaying(false)
-              return
-            }
-            a.play()
-              .then(() => setPlaying(true))
-              .catch(() => setPlaying(false))
-          }}
-          disabled={!audioUrl}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E11D48] text-white transition-transform active:scale-95"
+          type="button"
+          onClick={handlePrev}
+          disabled={currentIndex <= 0}
+          className="p-2 rounded-full text-gray-400 hover:text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          aria-label="Previous"
         >
-          {playing ? <Pause className="h-4 w-4" fill="currentColor" /> : <Play className="h-4 w-4" fill="currentColor" />}
+          <SkipBack className="h-5 w-5" />
         </button>
-        <div className="flex-1 space-y-1">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-            <div
-              className={cn("h-full bg-[#E11D48] transition-all duration-300")}
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-[10px] text-gray-400 font-medium">
-            <span>{fmt(posSec)}</span>
-            <span>{durSec ? fmt(durSec) : time}</span>
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={handlePlayPause}
+          disabled={!hasAudio}
+          className={cn(
+            'flex h-14 w-14 items-center justify-center rounded-full text-white transition-transform',
+            hasAudio ? 'bg-[#E11D48] hover:bg-rose-600 active:scale-95' : 'bg-gray-300 cursor-not-allowed'
+          )}
+          aria-label={playing ? 'Pause' : 'Play'}
+        >
+          {playing ? <Pause className="h-6 w-6 ml-0.5" fill="currentColor" /> : <Play className="h-6 w-6 ml-1" fill="currentColor" />}
+        </button>
+        <button
+          type="button"
+          onClick={handleNext}
+          disabled={currentIndex >= allTracks.length - 1}
+          className="p-2 rounded-full text-gray-400 hover:text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          aria-label="Next"
+        >
+          <SkipForward className="h-5 w-5" />
+        </button>
       </div>
 
-      {audioUrl ? (
-        <audio
-          ref={(el) => {
-            audioRef.current = el
-          }}
-          src={audioUrl}
-          preload="metadata"
-          loop
-          onTimeUpdate={(e) => {
-            const a = e.currentTarget
-            setPosSec(a.currentTime || 0)
-          }}
-          onLoadedMetadata={(e) => {
-            const a = e.currentTarget
-            const d = Number.isFinite(a.duration) ? a.duration : null
-            setDurSec(d && d > 0 ? d : null)
-          }}
-          onEnded={() => setPlaying(false)}
-          onPause={() => setPlaying(false)}
-          className="hidden"
-        />
-      ) : (
-        <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
-          Upload lagu dulu di Admin agar bisa diputar.
+      {!hasAudio && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
+          Upload lagu di Admin agar bisa diputar.
         </div>
       )}
 
-      <div className="mt-3 flex items-center gap-2 border-t border-gray-50 pt-3">
-        <div className="text-xs">
-          <span className="font-bold block">{name}</span>
-          {metaText ? <span className="text-gray-500 text-[10px]">{metaText}</span> : null}
-        </div>
-        <div className="ml-auto flex text-yellow-400">
-          <Star className="h-3 w-3 fill-current" />
-          <Star className="h-3 w-3 fill-current" />
-          <Star className="h-3 w-3 fill-current" />
-          <Star className="h-3 w-3 fill-current" />
-          <Star className="h-3 w-3 fill-current" />
-        </div>
-      </div>
+      {track.audioUrl && (
+        <audio
+          ref={(el) => { audioRef.current = el }}
+          src={track.audioUrl}
+          preload="metadata"
+          onTimeUpdate={(e) => setPosSec(e.currentTarget.currentTime || 0)}
+          onLoadedMetadata={(e) => {
+            const d = e.currentTarget.duration
+            setDurSec(Number.isFinite(d) && d > 0 ? d : null)
+          }}
+          onEnded={() => setPlaying(false)}
+          onPause={() => setPlaying(false)}
+          onPlay={() => setPlaying(true)}
+          className="hidden"
+        />
+      )}
     </div>
   )
 }
@@ -294,8 +423,8 @@ const FAQ_ITEMS = [
 export function LandingRoute() {
   const [publicSiteConfig, setPublicSiteConfig] = useState<PublicSiteConfig | null>(null)
   const [heroOpen, setHeroOpen] = useState(false)
-  const [playlistPlayingIndex, setPlaylistPlayingIndex] = useState<number | null>(null)
-  const playlistAudioRef = useRef<HTMLAudioElement | null>(null)
+  const [selectedTrackIndex, setSelectedTrackIndex] = useState<number>(0)
+  const [autoPlayOnSelect, setAutoPlayOnSelect] = useState(false)
   const [showMobileCta, setShowMobileCta] = useState(false)
   const heroRef = useRef<HTMLElement>(null)
 
@@ -483,14 +612,28 @@ export function LandingRoute() {
       ? audioSamples.playlist
       : defaultPublicSiteConfig.landing!.audioSamples!.playlist!
 
-  const playlistAudioUrl =
-    playlistPlayingIndex !== null &&
-    playlistPlayingIndex >= 0 &&
-    playlistPlayingIndex < playlist.length &&
-    typeof (playlist[playlistPlayingIndex] as any)?.audioUrl === 'string' &&
-    String((playlist[playlistPlayingIndex] as any).audioUrl).trim()
-      ? resolveAsset(String((playlist[playlistPlayingIndex] as any).audioUrl).trim())
-      : null
+  const allTracks: TrackItem[] = [
+    {
+      title: nowPlayingName,
+      subtitle: nowPlayingMetaText ?? '',
+      quote: nowPlayingQuote,
+      time: nowPlayingTime,
+      audioUrl: nowPlayingAudioUrl,
+    },
+    ...playlist.map((p: any) => {
+      const sub = typeof p.subtitle === 'string' ? p.subtitle : ''
+      const timeMatch = sub.match(/(\d+:\d{2})$/)
+      return {
+        title: p.title ?? '',
+        subtitle: sub,
+        quote: '',
+        time: timeMatch ? timeMatch[1] : '--:--',
+        audioUrl: typeof p.audioUrl === 'string' && p.audioUrl.trim() ? resolveAsset(p.audioUrl.trim()) : null,
+      }
+    }),
+  ]
+
+  const currentTrack = allTracks[selectedTrackIndex] ?? allTracks[0]
 
   const toastConfig = (site.activityToast && typeof site.activityToast === 'object'
     ? site.activityToast
@@ -530,39 +673,75 @@ export function LandingRoute() {
       <main className="mx-auto max-w-7xl w-full px-2 sm:px-4 md:px-6 pt-6 sm:pt-12 space-y-12 sm:space-y-20">
         {/* HERO SECTION */}
         <section ref={heroRef} aria-labelledby="hero-title" className="grid md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 items-center">
-          <div className="text-center md:text-left space-y-6 md:space-y-8">
-            <div className="flex justify-center md:justify-start gap-1 text-yellow-400 mb-2">
-              <Star className="h-4 w-4 fill-current" />
-              <Star className="h-4 w-4 fill-current" />
-              <Star className="h-4 w-4 fill-current" />
-              <Star className="h-4 w-4 fill-current" />
-              <Star className="h-4 w-4 fill-current" />
-              <span className="ml-2 text-xs sm:text-sm font-bold text-gray-900">2,847 pria menangis terharu</span>
+          <div className="text-center md:text-left space-y-5 md:space-y-6">
+            {/* Social proof badge */}
+            <div className="inline-flex items-center gap-3 rounded-full border border-gray-200 bg-white px-4 py-2.5 shadow-sm">
+              <div className="flex -space-x-2">
+                <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />
+                <img src="https://randomuser.me/api/portraits/women/65.jpg" alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />
+                <img src="https://randomuser.me/api/portraits/women/32.jpg" alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />
+              </div>
+              <span className="text-sm font-medium text-gray-900">2,847 pria menangis terharu</span>
+              <div className="flex gap-0.5 text-amber-400">
+                <Star className="h-4 w-4 fill-current" />
+                <Star className="h-4 w-4 fill-current" />
+                <Star className="h-4 w-4 fill-current" />
+                <Star className="h-4 w-4 fill-current" />
+                <Star className="h-4 w-4 fill-current" />
+              </div>
             </div>
-            
-            <h1 id="hero-title" className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-gray-900 tracking-tight">
-              Valentine kali ini, <br />
+
+            {/* Tagline */}
+            <p className="text-base sm:text-lg text-gray-700 font-normal">Lelah dengan kado yang dia lupa?</p>
+
+            {/* Main headline */}
+            <h1 id="hero-title" className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight tracking-tight">
+              <span className="text-gray-900">Valentine kali ini,</span>
+              <br />
               <span className="text-[#E11D48]">buat dia menangis bahagia.</span>
             </h1>
 
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 leading-relaxed max-w-lg mx-auto md:mx-0">
+            {/* Body paragraph */}
+            <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-lg mx-auto md:mx-0 text-center md:text-left">
               Sebuah <strong className="text-gray-900">lagu</strong> personal dengan{' '}
-              <strong className="text-gray-900">namanya</strong> di dalam lirik. Kualitas studio. Dikirim dalam 24 jam.
+              <strong className="text-gray-900">namanya</strong> di dalam lirik, menceritakan{' '}
+              <strong className="text-gray-900">kisah kalian</strong>. Kualitas studio. Dikirim dalam 24 jam.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-              <Button asChild size="lg" className="h-12 sm:h-14 px-8 rounded-full bg-[#E11D48] text-base sm:text-lg font-bold shadow-xl shadow-rose-200 hover:bg-rose-700 hover:scale-105 transition-all duration-300">
-                <Link to="/config">
+            {/* CTA + Pricing row */}
+            <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start sm:items-center gap-4">
+              <Button asChild size="lg" className="h-12 sm:h-14 px-6 sm:px-8 rounded-xl bg-[#E11D48] text-base sm:text-lg font-bold shadow-lg shadow-rose-200/50 hover:bg-rose-600 transition-all duration-300 group">
+                <Link to="/config" className="flex items-center gap-2">
                   Buat Lagunya — GRATIS
-                  <span className="ml-2 text-xs sm:text-sm font-normal line-through opacity-70">Rp 200.000</span>
+                  <ChevronRight className="h-5 w-5 -mr-1 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
               </Button>
+              <div className="flex items-baseline gap-2">
+                <span className="text-base text-gray-400 line-through">Rp 200.000</span>
+                <span className="text-xl font-bold text-[#E11D48]">GRATIS</span>
+              </div>
             </div>
 
-            <div className="flex flex-wrap justify-center md:justify-start gap-x-4 sm:gap-x-6 gap-y-2 text-[10px] sm:text-[11px] md:text-xs font-bold text-gray-500 uppercase tracking-wide">
-              <span className="flex items-center gap-1"><Zap className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" /> Pengiriman 24 jam</span>
-              <span className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" /> Garansi Uang Kembali</span>
-              <span className="flex items-center gap-1 text-[#E11D48]">11 kuota gratis tersisa!</span>
+            {/* Feature list */}
+            <div className="flex flex-wrap justify-center md:justify-start gap-x-6 gap-y-2 text-sm text-gray-700">
+              <span className="flex items-center gap-1.5">
+                <Check className="h-4 w-4 shrink-0 text-green-500" />
+                24h pengiriman
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Check className="h-4 w-4 shrink-0 text-green-500" />
+                Namanya ADA di lagu
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Check className="h-4 w-4 shrink-0 text-green-500" />
+                Tak menangis = uang kembali
+              </span>
+            </div>
+
+            {/* Urgency message */}
+            <div className="inline-flex items-center gap-2 rounded-full bg-rose-50/80 border border-rose-100 px-4 py-2">
+              <span className="h-2 w-2 rounded-full bg-[#E11D48]" />
+              <span className="text-sm font-medium text-[#E11D48]">Hanya 12 kuota gratis tersisa</span>
             </div>
           </div>
 
@@ -635,88 +814,75 @@ export function LandingRoute() {
 
         {/* AUDIO SAMPLES SECTION */}
         <section aria-labelledby="audio-samples-title" className="space-y-8 max-w-4xl mx-auto">
-          <div className="text-center space-y-2">
-            <div className="text-[#E11D48] text-sm font-bold uppercase tracking-wider">Contoh Nyata</div>
-            <h2 id="audio-samples-title" className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">Dengar <span className="text-[#E11D48] italic">namanya</span> di lagu asli</h2>
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-1.5 text-sm font-bold uppercase tracking-wider text-[#E11D48]">
+              <Play className="h-3.5 w-3.5" fill="currentColor" />
+              Tekan Putar
+            </div>
+            <h2 id="audio-samples-title" className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">
+              Dengar <span className="text-[#E11D48] italic">namanya</span> di lagu asli
+            </h2>
             <p className="text-gray-500">Lagu asli yang kami buat. Nama asli. Air mata asli.</p>
           </div>
 
           <div className="bg-white rounded-3xl p-5 sm:p-6 md:p-10 shadow-xl border border-rose-100/50">
-             <AudioPlayerCard 
-               name={nowPlayingName}
-               quote={nowPlayingQuote}
-               metaText={nowPlayingMetaText}
-               audioUrl={nowPlayingAudioUrl}
-               time={nowPlayingTime}
-             />
-             <div className="mt-8 space-y-4">
-               {playlist.map((track, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => {
-                    const urlRaw = (track as any)?.audioUrl
-                    const url = typeof urlRaw === 'string' && urlRaw.trim() ? resolveAsset(urlRaw.trim()) : null
-                    if (!url) return
+            <FeaturedAudioPlayer
+              track={currentTrack}
+              allTracks={allTracks}
+              selectedIndex={selectedTrackIndex}
+              onSelectTrack={(i) => {
+                setSelectedTrackIndex(i)
+                const t = allTracks[i]
+                if (t?.audioUrl) setAutoPlayOnSelect(true)
+              }}
+              verifiedBadgeText={heroVerifiedBadgeText}
+              autoPlay={autoPlayOnSelect}
+              onAutoPlayDone={() => setAutoPlayOnSelect(false)}
+            />
 
-                    const a = playlistAudioRef.current
-                    if (!a) {
-                      setPlaylistPlayingIndex(i)
-                      return
-                    }
-
-                    if (playlistPlayingIndex === i && !a.paused) {
-                      a.pause()
-                      setPlaylistPlayingIndex(null)
-                      return
-                    }
-
-                    // switch track and play
-                    setPlaylistPlayingIndex(i)
-                    // play will be handled by effect below after src updates
-                  }}
-                  className={cn(
-                    'flex w-full items-center gap-4 p-4 rounded-xl transition-colors group text-left',
-                    (track as any)?.audioUrl ? 'hover:bg-rose-50 cursor-pointer' : 'opacity-60 cursor-not-allowed',
-                  )}
-                  disabled={!(typeof (track as any)?.audioUrl === 'string' && String((track as any).audioUrl).trim())}
-                >
-                  <div className="h-10 w-10 rounded-full bg-rose-100 text-[#E11D48] flex items-center justify-center group-hover:bg-[#E11D48] group-hover:text-white transition-colors">
-                    {playlistPlayingIndex === i ? (
-                      <Pause className="h-5 w-5" fill="currentColor" />
-                    ) : (
-                      <Play className="h-5 w-5 ml-0.5" fill="currentColor" />
+            {/* More Examples */}
+            <div className="mt-10 pt-8 border-t border-gray-100">
+              <p className="text-center text-sm font-medium text-gray-400 uppercase tracking-wider mb-6">
+                Contoh Lainnya
+              </p>
+              <div className="space-y-0 divide-y divide-gray-100">
+                {allTracks.map((t, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => {
+                      setSelectedTrackIndex(i)
+                      if (t.audioUrl) setAutoPlayOnSelect(true)
+                    }}
+                    className={cn(
+                      'flex w-full items-center gap-4 px-2 py-4 rounded-lg transition-colors text-left',
+                      selectedTrackIndex === i ? 'bg-rose-50/70' : 'hover:bg-gray-50',
+                      t.audioUrl ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'
                     )}
-                  </div>
-                   <div className="flex-1">
-                     <div className="font-bold text-gray-900">{track.title}</div>
-                     <div className="text-xs text-gray-500">{track.subtitle}</div>
-                   </div>
-                   <div className="text-xs font-bold text-rose-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                     {track.ctaLabel ?? 'PUTAR'}
-                   </div>
-                </button>
-               ))}
-             </div>
-             {playlistAudioUrl ? (
-               <audio
-                 ref={(el) => {
-                   playlistAudioRef.current = el
-                 }}
-                 src={playlistAudioUrl}
-                 preload="metadata"
-                 loop
-                 onPause={() => setPlaylistPlayingIndex(null)}
-                 className="hidden"
-                 autoPlay
-               />
-             ) : null}
-             
-             <div className="mt-8 text-center">
-               <Button asChild size="lg" className="h-12 rounded-full bg-[#E11D48] font-bold shadow-lg shadow-rose-200 hover:bg-rose-700">
-                 <Link to="/config">Buat Lagunya Sekarang</Link>
-               </Button>
-             </div>
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-100 text-[#E11D48]">
+                      <Music className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-gray-900">
+                        <HighlightedTitle title={t.title} />
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">{t.subtitle}</div>
+                    </div>
+                    <div className="text-xs text-gray-400 shrink-0">{t.time}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-10 text-center space-y-4">
+              <p className="text-gray-600">
+                Bayangkan mendengar <span className="text-[#E11D48] font-medium italic">namanya</span> di lagu seperti ini...
+              </p>
+              <Button asChild size="lg" className="h-12 px-8 rounded-xl bg-[#E11D48] font-bold shadow-lg shadow-rose-200/50 hover:bg-rose-600">
+                <Link to="/config">Buat Lagunya — GRATIS</Link>
+              </Button>
+            </div>
           </div>
         </section>
 
