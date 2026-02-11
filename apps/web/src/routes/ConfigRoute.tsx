@@ -588,6 +588,7 @@ export function ConfigRoute() {
                           <p className="font-bold text-sm text-gray-800 leading-none">Rekam Video Reaksinya</p>
                           <div className="text-[11px] text-gray-500 mt-1 space-y-0.5 leading-tight">
                             <p>• Format portrait (9:16)</p>
+                            <p>• Minimal durasi 1 menit</p>
                             <p>• Pastikan suara lagu terdengar</p>
                           </div>
                         </div>
