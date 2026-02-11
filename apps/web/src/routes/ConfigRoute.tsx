@@ -730,6 +730,17 @@ export function ConfigRoute() {
                 <p className="text-gray-500">Ini akan menjadi lirik. <span className="text-[#E11D48] font-medium">Beberapa kalimat saja sudah cukup!</span></p>
               </div>
 
+              <div className="rounded-xl bg-rose-50 border border-rose-100 p-4 space-y-3 text-xs text-gray-600">
+                <div className="flex gap-3 items-start">
+                  <span className="text-[#E11D48] font-bold mt-0.5">•</span>
+                  <span>Semakin kaya detail yang kamu berikan, semakin kuat emosi dalam lagunya.</span>
+                </div>
+                <div className="flex gap-3 items-start">
+                  <span className="text-[#E11D48] font-bold mt-0.5">•</span>
+                  <span>Ceritakan momen pertemuan, hal yang kamu cintai darinya, kenangan gila, hingga saat-saat kalian tertawa dan menangis bersama.</span>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                   <Sparkles className="h-3 w-3" /> Ketuk untuk menambah:
@@ -759,6 +770,7 @@ export function ConfigRoute() {
                   }}
                   rows={6} 
                   placeholder="Mulai ketik ceritamu di sini..." 
+                  maxLength={500}
                   className="rounded-xl border-gray-300 text-base shadow-sm focus-visible:ring-[#E11D48] resize-none p-4"
                 />
                 <div className="flex justify-between text-xs">
@@ -771,7 +783,7 @@ export function ConfigRoute() {
                     </div>
                     {storyQuality.label}
                   </div>
-                  <span className="text-gray-400">{storyText.length} chars</span>
+                  <span className="text-gray-400">{storyText.length} / 500 chars</span>
                 </div>
               </div>
             </div>
