@@ -43,8 +43,13 @@ await app.register(fastifyStatic, {
   decorateReply: false,
 })
 
+const adminJwtSecret = process.env.ADMIN_JWT_SECRET
+if (!adminJwtSecret) {
+  throw new Error('ADMIN_JWT_SECRET is required in production (and recommended in dev).')
+}
+
 await app.register(jwt, {
-  secret: process.env.ADMIN_JWT_SECRET ?? 'dev-secret-change-me',
+  secret: adminJwtSecret,
 })
 
 async function adminAuth(req: any, reply: any) {
@@ -52,6 +57,11 @@ async function adminAuth(req: any, reply: any) {
     await req.jwtVerify()
   } catch {
     return reply.code(401).send({ error: 'unauthorized' })
+  }
+
+  const user = (req as any).user
+  if (!user || user.role !== 'admin') {
+    return reply.code(403).send({ error: 'forbidden' })
   }
 }
 
