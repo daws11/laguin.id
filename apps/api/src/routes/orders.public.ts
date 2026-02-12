@@ -6,6 +6,7 @@ import { prisma } from '../lib/prisma'
 import { addOrderEvent } from '../lib/events'
 import { getOrCreateSettings } from '../lib/settings'
 import { normalizeEmail, normalizeWhatsappNumber } from '../lib/normalize'
+import { sendMetaCapiEvent } from '../lib/metaCapi'
 
 const ParamsSchema = z.object({ id: z.string().min(1) })
 
@@ -124,6 +125,22 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       message: 'Order draft created from configurator.',
     })
 
+    // Meta Conversions API (server-side): treat a created draft as a Lead.
+    // Do not block response on analytics.
+    void sendMetaCapiEvent({
+      req,
+      eventName: 'Lead',
+      eventId: `order_created:${order.id}`,
+      email: normalizedInput.email,
+      phone: whatsappNumber,
+      externalId: customer.id,
+      customData: {
+        order_id: order.id,
+        value: 0,
+        currency: 'IDR',
+      },
+    })
+
     return { orderId: order.id }
   })
 
@@ -193,6 +210,34 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       orderId: updated.id,
       type: 'order_confirmed',
       message: 'Order confirmed from checkout.',
+    })
+
+    // Meta Conversions API (server-side): confirm ~= Purchase for this flow (value is free).
+    void sendMetaCapiEvent({
+      req,
+      eventName: 'Purchase',
+      eventId: `order_confirmed:${updated.id}`,
+      // We need email/phone; fetch minimal details (non-blocking, best-effort).
+      // If this fails, we still send the response.
+      ...(await (async () => {
+        try {
+          const full = await prisma.order.findUnique({
+            where: { id: updated.id },
+            include: { customer: true },
+          })
+          const email = (full?.customer?.email ?? null) as string | null
+          const phone = (full?.customer?.whatsappNumber ?? null) as string | null
+          const externalId = (full?.customer?.id ?? null) as string | null
+          return { email, phone, externalId }
+        } catch {
+          return { email: null, phone: null, externalId: null }
+        }
+      })()),
+      customData: {
+        order_id: updated.id,
+        value: 0,
+        currency: 'IDR',
+      },
     })
 
     return { ok: true, orderId: updated.id, status: updated.status }
