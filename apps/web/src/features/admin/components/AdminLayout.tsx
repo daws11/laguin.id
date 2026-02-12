@@ -213,8 +213,8 @@ export function AdminLayout<T extends string>({
       {/* Main Content */}
       <main className="flex-1 h-full overflow-hidden flex flex-col bg-muted/10 relative">
         {/* Top Bar / Header inside Main Content */}
-        <div className="w-full flex-none px-4 md:px-8 py-4 bg-background/50 backdrop-blur border-b flex items-center justify-between z-10 sticky top-0">
-            <h2 className="text-xl md:text-2xl font-bold tracking-tight capitalize text-foreground">{title}</h2>
+        <div className="w-full flex-none px-4 py-3 bg-background/50 backdrop-blur border-b flex items-center justify-between z-10 sticky top-0">
+            <h2 className="text-xl font-bold tracking-tight capitalize text-foreground">{title}</h2>
             <div className="flex items-center gap-2">
                 {isLoading && (
                     <div className="flex items-center gap-2 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded-full border">
@@ -226,8 +226,8 @@ export function AdminLayout<T extends string>({
         </div>
 
         {/* Content Scroll Area */}
-        <div className="flex-1 overflow-auto p-4 md:p-8">
-            <div className="mx-auto w-full max-w-7xl space-y-6 pb-20">
+        <div className="flex-1 overflow-auto p-2 md:p-4">
+            <div className="w-full h-full space-y-4 pb-20">
                 {error && (
                     <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive flex items-center gap-2">
                         <span className="font-semibold">Error:</span> {error}

@@ -155,7 +155,7 @@ export function PublicSiteConfigSection({
             
             {/* --- HERO MEDIA --- */}
             {activeTab === 'landing-media' && (
-                <div className="space-y-4 max-w-2xl animate-in fade-in duration-300">
+                <div className="space-y-4 w-full animate-in fade-in duration-300">
                     <div className="pb-2 border-b">
                         <h3 className="text-base font-semibold">Hero Media</h3>
                         <p className="text-xs text-muted-foreground">Visual utama pada landing page (Gambar/Video).</p>
@@ -227,7 +227,7 @@ export function PublicSiteConfigSection({
                         {/* Preview */}
                         <div className="rounded-xl border bg-muted/10 p-3 space-y-2">
                             <div className="text-xs font-bold text-foreground">Preview</div>
-                            <div className="relative aspect-[9/16] w-full max-w-[200px] mx-auto overflow-hidden rounded-lg shadow-sm border bg-black">
+                            <div className="relative aspect-video w-full mx-auto overflow-hidden rounded-lg shadow-sm border bg-black">
                                 {draft.landing.heroMedia.mode === 'video' && draft.landing.heroMedia.videoUrl.trim() ? (
                                     <video
                                         className="h-full w-full object-cover opacity-80"
@@ -252,7 +252,7 @@ export function PublicSiteConfigSection({
 
             {/* --- HERO OVERLAY --- */}
             {activeTab === 'landing-overlay' && (
-                 <div className="space-y-4 max-w-xl animate-in fade-in duration-300">
+                 <div className="space-y-4 w-full animate-in fade-in duration-300">
                     <div className="pb-2 border-b">
                         <h3 className="text-base font-semibold">Hero Overlay</h3>
                         <p className="text-xs text-muted-foreground">Teks testimonial yang muncul di atas Hero Media.</p>
@@ -302,7 +302,7 @@ export function PublicSiteConfigSection({
 
             {/* --- HERO PLAYER --- */}
             {activeTab === 'landing-player' && (
-                <div className="space-y-4 max-w-xl animate-in fade-in duration-300">
+                <div className="space-y-4 w-full animate-in fade-in duration-300">
                     <div className="pb-2 border-b flex items-center justify-between">
                         <div>
                             <h3 className="text-base font-semibold">Hero Player</h3>
