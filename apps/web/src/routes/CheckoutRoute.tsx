@@ -65,6 +65,21 @@ export function CheckoutRoute() {
 
   const hasAttemptedAutoConfirm = useRef(false)
   const hasTrackedInitiateCheckout = useRef(false)
+  const hasTrackedPurchase = useRef(false)
+
+  // Meta Pixel: track InitiateCheckout when the checkout page is loaded.
+  // Guard avoids double fire in dev StrictMode / re-mounts.
+  useEffect(() => {
+    if (!orderId) return
+    if (hasTrackedInitiateCheckout.current) return
+    hasTrackedInitiateCheckout.current = true
+    ;(window as any).fbq?.('track', 'InitiateCheckout', {
+      value: 497000,
+      currency: 'IDR',
+      num_items: 1,
+      content_type: 'product',
+    })
+  }, [orderId])
 
   // Auto-confirm logic: trigger immediately when order is loaded and status is created
   useEffect(() => {
@@ -153,15 +168,13 @@ export function CheckoutRoute() {
     try {
       await apiPost(`/api/orders/${encodeURIComponent(orderId)}/confirm`, {})
 
-      // Track only on successful "purchase"/confirm (flow is free for now).
-      // Guard to avoid double fire (StrictMode / retries).
-      if (!hasTrackedInitiateCheckout.current) {
-        hasTrackedInitiateCheckout.current = true
-        ;(window as any).fbq?.('track', 'InitiateCheckout', {
+      // Meta Pixel: track Purchase only when checkout/confirm succeeds.
+      // Guard to avoid double fire (auto-confirm + retries).
+      if (!hasTrackedPurchase.current) {
+        hasTrackedPurchase.current = true
+        ;(window as any).fbq?.('track', 'Purchase', {
           value: 497000,
           currency: 'IDR',
-          num_items: 1,
-          content_type: 'product',
         })
       }
 
