@@ -34,6 +34,7 @@ import {
 
 type PersistedConfigDraft = {
   v: 1
+  draftKey?: string | null
   step: number
   relationship: string
   emailVerificationId: string | null
@@ -151,6 +152,13 @@ export function ConfigRoute() {
   const [emailVerified, setEmailVerified] = useState(false)
   const [resendCooldownSec, setResendCooldownSec] = useState(0)
 
+  // Server-side draft persistence (best-effort).
+  const [draftKey, setDraftKey] = useState<string | null>(null)
+  const draftKeyRef = useRef<string | null>(null)
+  useEffect(() => {
+    draftKeyRef.current = draftKey
+  }, [draftKey])
+
   const DEFAULT_ORDER_INPUT: OrderInput = {
     yourName: undefined,
     recipientName: '',
@@ -194,25 +202,91 @@ export function ConfigRoute() {
   const didHydrateDraftRef = useRef(false)
   const suppressOtpResetOnceRef = useRef(false)
 
+  function generateDraftKey() {
+    const uuid = globalThis.crypto?.randomUUID?.()
+    if (uuid) return uuid
+    // Fallback: long-enough opaque token (best-effort).
+    return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`
+  }
+
+  function getOrCreateDraftKey() {
+    if (draftKeyRef.current) return draftKeyRef.current
+    const next = generateDraftKey()
+    draftKeyRef.current = next
+    setDraftKey(next)
+    return next
+  }
+
+  const getPersistableFormValues = (values: Partial<OrderInput>): Partial<OrderInput> => ({
+    yourName: values.yourName,
+    recipientName: values.recipientName,
+    occasion: values.occasion,
+    story: values.story,
+    musicPreferences: values.musicPreferences,
+    whatsappNumber: values.whatsappNumber,
+    email: values.email,
+    extraNotes: values.extraNotes,
+  })
+
+  const hasMeaningfulDraft = (values: Partial<OrderInput>) => {
+    const s = (v: unknown) => String(v ?? '').trim()
+    return Boolean(
+      s(values.recipientName) ||
+        s(values.email) ||
+        s(values.whatsappNumber) ||
+        s(values.story) ||
+        s(values.extraNotes)
+    )
+  }
+
+  const serverDraftSyncTimerRef = useRef<number | null>(null)
+  const lastServerDraftSyncJsonRef = useRef<string>('')
+
+  const scheduleServerDraftSync = (values: Partial<OrderInput>) => {
+    if (!didHydrateDraftRef.current) return
+    if (!hasMeaningfulDraft(values) && step <= 0) return
+
+    const key = getOrCreateDraftKey()
+    const formValues = getPersistableFormValues(values)
+    const payload = {
+      draftKey: key,
+      step,
+      relationship,
+      emailVerificationId,
+      formValues,
+    }
+    const json = JSON.stringify(payload)
+    if (json === lastServerDraftSyncJsonRef.current) return
+
+    if (serverDraftSyncTimerRef.current) {
+      window.clearTimeout(serverDraftSyncTimerRef.current)
+    }
+    serverDraftSyncTimerRef.current = window.setTimeout(() => {
+      void apiPost('/api/order-drafts/upsert', payload)
+        .then(() => {
+          lastServerDraftSyncJsonRef.current = json
+        })
+        .catch(() => {
+          // Best-effort only (offline / server error / rate limit)
+        })
+    }, 1000)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (serverDraftSyncTimerRef.current) window.clearTimeout(serverDraftSyncTimerRef.current)
+    }
+  }, [])
+
   const saveDraft = (values: Partial<OrderInput>) => {
     if (!didHydrateDraftRef.current) return
     try {
-      const formValues: Partial<OrderInput> = {
-        yourName: values.yourName,
-        recipientName: values.recipientName,
-        occasion: values.occasion,
-        story: values.story,
-        musicPreferences: values.musicPreferences,
-        whatsappNumber: values.whatsappNumber,
-        email: values.email,
-        extraNotes: values.extraNotes,
-        // Intentionally not persisting emailVerificationId from the form:
-        // - It is only set after OTP verification
-        // - Persisting it doesn't help without a server-side status check
-      }
+      const formValues = getPersistableFormValues(values)
+      const key = (hasMeaningfulDraft(values) || step > 0) ? getOrCreateDraftKey() : (draftKeyRef.current ?? null)
 
       const payload: PersistedConfigDraft = {
         v: 1,
+        draftKey: key,
         step,
         relationship,
         emailVerificationId,
@@ -224,6 +298,9 @@ export function ConfigRoute() {
     } catch {
       // Best-effort only (private mode / quota exceeded / JSON issues)
     }
+
+    // Best-effort server persistence.
+    scheduleServerDraftSync(values)
   }
 
   const clearDraft = () => {
@@ -251,6 +328,7 @@ export function ConfigRoute() {
       const nextStep = Number.isFinite(parsed.step) ? Math.max(0, Math.min(4, parsed.step as number)) : 0
       const nextRelationship = typeof parsed.relationship === 'string' && parsed.relationship ? parsed.relationship : 'Pasangan'
       const nextEmailVerificationId = typeof parsed.emailVerificationId === 'string' ? parsed.emailVerificationId : null
+      const nextDraftKey = typeof parsed.draftKey === 'string' && parsed.draftKey ? parsed.draftKey : null
 
       const fv = (parsed.formValues ?? {}) as Partial<OrderInput>
       const merged: OrderInput = {
@@ -267,6 +345,15 @@ export function ConfigRoute() {
       setStep(nextStep)
       setRelationship(nextRelationship)
       setEmailVerificationId(nextEmailVerificationId)
+      if (nextDraftKey) {
+        draftKeyRef.current = nextDraftKey
+        setDraftKey(nextDraftKey)
+      } else {
+        // Backfill draftKey for older local drafts (v1 without draftKey).
+        const created = generateDraftKey()
+        draftKeyRef.current = created
+        setDraftKey(created)
+      }
       suppressOtpResetOnceRef.current = true
       form.reset(merged)
     } catch {
@@ -276,6 +363,59 @@ export function ConfigRoute() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // If we have a persisted `emailVerificationId`, re-check it server-side so refresh doesn't force OTP again.
+  // Validity is bounded by the OTP record expiry (e.g. 10 minutes).
+  useEffect(() => {
+    if (!didHydrateDraftRef.current) return
+    if (!settingsLoaded || !emailOtpEnabled) return
+    if (!emailVerificationId) return
+    if (!email) return
+
+    let cancelled = false
+    type StatusRes = { ok: true; verified: boolean; expired: boolean; email: string; expiresAt: string }
+
+    apiGet<StatusRes>(`/api/email-verification/status/${encodeURIComponent(emailVerificationId)}`)
+      .then((res) => {
+        if (cancelled) return
+        const expected = email.trim().toLowerCase()
+        const actual = String(res?.email ?? '').trim().toLowerCase()
+
+        if (res?.ok && res.verified && !res.expired && actual === expected) {
+          setEmailVerified(true)
+          setValue('emailVerificationId', emailVerificationId)
+          setOtpError(null)
+          return
+        }
+
+        // Not verified (or expired/mismatch) → keep UI in "unverified" state.
+        setEmailVerified(false)
+        setValue('emailVerificationId', '')
+
+        // If expired/mismatch/not found, clear verification id so user must request a new OTP.
+        if (!res?.ok || res.expired || (actual && actual !== expected)) {
+          setEmailVerificationId(null)
+          setOtpDigits(['', '', '', ''])
+          setOtpError(null)
+        }
+      })
+      .catch((e: unknown) => {
+        // Best-effort only. If the server says it doesn't exist, force re-request.
+        const msg = getErrorMessage(e, '')
+        if (msg === 'not_found') {
+          setEmailVerified(false)
+          setValue('emailVerificationId', '')
+          setEmailVerificationId(null)
+          setOtpDigits(['', '', '', ''])
+          setOtpError(null)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settingsLoaded, emailOtpEnabled, emailVerificationId, email])
 
   // Persist on any form change (best-effort).
   useEffect(() => {
@@ -521,10 +661,7 @@ export function ConfigRoute() {
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-rose-100 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-md items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2 font-serif text-xl font-bold text-[#E11D48]">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E11D48] text-white">L</div>
-            Laguin.id
-          </div>
+          <img src="/logo.png" alt="Laguin - Musikmu Ceritamu" className="h-10 w-auto object-contain" />
           <div className="text-right">
              <span className="text-xs text-gray-400 line-through">Rp 497.000</span>{' '}
              <span className="text-lg font-bold text-[#E11D48]">GRATIS</span>{' '}
@@ -790,7 +927,7 @@ export function ConfigRoute() {
                   }}
                   rows={6} 
                   placeholder="Mulai ketik ceritamu di sini..." 
-                  maxLength={1000}
+                  maxLength={4000}
                   className="rounded-xl border-gray-300 text-base shadow-sm focus-visible:ring-[#E11D48] resize-none p-4"
                 />
                 <div className="flex justify-between text-xs">
@@ -803,7 +940,7 @@ export function ConfigRoute() {
                     </div>
                     {storyQuality.label}
                   </div>
-                  <span className="text-gray-400">{storyText.length} / 1000 chars</span>
+                  <span className="text-gray-400">{storyText.length} / 4000 chars</span>
                 </div>
               </div>
             </div>

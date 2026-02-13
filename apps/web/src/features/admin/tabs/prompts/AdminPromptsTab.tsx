@@ -11,21 +11,6 @@ import { AlertCircle, CheckCircle, FileCode } from 'lucide-react'
 
 type PromptType = 'lyrics' | 'mood_description' | 'music'
 
-const PromptTypeMeta: Record<PromptType, { label: string; description: string }> = {
-  lyrics: {
-    label: 'Lyrics',
-    description: 'Prompt untuk menghasilkan lirik berdasarkan input user.',
-  },
-  mood_description: {
-    label: 'Mood Description',
-    description: 'Prompt untuk membuat deskripsi mood/style dari lirik.',
-  },
-  music: {
-    label: 'Music',
-    description: 'Prompt audit/debug untuk style musik (dipakai untuk metadata).',
-  },
-}
-
 export function AdminPromptsTab({
   t,
   templates,
@@ -37,6 +22,21 @@ export function AdminPromptsTab({
   loading: boolean
   onSaveTemplate: (id: string, templateText: string) => Promise<void> | void
 }) {
+  const PromptTypeMeta: Record<PromptType, { label: string; description: string }> = {
+    lyrics: {
+      label: t.promptTypeLyricsLabel ?? 'Lyrics',
+      description: t.promptTypeLyricsDesc ?? '',
+    },
+    mood_description: {
+      label: t.promptTypeMoodDescLabel ?? 'Mood Description',
+      description: t.promptTypeMoodDescDesc ?? '',
+    },
+    music: {
+      label: t.promptTypeMusicLabel ?? 'Music',
+      description: t.promptTypeMusicDesc ?? '',
+    },
+  }
+
   const activeTemplates = useMemo(() => {
     const byType: Partial<Record<PromptType, PromptTemplate>> = {}
     ;(['lyrics', 'mood_description', 'music'] as const).forEach((type) => {
@@ -98,7 +98,7 @@ export function AdminPromptsTab({
         <div className="flex items-start justify-between gap-3">
           <div>
             <CardTitle className="text-sm font-semibold">{t.prompts}</CardTitle>
-            <CardDescription className="text-[10px]">Kelola template prompt untuk generasi lirik dan musik.</CardDescription>
+            <CardDescription className="text-[10px]">{t.promptsDesc ?? ''}</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -106,11 +106,11 @@ export function AdminPromptsTab({
       <CardContent className="p-0 flex-1 min-h-0 flex flex-col md:flex-row">
         <aside className="w-full md:w-[220px] bg-muted/10 border-b md:border-b-0 md:border-r flex flex-col gap-1 p-2 overflow-y-auto shrink-0">
           <div className="px-2 py-1.5 mt-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 border-t pt-3">
-            Helpers
+            {t.helpers ?? 'Helpers'}
           </div>
           <div className="px-2 space-y-2">
              <div className="text-[10px] text-muted-foreground">
-               Available Placeholders:
+               {(t.availablePlaceholders ?? 'Available Placeholders') + ':'}
              </div>
              <div className="flex flex-wrap gap-1">
                {SupportedPlaceholders.map((p) => (
@@ -125,8 +125,8 @@ export function AdminPromptsTab({
         <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
           <div className="space-y-4 animate-in fade-in duration-300">
             <div className="pb-2 border-b">
-              <h3 className="text-base font-semibold">Active Prompts</h3>
-              <p className="text-xs text-muted-foreground">Edit prompt aktif untuk setiap tipe (tanpa versi & tanpa template list).</p>
+              <h3 className="text-base font-semibold">{t.activePrompts ?? 'Active Prompts'}</h3>
+              <p className="text-xs text-muted-foreground">{t.activePromptsDesc ?? ''}</p>
             </div>
 
             <Tabs value={selectedType} onValueChange={(v) => setSelectedType(v as PromptType)} className="w-full">
@@ -175,7 +175,9 @@ export function AdminPromptsTab({
                           </div>
                           <div className="text-right space-y-1">
                             {savedAt[type] ? (
-                              <div className="text-[10px] text-muted-foreground">saved at {savedAt[type]}</div>
+                              <div className="text-[10px] text-muted-foreground">
+                                {t.savedAt ?? 'saved at'} {savedAt[type]}
+                              </div>
                             ) : (
                               <div className="text-[10px] text-muted-foreground">&nbsp;</div>
                             )}
@@ -183,11 +185,11 @@ export function AdminPromptsTab({
                               {hasInvalid ? (
                                 <span className="inline-flex items-center gap-1 text-destructive font-medium">
                                   <AlertCircle className="h-3 w-3" />
-                                  Invalid: {v.unknown.join(', ')}
+                                  {t.invalid ?? 'Invalid'}: {v.unknown.join(', ')}
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center gap-1 text-green-600 font-medium">
-                                  <CheckCircle className="h-3 w-3" /> Valid
+                                  <CheckCircle className="h-3 w-3" /> {t.valid ?? 'Valid'}
                                 </span>
                               )}
                             </div>
@@ -212,7 +214,7 @@ export function AdminPromptsTab({
                               'font-mono text-xs leading-relaxed h-[42vh] min-h-[260px] resize-y',
                               hasInvalid ? 'border-destructive/50 focus-visible:ring-destructive/30' : '',
                             )}
-                            placeholder="Write your prompt template here..."
+                            placeholder={t.writePromptHere ?? 'Write your prompt template here...'}
                             disabled={!active || saving[type] || loading}
                           />
                         </div>

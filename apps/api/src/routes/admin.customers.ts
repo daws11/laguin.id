@@ -16,7 +16,23 @@ export const adminCustomerRoutes: FastifyPluginAsync = async (app) => {
       take: 200,
     })
 
-    return customers.map((c) => ({
+    const drafts = await prisma.orderDraft.findMany({
+      orderBy: { updatedAt: 'desc' },
+      take: 200,
+      select: {
+        id: true,
+        step: true,
+        formValues: true,
+        whatsappNumber: true,
+        emailLower: true,
+        createdAt: true,
+        updatedAt: true,
+        convertedOrderId: true,
+      },
+    })
+
+    const customerItems = customers.map((c) => ({
+      kind: 'customer' as const,
       id: c.id,
       name: c.name,
       whatsappNumber: c.whatsappNumber,
@@ -25,7 +41,43 @@ export const adminCustomerRoutes: FastifyPluginAsync = async (app) => {
       latestOrderStatus: c.orders[0]?.status ?? null,
       latestDeliveryStatus: c.orders[0]?.deliveryStatus ?? null,
       createdAt: c.createdAt,
+      draftStep: null as number | null,
+      draftUpdatedAt: null as Date | null,
     }))
+
+    const draftItems = drafts
+      .filter((d) => !d.convertedOrderId)
+      .map((d) => {
+        const fv = (d.formValues ?? {}) as any
+        const nameRaw = String(fv?.recipientName ?? fv?.yourName ?? '').trim()
+        const emailRaw = String(fv?.email ?? '').trim()
+        const whatsappRaw = String(fv?.whatsappNumber ?? d.whatsappNumber ?? '').trim()
+
+        return {
+          kind: 'draft' as const,
+          // Prefix to avoid collision with real customer ids.
+          id: `draft:${d.id}`,
+          name: nameRaw || emailRaw || whatsappRaw || 'Draft registration',
+          whatsappNumber: whatsappRaw,
+          email: emailRaw || d.emailLower || null,
+          orderCount: 0,
+          latestOrderStatus: 'draft',
+          latestDeliveryStatus: null,
+          createdAt: d.createdAt,
+          draftStep: typeof d.step === 'number' ? d.step : 0,
+          draftUpdatedAt: d.updatedAt,
+        }
+      })
+
+    const combined = [...draftItems, ...customerItems]
+    // Sort by recency (draft uses updatedAt, customer uses createdAt)
+    combined.sort((a, b) => {
+      const aTime = (a.kind === 'draft' ? (a.draftUpdatedAt ?? a.createdAt) : a.createdAt).getTime()
+      const bTime = (b.kind === 'draft' ? (b.draftUpdatedAt ?? b.createdAt) : b.createdAt).getTime()
+      return bTime - aTime
+    })
+
+    return combined
   })
 
   app.get('/customers/:id', async (req, reply) => {

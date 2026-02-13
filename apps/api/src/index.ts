@@ -11,12 +11,14 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { publicSettingsRoutes } from './routes/settings.public'
 import { publicOrdersRoutes } from './routes/orders.public'
+import { orderDraftsRoutes } from './routes/orderDrafts.public'
 import { kieCallbackRoutes } from './routes/kie.callback'
 import { emailVerificationRoutes } from './routes/emailVerification.public'
 import { adminAuthRoutes } from './routes/admin.auth'
 import { adminPromptRoutes } from './routes/admin.prompts'
 import { adminSettingsRoutes } from './routes/admin.settings'
 import { adminCustomerRoutes } from './routes/admin.customers'
+import { adminOrderDraftRoutes } from './routes/admin.orderDrafts'
 import { adminOrderRoutes } from './routes/admin.orders'
 import { adminUploadsRoutes } from './routes/admin.uploads'
 
@@ -71,6 +73,7 @@ app.get('/health', async () => {
 
 await app.register(publicSettingsRoutes, { prefix: '/api' })
 await app.register(publicOrdersRoutes, { prefix: '/api' })
+await app.register(orderDraftsRoutes, { prefix: '/api' })
 await app.register(emailVerificationRoutes, { prefix: '/api' })
 await app.register(kieCallbackRoutes, { prefix: '/api' })
 await app.register(adminAuthRoutes, { prefix: '/api/admin' })
@@ -79,6 +82,7 @@ await app.register(async (adminApp) => {
   await adminApp.register(adminPromptRoutes)
   await adminApp.register(adminSettingsRoutes)
   await adminApp.register(adminCustomerRoutes)
+  await adminApp.register(adminOrderDraftRoutes)
   await adminApp.register(adminOrderRoutes)
   await adminApp.register(adminUploadsRoutes)
 }, { prefix: '/api/admin' })

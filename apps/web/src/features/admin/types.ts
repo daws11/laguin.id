@@ -80,6 +80,7 @@ export type PublicSiteDraft = {
 }
 
 export type CustomerListItem = {
+  kind: 'customer' | 'draft'
   id: string
   name: string
   whatsappNumber: string
@@ -88,6 +89,8 @@ export type CustomerListItem = {
   latestOrderStatus: string | null
   latestDeliveryStatus: string | null
   createdAt: string
+  draftStep?: number | null
+  draftUpdatedAt?: string | null
 }
 
 export type OrderListItem = {
@@ -103,4 +106,5 @@ export type OrderListItem = {
 
 export type CustomerDetail = any
 export type OrderDetail = any
+export type DraftDetail = any
 

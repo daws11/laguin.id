@@ -56,6 +56,8 @@ export function AdminLayout<T extends string>({
   onSelectNav,
   lang,
   setLang,
+  switchToEnglishLabel,
+  switchToIndonesianLabel,
   logoutLabel,
   onLogout,
   isSidebarOpen,
@@ -74,6 +76,8 @@ export function AdminLayout<T extends string>({
   onSelectNav: (v: T) => void
   lang: AdminLang
   setLang: (v: AdminLang) => void
+  switchToEnglishLabel: string
+  switchToIndonesianLabel: string
   logoutLabel: string
   onLogout: () => void
   isSidebarOpen: boolean
@@ -182,7 +186,7 @@ export function AdminLayout<T extends string>({
                 size="icon"
                 className="h-9 w-9 mx-auto rounded-full"
                 onClick={() => setLang(lang === 'id' ? 'en' : 'id')}
-                title={lang === 'id' ? 'Switch to English' : 'Ganti ke Bahasa Indonesia'}
+                title={lang === 'id' ? switchToEnglishLabel : switchToIndonesianLabel}
               >
                 <span className="text-[10px] font-bold">{lang.toUpperCase()}</span>
               </Button>

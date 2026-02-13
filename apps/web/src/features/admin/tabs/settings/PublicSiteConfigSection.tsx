@@ -105,7 +105,7 @@ export function PublicSiteConfigSection({
       const res = await adminApi.adminUpload(token, type, fd)
       onSuccess(res.path)
     } catch (err: any) {
-      setError(err?.message ?? 'Upload gagal.')
+      setError(err?.message ?? (t.uploadFailed ?? 'Upload failed.'))
     } finally {
       e.target.value = ''
     }
@@ -120,17 +120,17 @@ export function PublicSiteConfigSection({
         <div className="flex items-start justify-between gap-3">
           <div>
             <CardTitle className="text-sm font-semibold">{t.settings}</CardTitle>
-            <CardDescription className="text-[10px]">Konfigurasi sistem, landing page, dan integrasi.</CardDescription>
+            <CardDescription className="text-[10px]">{t.settingsDesc ?? ''}</CardDescription>
           </div>
           <div className="flex flex-col items-end gap-1">
             {isDirty && (
               <div className="text-[10px] text-amber-800 bg-amber-50 border border-amber-100 px-2 py-1 rounded-full animate-pulse">
-                landing/toast belum disimpan
+                {t.landingToastUnsaved ?? ''}
               </div>
             )}
             {savedAt && (
               <div className="text-[10px] text-green-700 bg-green-50 border border-green-100 px-2 py-1 rounded-full">
-                landing tersimpan {savedAt}
+                {(t.landingSavedAt ?? 'Saved {time}').replace('{time}', savedAt)}
               </div>
             )}
           </div>
@@ -158,7 +158,7 @@ export function PublicSiteConfigSection({
                 <div className="space-y-4 w-full animate-in fade-in duration-300">
                     <div className="pb-2 border-b">
                         <h3 className="text-base font-semibold">Hero Media</h3>
-                        <p className="text-xs text-muted-foreground">Visual utama pada landing page (Gambar/Video).</p>
+                        <p className="text-xs text-muted-foreground">{t.heroMediaDesc ?? ''}</p>
                     </div>
 
                     <div className="grid gap-6 md:grid-cols-2 items-start">
@@ -255,7 +255,7 @@ export function PublicSiteConfigSection({
                  <div className="space-y-4 w-full animate-in fade-in duration-300">
                     <div className="pb-2 border-b">
                         <h3 className="text-base font-semibold">Hero Overlay</h3>
-                        <p className="text-xs text-muted-foreground">Teks testimonial yang muncul di atas Hero Media.</p>
+                        <p className="text-xs text-muted-foreground">{t.heroOverlayDesc ?? ''}</p>
                     </div>
 
                     <div className="space-y-3">
@@ -264,7 +264,7 @@ export function PublicSiteConfigSection({
                             <Textarea
                                 value={draft.landing.heroOverlay.quote}
                                 onChange={(e) => setDraft(d => ({ ...d, landing: { ...d.landing, heroOverlay: { ...d.landing.heroOverlay, quote: e.target.value } } }))}
-                                placeholder="Example: Dia menangis bahagia..."
+                                placeholder={t.heroOverlayQuotePlaceholder ?? ''}
                                 className="h-20"
                             />
                         </div>
@@ -306,7 +306,7 @@ export function PublicSiteConfigSection({
                     <div className="pb-2 border-b flex items-center justify-between">
                         <div>
                             <h3 className="text-base font-semibold">Hero Player</h3>
-                            <p className="text-xs text-muted-foreground">Music player mini yang melayang di hero section.</p>
+                            <p className="text-xs text-muted-foreground">{t.heroPlayerDesc ?? ''}</p>
                         </div>
                         <label className="flex items-center gap-2 text-xs border rounded px-2 py-1 bg-muted/20 cursor-pointer">
                             <input

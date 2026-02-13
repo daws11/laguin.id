@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 
-import type { CustomerDetail, CustomerListItem, OrderDetail, OrderListItem, PromptTemplate, PublicSiteDraft, Settings } from '@/features/admin/types'
+import type { CustomerDetail, CustomerListItem, DraftDetail, OrderDetail, OrderListItem, PromptTemplate, PublicSiteDraft, Settings } from '@/features/admin/types'
 import { buildDraftFromSettings, buildPublicSiteConfigPayload } from '@/features/admin/publicSiteDraft'
 import { AdminLayout } from '@/features/admin/components/AdminLayout'
 import { PublicSiteConfigSection } from '@/features/admin/tabs/settings/PublicSiteConfigSection'
@@ -273,7 +273,7 @@ function AdminRouteLegacy() {
   const [templates, setTemplates] = useState<PromptTemplate[]>([])
   const [customers, setCustomers] = useState<CustomerListItem[]>([])
   const [orders, setOrders] = useState<OrderListItem[]>([])
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerDetail | null>(null)
+  const [selectedCustomer, setSelectedCustomer] = useState<(CustomerDetail | DraftDetail) | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null)
 
   const [loading, setLoading] = useState(false)
@@ -325,7 +325,8 @@ function AdminRouteLegacy() {
   async function refreshCustomers() {
     if (!token) return
     const items = await adminApi.adminGetCustomers(token)
-    setCustomers(items)
+    // Backward compatibility: older API might not send `kind`.
+    setCustomers(items.map((c: any) => ({ kind: c?.kind ?? 'customer', ...c })))
   }
 
   async function refreshOrders() {
@@ -404,8 +405,14 @@ function AdminRouteLegacy() {
     setError(null)
     setLoading(true)
     try {
-      const detail = await adminApi.adminGetCustomer(token, id)
-      setSelectedCustomer(detail)
+      if (id.startsWith('draft:')) {
+        const draftId = id.slice('draft:'.length)
+        const draft = await adminApi.adminGetOrderDraft(token, draftId)
+        setSelectedCustomer(draft)
+      } else {
+        const detail = await adminApi.adminGetCustomer(token, id)
+        setSelectedCustomer({ kind: 'customer', ...detail })
+      }
       setTab('customers')
     } catch (e: any) {
       setError(e?.message ?? t.failedLoadCustomer)
@@ -544,6 +551,8 @@ function AdminRouteLegacy() {
       }}
       lang={lang}
       setLang={setLang}
+      switchToEnglishLabel={t.switchToEnglish}
+      switchToIndonesianLabel={t.switchToIndonesian}
       logoutLabel={t.logout}
       onLogout={logout}
       isSidebarOpen={isSidebarOpen}

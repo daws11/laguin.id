@@ -139,3 +139,26 @@ model OrderEvent {
   @@index([type])
 }
 
+model OrderDraft {
+  id                  String   @id @default(cuid())
+  // Secret handle stored client-side; treat as bearer token.
+  draftKey            String   @unique
+
+  step                Int      @default(0)
+  relationship        String?
+  formValues          Json
+
+  // Optional denormalized fields for analytics/debugging.
+  emailLower          String?
+  whatsappNumber      String?
+  emailVerificationId String?
+  convertedOrderId    String?
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([updatedAt])
+  @@index([emailLower])
+  @@index([whatsappNumber])
+}
+

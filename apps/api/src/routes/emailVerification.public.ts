@@ -14,6 +14,10 @@ const VerifySchema = z.object({
   code: z.string().regex(/^\d{4}$/),
 })
 
+const StatusParamsSchema = z.object({
+  verificationId: z.string().min(1),
+})
+
 const OTP_EXPIRES_MINUTES = 10
 const OTP_MAX_ATTEMPTS = 5
 const OTP_RATE_LIMIT_WINDOW_MINUTES = 10
@@ -53,6 +57,32 @@ function renderOtpEmailText(code: string) {
 }
 
 export const emailVerificationRoutes: FastifyPluginAsync = async (app) => {
+  app.get('/email-verification/status/:verificationId', async (req, reply) => {
+    const parsed = StatusParamsSchema.safeParse(req.params)
+    if (!parsed.success) return reply.code(400).send({ error: 'invalid_params' })
+
+    const rec = await prisma.emailVerification.findUnique({
+      where: { id: parsed.data.verificationId },
+      select: {
+        email: true,
+        expiresAt: true,
+        verifiedAt: true,
+      },
+    })
+    if (!rec) return reply.code(404).send({ error: 'not_found' })
+
+    const expired = rec.expiresAt.getTime() < Date.now()
+    const verified = Boolean(rec.verifiedAt) && !expired
+
+    return {
+      ok: true,
+      verified,
+      expired,
+      email: rec.email,
+      expiresAt: rec.expiresAt.toISOString(),
+    }
+  })
+
   app.post('/email-verification/start', async (req, reply) => {
     const parsed = StartSchema.safeParse(req.body)
     if (!parsed.success) return reply.code(400).send({ error: 'invalid_body' })

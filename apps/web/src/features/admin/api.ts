@@ -1,5 +1,5 @@
 import { apiGet, apiPost, apiPut, apiUpload } from '@/lib/http'
-import type { CustomerDetail, CustomerListItem, OrderDetail, OrderListItem, PromptTemplate, Settings } from './types'
+import type { CustomerDetail, CustomerListItem, DraftDetail, OrderDetail, OrderListItem, PromptTemplate, Settings } from './types'
 
 export async function adminLogin(password: string) {
   return apiPost<{ token: string }>('/api/admin/login', { password })
@@ -49,6 +49,10 @@ export async function adminGetCustomers(token: string) {
 
 export async function adminGetCustomer(token: string, id: string) {
   return apiGet<CustomerDetail>(`/api/admin/customers/${encodeURIComponent(id)}`, { token })
+}
+
+export async function adminGetOrderDraft(token: string, id: string) {
+  return apiGet<DraftDetail>(`/api/admin/order-drafts/${encodeURIComponent(id)}`, { token })
 }
 
 export async function adminGetOrders(token: string) {

@@ -73,7 +73,7 @@ export function AdminOrdersTab({
                <Input
                  value={query}
                  onChange={(e) => setQuery(e.target.value)}
-                 placeholder="Search Order ID, name..."
+                 placeholder={t.searchOrdersPlaceholder ?? 'Search...'}
                  className="h-9 pl-9 text-xs"
                />
              </div>
@@ -123,7 +123,7 @@ export function AdminOrdersTab({
              
              {filtered.length === 0 && (
                 <div className="text-center py-8 text-xs text-muted-foreground">
-                  No orders found.
+                  {t.noOrdersFound ?? 'No orders found.'}
                 </div>
              )}
            </div>
@@ -136,7 +136,7 @@ export function AdminOrdersTab({
                 <div className="flex items-start justify-between pb-4 border-b shrink-0">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <h2 className="text-xl font-bold tracking-tight">Order Details</h2>
+                            <h2 className="text-xl font-bold tracking-tight">{t.orderDetailsTitle ?? 'Order Details'}</h2>
                             <Badge variant={statusVariant(selectedOrder.status)} className="uppercase">{selectedOrder.status}</Badge>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
@@ -146,7 +146,9 @@ export function AdminOrdersTab({
                         </div>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => onSelectOrder(null)} className="md:hidden">Close</Button>
+                        <Button variant="outline" size="sm" onClick={() => onSelectOrder(null)} className="md:hidden">
+                          {t.close ?? 'Close'}
+                        </Button>
                         <Button variant="secondary" size="sm" onClick={() => onRetryOrder(selectedOrder.id)} disabled={loading} className="gap-2">
                             <RotateCcw className="h-3.5 w-3.5" /> {t.retryCreation}
                         </Button>
@@ -167,7 +169,7 @@ export function AdminOrdersTab({
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <Card className="shadow-sm">
                                     <CardHeader className="p-3 pb-1">
-                                        <CardTitle className="text-xs font-medium text-muted-foreground uppercase">Delivery Status</CardTitle>
+                                        <CardTitle className="text-xs font-medium text-muted-foreground uppercase">{t.deliveryStatus ?? 'Delivery Status'}</CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-3 pt-1">
                                         <div className="flex items-center justify-between">
@@ -177,10 +179,10 @@ export function AdminOrdersTab({
                                         {selectedOrder.deliveryStatus === 'delivery_pending' && (
                                             <div className="grid grid-cols-2 gap-2 mt-3">
                                                 <Button size="sm" variant="outline" disabled={loading} onClick={() => onResendEmail(selectedOrder.id)} className="h-8 text-xs gap-2">
-                                                    <Mail className="h-3 w-3" /> Resend Email
+                                                    <Mail className="h-3 w-3" /> {t.resendEmailShort ?? 'Resend Email'}
                                                 </Button>
                                                 <Button size="sm" variant="outline" disabled={loading} onClick={() => onResendWhatsApp(selectedOrder.id)} className="h-8 text-xs gap-2">
-                                                    <MessageCircle className="h-3 w-3" /> Resend WA
+                                                    <MessageCircle className="h-3 w-3" /> {t.resendWhatsAppShort ?? 'Resend WA'}
                                                 </Button>
                                             </div>
                                         )}
@@ -189,7 +191,7 @@ export function AdminOrdersTab({
 
                                 <Card className="shadow-sm">
                                     <CardHeader className="p-3 pb-1">
-                                        <CardTitle className="text-xs font-medium text-muted-foreground uppercase">Generated Track</CardTitle>
+                                        <CardTitle className="text-xs font-medium text-muted-foreground uppercase">{t.generatedTrack ?? 'Generated Track'}</CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-3 pt-1">
                                         {(() => {
@@ -197,7 +199,7 @@ export function AdminOrdersTab({
                                             const tracks = Array.isArray(meta?.tracks) ? (meta.tracks as string[]).filter(Boolean) : []
                                             const links = tracks.length ? tracks : selectedOrder.trackUrl ? [selectedOrder.trackUrl] : []
                                             
-                                            if (!links.length) return <span className="text-sm text-muted-foreground italic">No track generated yet</span>
+                                            if (!links.length) return <span className="text-sm text-muted-foreground italic">{t.noTrackYet ?? 'No track generated yet'}</span>
 
                                             return (
                                                 <div className="space-y-1">
@@ -225,7 +227,7 @@ export function AdminOrdersTab({
 
                             {/* Timeline */}
                             <div className="space-y-3">
-                                <h3 className="text-sm font-semibold">Activity Log</h3>
+                                <h3 className="text-sm font-semibold">{t.activityLog ?? 'Activity Log'}</h3>
                                 <div className="rounded-xl border bg-card p-0 overflow-hidden text-sm">
                                     <div className="max-h-[300px] overflow-y-auto divide-y">
                                         {(selectedOrder.events ?? []).map((ev: any) => (

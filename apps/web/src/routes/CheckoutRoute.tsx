@@ -64,6 +64,7 @@ export function CheckoutRoute() {
   const [checklistStep, setChecklistStep] = useState(0)
 
   const hasAttemptedAutoConfirm = useRef(false)
+  const hasTrackedInitiateCheckout = useRef(false)
 
   // Auto-confirm logic: trigger immediately when order is loaded and status is created
   useEffect(() => {
@@ -151,6 +152,19 @@ export function CheckoutRoute() {
     setError(null)
     try {
       await apiPost(`/api/orders/${encodeURIComponent(orderId)}/confirm`, {})
+
+      // Track only on successful "purchase"/confirm (flow is free for now).
+      // Guard to avoid double fire (StrictMode / retries).
+      if (!hasTrackedInitiateCheckout.current) {
+        hasTrackedInitiateCheckout.current = true
+        ;(window as any).fbq?.('track', 'InitiateCheckout', {
+          value: 497000,
+          currency: 'IDR',
+          num_items: 1,
+          content_type: 'product',
+        })
+      }
+
       const refreshed = await apiGet<OrderSummary>(`/api/orders/${encodeURIComponent(orderId)}`)
       setOrder(refreshed)
       // Animation will trigger via effect
