@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Controller, useForm, type Path } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { OrderInputSchema, type OrderInput } from 'shared'
@@ -46,6 +46,8 @@ const CONFIG_DRAFT_STORAGE_KEY = 'laguin:config_draft:v1'
 
 export function ConfigRoute() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [isHydrated, setIsHydrated] = useState(false)
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -178,8 +180,12 @@ export function ConfigRoute() {
     extraNotes: '',
   }
 
-  const getErrorMessage = (e: unknown, fallback: string) => {
+  const getErrorMessage = (e: unknown, fallback: string): string => {
     if (e instanceof Error && e.message) return e.message
+    if (typeof e === 'string') return e
+    if (e && typeof e === 'object' && 'message' in e && typeof e.message === 'string') {
+      return e.message
+    }
     return fallback
   }
 
@@ -315,17 +321,29 @@ export function ConfigRoute() {
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(CONFIG_DRAFT_STORAGE_KEY)
-      if (!raw) {
-        didHydrateDraftRef.current = true
-        return
-      }
-      const parsed = JSON.parse(raw) as Partial<PersistedConfigDraft>
-      if (parsed.v !== 1) {
-        didHydrateDraftRef.current = true
-        return
+      let parsed: Partial<PersistedConfigDraft> = {}
+      
+      if (raw) {
+        try {
+           const p = JSON.parse(raw)
+           if (p && p.v === 1) parsed = p
+        } catch {
+           // ignore invalid json
+        }
       }
 
-      const nextStep = Number.isFinite(parsed.step) ? Math.max(0, Math.min(4, parsed.step as number)) : 0
+      const savedStep = Number.isFinite(parsed.step) ? Math.max(0, Math.min(4, parsed.step as number)) : 0
+      
+      // Prefer URL step if available and valid
+      const urlStepParam = searchParams.get('step')
+      let initialStep = savedStep
+      if (urlStepParam !== null) {
+         const s = Number(urlStepParam)
+         if (!isNaN(s) && s >= 0 && s <= 4) {
+            initialStep = s
+         }
+      }
+
       const nextRelationship = typeof parsed.relationship === 'string' && parsed.relationship ? parsed.relationship : 'Pasangan'
       const nextEmailVerificationId = typeof parsed.emailVerificationId === 'string' ? parsed.emailVerificationId : null
       const nextDraftKey = typeof parsed.draftKey === 'string' && parsed.draftKey ? parsed.draftKey : null
@@ -342,7 +360,7 @@ export function ConfigRoute() {
         emailVerificationId: DEFAULT_ORDER_INPUT.emailVerificationId,
       }
 
-      setStep(nextStep)
+      setStep(initialStep)
       setRelationship(nextRelationship)
       setEmailVerificationId(nextEmailVerificationId)
       if (nextDraftKey) {
@@ -360,6 +378,7 @@ export function ConfigRoute() {
       // ignore and continue with defaults
     } finally {
       didHydrateDraftRef.current = true
+      setIsHydrated(true)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -382,9 +401,12 @@ export function ConfigRoute() {
         const actual = String(res?.email ?? '').trim().toLowerCase()
 
         if (res?.ok && res.verified && !res.expired && actual === expected) {
+          // Email sudah terverifikasi - set state dan form value
           setEmailVerified(true)
           setValue('emailVerificationId', emailVerificationId)
           setOtpError(null)
+          // Clear OTP digits karena sudah tidak diperlukan
+          setOtpDigits(['', '', '', ''])
           return
         }
 
@@ -400,6 +422,7 @@ export function ConfigRoute() {
         }
       })
       .catch((e: unknown) => {
+        if (cancelled) return
         // Best-effort only. If the server says it doesn't exist, force re-request.
         const msg = getErrorMessage(e, '')
         if (msg === 'not_found') {
@@ -426,6 +449,14 @@ export function ConfigRoute() {
 
   // Persist when non-form state changes (step/relationship/OTP start).
   useEffect(() => {
+    const currentUrlStep = searchParams.get('step')
+    if (currentUrlStep !== String(step)) {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('step', String(step))
+        return next
+      }, { replace: true })
+    }
     saveDraft(form.getValues())
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, relationship, emailVerificationId])
@@ -482,10 +513,14 @@ export function ConfigRoute() {
     }
   }, [settingsLoaded, agreementEnabled, step])
 
-  // Reset OTP state if email changes
+  // Reset OTP state if email changes (but not if already verified)
   useEffect(() => {
     if (suppressOtpResetOnceRef.current) {
       suppressOtpResetOnceRef.current = false
+      return
+    }
+    // Jangan reset jika email sudah terverifikasi
+    if (emailVerified) {
       return
     }
     setEmailVerified(false)
@@ -529,9 +564,12 @@ export function ConfigRoute() {
       setEmailVerified(false)
       setValue('emailVerificationId', '')
       setResendCooldownSec(60)
+      setOtpError(null) // Clear any previous errors on success
       window.setTimeout(() => otpRefs.current?.[0]?.focus?.(), 50)
     } catch (e: unknown) {
-      setOtpError(getErrorMessage(e, 'Gagal mengirim OTP. Coba lagi.'))
+      const errorMsg = getErrorMessage(e, 'Gagal mengirim OTP. Coba lagi.')
+      console.error('Send OTP error:', e)
+      setOtpError(errorMsg)
     } finally {
       setOtpSending(false)
     }
@@ -553,10 +591,13 @@ export function ConfigRoute() {
       await apiPost<{ ok: true }>('/api/email-verification/verify', { verificationId: emailVerificationId, code })
       setEmailVerified(true)
       setValue('emailVerificationId', emailVerificationId)
+      setOtpError(null) // Clear any previous errors on success
     } catch (e: unknown) {
       setEmailVerified(false)
       setValue('emailVerificationId', '')
-      setOtpError(getErrorMessage(e, 'Kode OTP salah / kadaluarsa.'))
+      const errorMsg = getErrorMessage(e, 'Kode OTP salah / kadaluarsa.')
+      console.error('Verify OTP error:', e)
+      setOtpError(errorMsg)
     } finally {
       setOtpVerifying(false)
     }
@@ -649,6 +690,14 @@ export function ConfigRoute() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FFF5F7]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#E11D48]" />
+      </div>
+    )
   }
 
   return (
@@ -999,10 +1048,16 @@ export function ConfigRoute() {
                        {...register('email')}
                        placeholder="nama@email.com"
                        type="email"
-                       className="h-12 rounded-xl border-gray-300 shadow-sm focus-visible:ring-[#E11D48] pl-10"
+                       disabled={emailVerified}
+                       className={`h-12 rounded-xl border-gray-300 shadow-sm focus-visible:ring-[#E11D48] pl-10 ${emailVerified ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                      />
                    </div>
                     {errors.email && <p className="text-xs text-[#E11D48]">{errors.email.message}</p>}
+                    {emailVerified && (
+                      <p className="text-xs text-green-600 flex items-center gap-1">
+                        <Check className="h-3 w-3" /> Email terkunci setelah verifikasi
+                      </p>
+                    )}
                  </div>
 
                  {emailOtpEnabled ? (
@@ -1016,74 +1071,82 @@ export function ConfigRoute() {
                        ) : null}
                      </div>
 
-                     <div className="flex gap-3">
-                       <Button
-                         type="button"
-                         variant="outline"
-                         className="h-11 rounded-xl border-gray-200"
-                         onClick={() => void sendEmailOtp()}
-                         disabled={
-                           otpSending ||
-                           otpVerifying ||
-                           !email ||
-                           Boolean(errors.email) ||
-                           resendCooldownSec > 0 ||
-                           emailVerified ||
-                           hasEnteredOtp
-                         }
-                       >
-                         {otpSending ? (
-                           <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Mengirim...</span>
-                         ) : emailVerified ? (
-                           'Email terverifikasi'
-                         ) : hasEnteredOtp ? (
-                           'Verifikasi kode di bawah'
-                         ) : resendCooldownSec > 0 ? (
-                           `Kirim ulang (${resendCooldownSec}s)`
-                         ) : (
-                           'Kirim kode verifikasi'
-                         )}
-                       </Button>
-                     </div>
-
-                     {emailVerificationId && !emailVerified ? (
-                       <div className="space-y-3">
-                         <div className="text-xs text-gray-500">
-                           Masukkan 4 digit kode OTP yang kami kirim ke <span className="font-semibold text-gray-800">{email}</span>
-                         </div>
-                         <div className="flex gap-2 justify-center">
-                           {[0, 1, 2, 3].map((i) => (
-                             <Input
-                               key={i}
-                               ref={(el) => { otpRefs.current[i] = el }}
-                               value={otpDigits[i] ?? ''}
-                               onChange={(e) => handleOtpChange(i, e.target.value)}
-                               onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                               onPaste={i === 0 ? handleOtpPaste : undefined}
-                               inputMode="numeric"
-                               pattern="[0-9]*"
-                               type="tel"
-                               maxLength={1}
-                               className="h-12 w-12 text-center text-lg font-bold rounded-xl border-gray-300 shadow-sm focus-visible:ring-[#E11D48]"
-                             />
-                           ))}
-                         </div>
-                         <Button
-                           type="button"
-                           className="h-11 w-full rounded-xl bg-gray-900 text-white hover:bg-gray-800"
-                           onClick={() => void verifyEmailOtp()}
-                           disabled={otpVerifying || otpDigits.some((d) => !d)}
-                         >
-                           {otpVerifying ? (
-                             <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Memverifikasi...</span>
-                           ) : (
-                             'Verifikasi kode'
-                           )}
-                         </Button>
+                     {emailVerified ? (
+                       <div className="bg-green-50 border border-green-100 rounded-lg p-3 text-sm text-green-800">
+                         <p className="font-medium">✓ Email <span className="font-bold">{email}</span> sudah terverifikasi</p>
+                         <p className="text-xs mt-1 text-green-700">Kamu bisa melanjutkan ke checkout.</p>
                        </div>
-                     ) : null}
+                     ) : (
+                       <>
+                         <div className="flex gap-3">
+                           <Button
+                             type="button"
+                             variant="outline"
+                             className="h-11 rounded-xl border-gray-200"
+                             onClick={() => void sendEmailOtp()}
+                             disabled={
+                               otpSending ||
+                               otpVerifying ||
+                               !email ||
+                               Boolean(errors.email) ||
+                               resendCooldownSec > 0 ||
+                               hasEnteredOtp
+                             }
+                           >
+                             {otpSending ? (
+                               <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Mengirim...</span>
+                             ) : hasEnteredOtp ? (
+                               'Verifikasi kode di bawah'
+                             ) : resendCooldownSec > 0 ? (
+                               `Kirim ulang (${resendCooldownSec}s)`
+                             ) : (
+                               'Kirim kode verifikasi'
+                             )}
+                           </Button>
+                         </div>
 
-                     {otpError ? <p className="text-xs text-[#E11D48]">{otpError}</p> : null}
+                         {emailVerificationId && !emailVerified ? (
+                           <div className="space-y-3">
+                             <div className="text-xs text-gray-500">
+                               Masukkan 4 digit kode OTP yang kami kirim ke <span className="font-semibold text-gray-800">{email}</span>
+                             </div>
+                             <div className="flex gap-2 justify-center">
+                               {[0, 1, 2, 3].map((i) => (
+                                 <Input
+                                   key={i}
+                                   ref={(el) => { otpRefs.current[i] = el }}
+                                   value={otpDigits[i] ?? ''}
+                                   onChange={(e) => handleOtpChange(i, e.target.value)}
+                                   onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                                   onPaste={i === 0 ? handleOtpPaste : undefined}
+                                   inputMode="numeric"
+                                   pattern="[0-9]*"
+                                   type="tel"
+                                   maxLength={1}
+                                   className="h-12 w-12 text-center text-lg font-bold rounded-xl border-gray-300 shadow-sm focus-visible:ring-[#E11D48]"
+                                 />
+                               ))}
+                             </div>
+                             <Button
+                               type="button"
+                               className="h-11 w-full rounded-xl bg-gray-900 text-white hover:bg-gray-800"
+                               onClick={() => void verifyEmailOtp()}
+                               disabled={otpVerifying || otpDigits.some((d) => !d)}
+                             >
+                               {otpVerifying ? (
+                                 <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Memverifikasi...</span>
+                               ) : (
+                                 'Verifikasi kode'
+                               )}
+                             </Button>
+                           </div>
+                         ) : null}
+
+                         {otpError && typeof otpError === 'string' ? (
+                           <p className="text-xs text-[#E11D48]">{otpError}</p>
+                         ) : null}
+                       </>
+                     )}
                    </div>
                  ) : null}
 
