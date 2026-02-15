@@ -673,80 +673,37 @@ export function LandingRoute() {
 
       <main className="mx-auto max-w-7xl w-full px-2 sm:px-4 md:px-6 pt-6 sm:pt-12 space-y-12 sm:space-y-20">
         {/* HERO SECTION */}
-        <section ref={heroRef} aria-labelledby="hero-title" className="grid md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 items-center">
-          <div className="text-center md:text-left space-y-5 md:space-y-6">
-            {/* Social proof badge */}
-            <div className="inline-flex flex-nowrap items-center gap-2 sm:gap-3 rounded-full border border-gray-200 bg-white px-3 sm:px-4 py-2.5 shadow-sm">
-              <div className="flex shrink-0 -space-x-2">
-                <img src="https://images.unsplash.com/photo-1530254541043-129f4c372200?w=100&h=100&fit=crop" alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />
-                <img src="https://images.unsplash.com/photo-1562904403-a5106bef8319?w=100&h=100&fit=crop" alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />
-                <img src="https://images.unsplash.com/photo-1630758664435-72a78888fb9d?w=100&h=100&fit=crop" alt="" className="h-8 w-8 rounded-full border-2 border-white object-cover" />
-              </div>
-              <span className="shrink-0 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">2,847 pria menangis terharu</span>
-              <div className="flex shrink-0 gap-0.5 text-amber-400">
+        <section ref={heroRef} aria-labelledby="hero-title" className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 items-center">
+          {/* TOP CONTENT (Left on Desktop) */}
+          <div className="text-center md:text-left space-y-4 md:space-y-6 md:col-start-1 md:row-start-1">
+            {/* Social proof - Simple Star Rating for Mobile Match */}
+            <div className="flex flex-col items-center md:items-start justify-center gap-1.5">
+              <div className="flex text-amber-400 gap-0.5">
                 <Star className="h-4 w-4 fill-current" />
                 <Star className="h-4 w-4 fill-current" />
                 <Star className="h-4 w-4 fill-current" />
                 <Star className="h-4 w-4 fill-current" />
                 <Star className="h-4 w-4 fill-current" />
               </div>
+              <span className="text-sm font-medium text-gray-600">2,847 pria menangis terharu</span>
             </div>
-
-            {/* Tagline */}
-            <p className="text-base sm:text-lg text-gray-700 font-normal">Lelah dengan kado yang dia lupa?</p>
 
             {/* Main headline */}
             <h1 id="hero-title" className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight tracking-tight">
               <span className="text-gray-900">Valentine kali ini,</span>
               <br />
-              <span className="text-[#E11D48]">buat dia menangis bahagia.</span>
+              <span className="text-[#E11D48]">buat dia menangis.</span>
             </h1>
 
             {/* Body paragraph */}
-            <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-lg mx-auto md:mx-0 text-center md:text-left">
-              Sebuah <strong className="text-gray-900">lagu</strong> personal dengan{' '}
-              <strong className="text-gray-900">namanya</strong> di dalam lirik, menceritakan{' '}
-              <strong className="text-gray-900">kisah kalian</strong>. Kualitas studio. Dikirim {deliveryEta.sentenceLower}.
+            <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-lg mx-auto md:mx-0">
+              Sebuah lagu personal dengan <strong className="text-gray-900">namanya</strong> di lirik.
+              <br className="hidden sm:inline" /> Dikirim dalam 24 jam.
             </p>
-
-            {/* CTA + Pricing row */}
-            <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start sm:items-center gap-4">
-              <Button asChild size="lg" className="h-12 sm:h-14 px-6 sm:px-8 rounded-xl bg-[#E11D48] text-base sm:text-lg font-bold shadow-lg shadow-rose-200/50 hover:bg-rose-600 transition-all duration-300 group">
-                <Link to="/config" className="flex items-center gap-2">
-                  Buat Lagunya — GRATIS
-                  <ChevronRight className="h-5 w-5 -mr-1 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-              </Button>
-              <div className="flex items-baseline gap-2">
-                <span className="text-base text-gray-400 line-through">Rp 497.000</span>
-                <span className="text-xl font-bold text-[#E11D48]">GRATIS</span>
-              </div>
-            </div>
-
-            {/* Feature list */}
-            <div className="flex flex-wrap justify-center md:justify-start gap-x-6 gap-y-2 text-sm text-gray-700">
-              <span className="flex items-center gap-1.5">
-                <Check className="h-4 w-4 shrink-0 text-green-500" />
-                24h pengiriman
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Check className="h-4 w-4 shrink-0 text-green-500" />
-                Namanya ADA di lagu
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Check className="h-4 w-4 shrink-0 text-green-500" />
-                Tak menangis = uang kembali
-              </span>
-            </div>
-
-            {/* Urgency message */}
-            <div className="inline-flex items-center gap-2 rounded-full bg-rose-50/80 border border-rose-100 px-4 py-2">
-              <span className="h-2 w-2 rounded-full bg-[#E11D48]" />
-              <span className="text-sm font-medium text-[#E11D48]">11 kuota gratis tersisa</span>
-            </div>
           </div>
 
-          <div className="relative mx-auto w-full max-w-full sm:max-w-md md:max-w-full min-w-0">
+          {/* MEDIA CONTENT (Middle on Mobile, Right on Desktop) */}
+          <div className="relative mx-auto w-full max-w-full sm:max-w-md md:max-w-full min-w-0 md:col-start-2 md:row-start-1 md:row-span-2">
              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl sm:rounded-2xl shadow-2xl">
                {/* Placeholder for Video/Image from screenshot */}
                <div className="absolute inset-0 bg-gray-900/10 z-10"></div>
@@ -806,10 +763,57 @@ export function LandingRoute() {
                        <div className="w-6 h-6 rounded-full border border-white bg-white/20" />
                      )}
                      {authorLocation ? `${authorName}, ${authorLocation}` : authorName}
+                     <span className="bg-white/20 px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-0.5">
+                       <Check className="w-3 h-3" /> Verified
+                     </span>
                    </div>
                  </div>
                )}
              </div>
+          </div>
+
+          {/* BOTTOM CONTENT (Left Bottom on Desktop) */}
+          <div className="text-center md:text-left space-y-5 md:space-y-6 md:col-start-1 md:row-start-2">
+            {/* Trust Badges */}
+            <div className="flex flex-wrap justify-center md:justify-start gap-x-4 gap-y-2 text-xs sm:text-sm font-medium text-gray-600">
+              <span className="flex items-center gap-1">
+                <div className="rounded-full bg-green-100 p-0.5">
+                  <Check className="h-3 w-3 text-green-600" />
+                </div>
+                Kualitas Studio
+              </span>
+              <span className="flex items-center gap-1">
+                <div className="rounded-full bg-green-100 p-0.5">
+                  <Check className="h-3 w-3 text-green-600" />
+                </div>
+                98% Menangis
+              </span>
+              <span className="flex items-center gap-1">
+                <div className="rounded-full bg-green-100 p-0.5">
+                  <Check className="h-3 w-3 text-green-600" />
+                </div>
+                Revisi Gratis
+              </span>
+            </div>
+
+            {/* CTA Button */}
+            <div className="space-y-3">
+              <Button asChild size="lg" className="w-full sm:w-auto h-14 px-8 rounded-full bg-[#E11D48] text-lg font-bold shadow-xl shadow-rose-200/50 hover:bg-rose-600 hover:scale-105 transition-all duration-300">
+                <Link to="/config" className="flex items-center justify-center gap-2">
+                  Buat Lagunya — GRATIS
+                  <span className="text-rose-200 line-through font-normal text-base ml-1">Rp 497rb</span>
+                </Link>
+              </Button>
+              
+              {/* Footer Trust Info */}
+              <div className="flex flex-wrap justify-center md:justify-start items-center gap-3 text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-amber-500" /> 24h Delivery</span>
+                <span className="hidden sm:inline">•</span>
+                <span className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-green-500" /> Secure</span>
+                <span className="hidden sm:inline">•</span>
+                <span className="text-rose-500">11 kuota gratis</span>
+              </div>
+            </div>
           </div>
         </section>
 
