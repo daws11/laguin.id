@@ -4,6 +4,7 @@ import { Controller, useForm, type FieldErrors, type Path } from 'react-hook-for
 import { zodResolver } from '@hookform/resolvers/zod'
 import { OrderInputSchema, type OrderInput } from 'shared'
 import { apiGet, apiPost } from '@/lib/http'
+import { trackWishlist } from '@/features/analytics/MetaPixel'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -722,6 +723,8 @@ export function ConfigRoute() {
         ].join('\n')
 
         const url = `https://wa.me/${adminNumber}?text=${encodeURIComponent(message)}`
+        const wishlistPixelId = import.meta.env.VITE_META_PIXEL_WISHLIST_ID ?? '1234505681452683'
+        trackWishlist(wishlistPixelId, { content_name: 'Lagu Personal Valentine' })
         window.location.assign(url)
         return
       }

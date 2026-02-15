@@ -15,9 +15,8 @@ function ensureMetaPixelLoaded(pixelId: string) {
   if (!id) return
   if (typeof window === 'undefined' || typeof document === 'undefined') return
 
-  // Avoid double-inject (React StrictMode in dev, re-mounts, etc.)
-  if (document.getElementById(META_PIXEL_SCRIPT_ID)) return
-
+  // Load script if not yet injected (React StrictMode in dev, re-mounts, etc.)
+  if (!document.getElementById(META_PIXEL_SCRIPT_ID)) {
   ;(function (f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) {
     if (f.fbq) return
     n = (f.fbq = function () {
@@ -36,7 +35,8 @@ function ensureMetaPixelLoaded(pixelId: string) {
     s = b.getElementsByTagName(e)[0]
     s.parentNode.insertBefore(t, s)
   })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js')
-
+  }
+  // Always init this pixel (supports multiple pixels)
   window.fbq?.('init', id)
 }
 
@@ -50,5 +50,13 @@ export function MetaPixel({ pixelId }: { pixelId: string }) {
   }, [pixelId, location.pathname, location.search])
 
   return null
+}
+
+/** Fire Meta Wishlist event for a specific pixel (e.g. wishlist pixel). */
+export function trackWishlist(pixelId: string, params?: Record<string, unknown>) {
+  const fbq = (window as unknown as { fbq?: (...args: unknown[]) => void }).fbq
+  if (fbq) {
+    fbq('trackSingle', pixelId, 'Wishlist', params ?? {})
+  }
 }
 
