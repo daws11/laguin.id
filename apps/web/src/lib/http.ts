@@ -26,7 +26,11 @@ export async function apiGet<T>(path: string, opts?: { token?: string }) {
   })
   if (!res.ok) {
     const body = await parseJson(res)
-    throw new Error(typeof body === 'string' ? body : body?.error ?? `Request failed (${res.status})`)
+    throw new Error(
+      typeof body === 'string'
+        ? body
+        : (typeof body?.message === 'string' ? body.message : null) ?? body?.error ?? `Request failed (${res.status})`,
+    )
   }
   return (await parseJson(res)) as T
 }
@@ -42,7 +46,13 @@ export async function apiPost<T>(path: string, body: unknown, opts?: { token?: s
   })
   if (!res.ok) {
     const payload = await parseJson(res)
-    throw new Error(typeof payload === 'string' ? payload : payload?.error ?? `Request failed (${res.status})`)
+    throw new Error(
+      typeof payload === 'string'
+        ? payload
+        : (typeof payload?.message === 'string' ? payload.message : null) ??
+            payload?.error ??
+            `Request failed (${res.status})`,
+    )
   }
   return (await parseJson(res)) as T
 }
@@ -58,7 +68,13 @@ export async function apiPut<T>(path: string, body: unknown, opts?: { token?: st
   })
   if (!res.ok) {
     const payload = await parseJson(res)
-    throw new Error(typeof payload === 'string' ? payload : payload?.error ?? `Request failed (${res.status})`)
+    throw new Error(
+      typeof payload === 'string'
+        ? payload
+        : (typeof payload?.message === 'string' ? payload.message : null) ??
+            payload?.error ??
+            `Request failed (${res.status})`,
+    )
   }
   return (await parseJson(res)) as T
 }
@@ -77,7 +93,13 @@ export async function apiUpload<T>(
   })
   if (!res.ok) {
     const payload = await parseJson(res)
-    throw new Error(typeof payload === 'string' ? payload : payload?.error ?? `Request failed (${res.status})`)
+    throw new Error(
+      typeof payload === 'string'
+        ? payload
+        : (typeof payload?.message === 'string' ? payload.message : null) ??
+            payload?.error ??
+            `Request failed (${res.status})`,
+    )
   }
   return (await parseJson(res)) as T
 }

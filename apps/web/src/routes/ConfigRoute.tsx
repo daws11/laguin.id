@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Controller, useForm, type Path } from 'react-hook-form'
+import { Controller, useForm, type FieldErrors, type Path } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { OrderInputSchema, type OrderInput } from 'shared'
 import { apiGet, apiPost } from '@/lib/http'
@@ -54,6 +54,7 @@ export function ConfigRoute() {
   const [error, setError] = useState<string | null>(null)
   const [relationship, setRelationship] = useState('Pasangan')
   const storyTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const whatsappSectionRef = useRef<HTMLDivElement | null>(null)
   const [instantEnabled, setInstantEnabled] = useState<boolean | null>(null)
   const [deliveryDelayHours, setDeliveryDelayHours] = useState<number | null>(null)
   const [manualConfirmationEnabled, setManualConfirmationEnabled] = useState(false)
@@ -153,7 +154,6 @@ export function ConfigRoute() {
   const [emailOtpEnabled, setEmailOtpEnabled] = useState(true)
   const [agreementEnabled, setAgreementEnabled] = useState(false)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
-  const [agreementAccepted, setAgreementAccepted] = useState(true)
   const [heroVideoUrl, setHeroVideoUrl] = useState<string | null>(null)
   const [emailVerificationId, setEmailVerificationId] = useState<string | null>(null)
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', ''])
@@ -512,17 +512,10 @@ export function ConfigRoute() {
   }
 
   const handleBack = () => {
-    const minStep = agreementEnabled ? 0 : 1
-    setStep((prev) => Math.max(prev - 1, minStep))
+    // Step 0 is the announcement page; always allow going back to it.
+    setStep((prev) => Math.max(prev - 1, 0))
     window.scrollTo(0, 0)
   }
-
-  // Redirect if on step 0 but agreement is disabled
-  useEffect(() => {
-    if (settingsLoaded && !agreementEnabled && step === 0) {
-      setStep(1)
-    }
-  }, [settingsLoaded, agreementEnabled, step])
 
   // Reset OTP state if email changes (but not if already verified)
   useEffect(() => {
@@ -689,13 +682,11 @@ export function ConfigRoute() {
       setError('Verifikasi email dulu sebelum lanjut ke checkout.')
       return
     }
-    if (agreementEnabled && !agreementAccepted) {
-      setError('Centang persetujuan di atas untuk melanjutkan.')
-      return
-    }
     setLoading(true)
     setError(null)
     try {
+      // Clear any previous server-side field errors.
+      form.clearErrors('whatsappNumber')
       const payload: Record<string, unknown> = { ...data, whatsappNumber: data.whatsappNumber }
       if (manualConfirmationEnabled) {
         delete payload.email
@@ -703,6 +694,8 @@ export function ConfigRoute() {
       } else if (!emailOtpEnabled) {
         delete payload.emailVerificationId
       }
+      // Agreement UI is temporarily disabled, but backend may still enforce it.
+      // If enabled in settings, auto-accept to avoid blocking the public flow.
       if (agreementEnabled) (payload as Record<string, unknown>).agreementAccepted = true
       const res = await apiPost<{ orderId: string }>('/api/orders/draft', payload)
       clearDraft()
@@ -735,11 +728,37 @@ export function ConfigRoute() {
 
       navigate(`/checkout?orderId=${encodeURIComponent(res.orderId)}`)
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Something went wrong. Please try again.'))
+      const msg = getErrorMessage(err, 'Something went wrong. Please try again.')
+      // Prefer showing the message right under the WhatsApp field (most common failure here).
+      form.setError('whatsappNumber', { type: 'server', message: msg })
+      whatsappSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      // Keep only one warning: show it under the WhatsApp field.
+      setError(null)
     } finally {
       setLoading(false)
     }
   }
+
+  const onInvalid = (_errs: FieldErrors<OrderInput>) => {
+    // Make it visible even if the invalid field is on a previous step.
+    setError('Data belum lengkap. Mohon lengkapi semua field yang wajib di langkah sebelumnya sebelum melanjutkan.')
+  }
+
+  // When admin enables manual confirmation, the public flow must not be blocked by hidden email/OTP fields.
+  useEffect(() => {
+    if (!manualConfirmationEnabled) return
+    form.clearErrors(['email', 'emailVerificationId'])
+    setValue('email', undefined, { shouldDirty: false, shouldTouch: false, shouldValidate: false })
+    setValue('emailVerificationId', undefined, { shouldDirty: false, shouldTouch: false, shouldValidate: false })
+    setEmailVerificationId(null)
+    setOtpDigits(['', '', '', ''])
+    setOtpError(null)
+    setEmailVerified(false)
+  }, [manualConfirmationEnabled, form, setValue, step])
+
+  useEffect(() => {
+    if (!error) return
+  }, [error])
 
   if (!isHydrated) {
     return (
@@ -768,9 +787,7 @@ export function ConfigRoute() {
         </div>
         {/* Progress Bar inside Header - Ultra Compact */}
         <div className="w-full h-0.5 bg-gray-100 flex">
-           {[0, 1, 2, 3, 4]
-             .filter((i) => agreementEnabled || i > 0)
-             .map((i) => (
+           {[0, 1, 2, 3, 4].map((i) => (
              <div key={i} className={`flex-1 transition-all duration-500 ${i <= step ? 'bg-[#E11D48]' : 'bg-transparent'}`} />
            ))}
         </div>
@@ -785,7 +802,7 @@ export function ConfigRoute() {
       </header>
 
       <main className="mx-auto max-w-md px-4 py-4 sm:py-8">
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={form.handleSubmit(onSubmit, onInvalid)}>
           
           {/* STEP 0: ANNOUNCEMENT - halaman pengumuman */}
           {step === 0 && (
@@ -1100,6 +1117,7 @@ export function ConfigRoute() {
                  </div>
 
                  <div className="space-y-1">
+                   <div ref={whatsappSectionRef} />
                    <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Nomor WhatsApp</label>
                    <Controller
                      name="whatsappNumber"
@@ -1115,9 +1133,14 @@ export function ConfigRoute() {
                            <Input
                              value={local}
                              onChange={(e) => {
-                               const raw = e.target.value.replace(/\D/g, '')
-                               const normalizedLocal = raw.replace(/^0+/, '')
-                               field.onChange(`62${normalizedLocal}`)
+                               // Clear server error as user edits.
+                               setError(null)
+                               form.clearErrors('whatsappNumber')
+                                const raw = e.target.value.replace(/\D/g, '')
+                                let normalizedLocal = raw.replace(/^0+/, '')
+                                // Prevent double-prefix if user pastes +62/62 into the local-part field.
+                                if (normalizedLocal.startsWith('62')) normalizedLocal = normalizedLocal.slice(2)
+                                field.onChange(`62${normalizedLocal}`)
                              }}
                              placeholder="8123456789"
                              inputMode="numeric"
@@ -1246,27 +1269,19 @@ export function ConfigRoute() {
                    </>
                  ) : null}
 
-                 {agreementEnabled ? (
-                   <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm space-y-2">
-                     <label className="flex items-start gap-2 cursor-pointer">
-                       <input
-                         type="checkbox"
-                         checked={agreementAccepted}
-                         onChange={(e) => setAgreementAccepted(e.target.checked)}
-                         className="mt-1 h-3.5 w-3.5 rounded border-gray-300 text-[#E11D48] focus:ring-[#E11D48]"
-                       />
-                       <span className="text-xs text-gray-600 leading-tight">
-                         Saya setuju mengirimkan video reaksi untuk keperluan promosi Laguin.id.
-                       </span>
-                     </label>
-                     <p className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-1.5 rounded border border-amber-100">
-                       🏆 Hadiah Rp 1.000.000 untuk video reaksi terbaik.
-                     </p>
-                   </div>
-                 ) : null}
+                {/* Agreement UI temporarily disabled (keep announcement step). */}
+
+                <div className="rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm">
+                  <img
+                    src="/image.png"
+                    alt="Proses produksi lagu di studio"
+                    className="h-auto w-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
 
                  <div className="rounded-xl bg-green-50 p-3 border border-green-100 space-y-2">
-                   <div className="text-[10px] font-bold text-green-800 uppercase tracking-wider">Selanjutnya:</div>
+                  <div className="text-[10px] font-bold text-green-800 uppercase tracking-wider">Apa selanjutnya?</div>
                    <div className="space-y-1.5 text-xs text-green-900">
                      <div className="flex gap-2 items-start">
                        <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-green-200 text-[9px] font-bold text-green-700 mt-0.5">1</div>
@@ -1282,6 +1297,10 @@ export function ConfigRoute() {
                         </span>
                       )}
                      </div>
+                    <div className="flex gap-2 items-start">
+                      <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-green-200 text-[9px] font-bold text-green-700 mt-0.5">3</div>
+                      <span className="leading-tight">Putar untuknya dan lihat dia menangis 😭</span>
+                    </div>
                    </div>
                  </div>
 
@@ -1301,9 +1320,11 @@ export function ConfigRoute() {
                    <Timer className="h-3 w-3" /> Cerita tersimpan selama 9:56 — selesaikan checkout untuk menyimpannya
                  </div>
                )}
+
+               {/* Intentionally no global error banner here (avoid duplicate warnings). */}
                
                <div className="flex gap-3">
-                 {step > (agreementEnabled ? 0 : 1) && (
+                 {step > 0 && (
                    <Button 
                      type="button" 
                      variant="outline" 
@@ -1323,20 +1344,19 @@ export function ConfigRoute() {
                   disabled={
                     loading ||
                     (step === 4 && !manualConfirmationEnabled && emailOtpEnabled && !emailVerified) ||
-                    (step === 4 && agreementEnabled && !agreementAccepted)
+                    false
                   }
                  >
                    {step === 0 ? 'Mulai Buat Lagu ->' : 
                     step === 1 ? 'Pilih vibenya ->' : 
                     step === 2 ? 'Tambahkan ceritamu ->' : 
                     step === 3 ? 'Hampir selesai! ->' : 
-                    loading ? 'Memproses...' : (agreementEnabled && !agreementAccepted ? 'Centang persetujuan' : manualConfirmationEnabled ? 'Konfirmasi via WhatsApp' : emailOtpEnabled ? (emailVerified ? 'Ke checkout — GRATIS' : 'Verifikasi email dulu') : 'Ke checkout — GRATIS')}
+                    loading ? 'Memproses...' : (manualConfirmationEnabled ? 'Konfirmasi via WhatsApp' : emailOtpEnabled ? (emailVerified ? 'Ke checkout — GRATIS' : 'Verifikasi email dulu') : 'Ke checkout — GRATIS')}
                  </Button>
                </div>
              </div>
           </div>
-
-          {error && <div className="mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg">{error}</div>}
+          {/* NOTE: Error banner is shown inside the fixed CTA area above. */}
 
         </form>
       </main>

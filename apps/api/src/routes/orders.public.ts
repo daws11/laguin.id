@@ -76,7 +76,11 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
     if (existingByWhatsapp) {
       return reply
         .code(409)
-        .send({ error: 'Nomor WhatsApp sudah terdaftar. Setiap nomor WhatsApp hanya bisa mendaftar sekali.' })
+        .send({
+          error: 'duplicate_whatsapp',
+          message:
+            'Nomor WhatsApp ini sudah terdaftar dan pernah digunakan untuk membuat pesanan. Untuk menjaga keamanan dan kualitas layanan, setiap nomor WhatsApp hanya dapat melakukan pemesanan satu kali.',
+        })
     }
 
     if (!manualConfirmationEnabled) {
