@@ -8,7 +8,6 @@ import {
   ShieldCheck,
   Zap,
   Music,
-  ChevronRight,
   SkipBack,
   SkipForward,
   Heart,
