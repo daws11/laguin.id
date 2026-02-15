@@ -20,6 +20,7 @@ export type Settings = {
   paymentsEnabled: boolean
   emailOtpEnabled: boolean
   agreementEnabled: boolean
+  manualConfirmationEnabled: boolean
   whatsappProvider: string
   whatsappConfig: unknown | null
   publicSiteConfig: unknown | null

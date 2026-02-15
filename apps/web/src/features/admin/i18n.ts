@@ -22,6 +22,7 @@ export const translations = {
     instantEnabled: 'Pengiriman instan aktif',
     emailOtpEnabled: 'Verifikasi OTP email',
     agreementEnabled: 'Agreement di checkout',
+    manualConfirmationEnabled: 'Manual confirmation (admin kirim WA/email manual)',
     deliveryDelay: 'Penundaan pengiriman (jam) (saat instan NONAKTIF)',
     whatsappGateway: 'WhatsApp Gateway',
     whatsappGatewayDesc:
@@ -202,6 +203,7 @@ export const translations = {
     instantEnabled: 'Instant delivery enabled',
     emailOtpEnabled: 'Email OTP verification',
     agreementEnabled: 'Checkout agreement',
+    manualConfirmationEnabled: 'Manual confirmation (admin sends WA/email manually)',
     deliveryDelay: 'Delivery delay (hours) (when instant is OFF)',
     whatsappGateway: 'WhatsApp Gateway',
     whatsappGatewayDesc:

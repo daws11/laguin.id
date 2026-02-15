@@ -8,7 +8,7 @@ interface Props {
   setSettings: React.Dispatch<React.SetStateAction<Settings | null>>
   saveSettings: (partial: Partial<Settings>) => Promise<Settings | null>
   loading: boolean
-  t: any
+  t: Record<string, string>
 }
 
 export function CreationDeliveryCard({ settings, setSettings, saveSettings, loading, t }: Props) {
@@ -48,6 +48,17 @@ export function CreationDeliveryCard({ settings, setSettings, saveSettings, load
                 onChange={(e) => setSettings((s) => (s ? { ...s, agreementEnabled: e.target.checked } : s))}
               />
             </label>
+            <label className="flex items-center justify-between gap-2 rounded border p-1.5 bg-background cursor-pointer hover:bg-muted/40 transition-colors">
+              <span className="font-medium">{t.manualConfirmationEnabled}</span>
+              <input
+                type="checkbox"
+                className="h-3.5 w-3.5 rounded border-gray-300 text-primary focus:ring-primary"
+                checked={settings.manualConfirmationEnabled ?? false}
+                onChange={(e) =>
+                  setSettings((s) => (s ? { ...s, manualConfirmationEnabled: e.target.checked } : s))
+                }
+              />
+            </label>
             <div className="space-y-0.5">
               <div className="text-[10px] font-medium text-muted-foreground">{t.deliveryDelay}</div>
               <Input
@@ -67,6 +78,7 @@ export function CreationDeliveryCard({ settings, setSettings, saveSettings, load
                   instantEnabled: settings.instantEnabled,
                   emailOtpEnabled: settings.emailOtpEnabled ?? true,
                   agreementEnabled: settings.agreementEnabled ?? false,
+                  manualConfirmationEnabled: settings.manualConfirmationEnabled ?? false,
                   deliveryDelayHours: settings.deliveryDelayHours ?? 24,
                 })
               }

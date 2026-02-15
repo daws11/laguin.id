@@ -28,6 +28,11 @@ type OrderSummary = {
   errorMessage?: string | null
 }
 
+function trackFbq(eventName: string, params: Record<string, unknown>) {
+  const fbq = (window as unknown as { fbq?: (...args: unknown[]) => void }).fbq
+  fbq?.('track', eventName, params)
+}
+
 function ChecklistItem({ label, status }: { label: string; status: 'pending' | 'loading' | 'completed' }) {
   return (
     <div className="flex items-center gap-3 py-2">
@@ -62,10 +67,27 @@ export function CheckoutRoute() {
   const [order, setOrder] = useState<OrderSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [checklistStep, setChecklistStep] = useState(0)
+  const [manualConfirmationEnabled, setManualConfirmationEnabled] = useState<boolean | null>(null)
 
   const hasAttemptedAutoConfirm = useRef(false)
   const hasTrackedInitiateCheckout = useRef(false)
   const hasTrackedPurchase = useRef(false)
+
+  // Manual confirmation setting (safety guard): if enabled, do NOT auto-confirm from this route.
+  useEffect(() => {
+    let cancelled = false
+    apiGet<{ manualConfirmationEnabled?: boolean }>('/api/public/settings')
+      .then((res) => {
+        if (cancelled) return
+        setManualConfirmationEnabled(Boolean(res?.manualConfirmationEnabled))
+      })
+      .catch(() => {
+        if (!cancelled) setManualConfirmationEnabled(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Meta Pixel: track InitiateCheckout when the checkout page is loaded.
   // Guard avoids double fire in dev StrictMode / re-mounts.
@@ -73,7 +95,7 @@ export function CheckoutRoute() {
     if (!orderId) return
     if (hasTrackedInitiateCheckout.current) return
     hasTrackedInitiateCheckout.current = true
-    ;(window as any).fbq?.('track', 'InitiateCheckout', {
+    trackFbq('InitiateCheckout', {
       value: 497000,
       currency: 'IDR',
       num_items: 1,
@@ -83,12 +105,13 @@ export function CheckoutRoute() {
 
   // Auto-confirm logic: trigger immediately when order is loaded and status is created
   useEffect(() => {
+    if (manualConfirmationEnabled) return
     if (orderId && order?.status === 'created' && !confirming && !hasAttemptedAutoConfirm.current) {
       hasAttemptedAutoConfirm.current = true
       confirm()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId, order?.status])
+  }, [orderId, order?.status, manualConfirmationEnabled])
 
   // Initial Load
   useEffect(() => {
@@ -172,7 +195,7 @@ export function CheckoutRoute() {
       // Guard to avoid double fire (auto-confirm + retries).
       if (!hasTrackedPurchase.current) {
         hasTrackedPurchase.current = true
-        ;(window as any).fbq?.('track', 'Purchase', {
+        trackFbq('Purchase', {
           value: 497000,
           currency: 'IDR',
         })
@@ -181,7 +204,7 @@ export function CheckoutRoute() {
       const refreshed = await apiGet<OrderSummary>(`/api/orders/${encodeURIComponent(orderId)}`)
       setOrder(refreshed)
       // Animation will trigger via effect
-    } catch (e: any) {
+    } catch {
       // Never show technical errors to end users on this route.
       setError('Pesanan kamu sudah kami terima. Silakan tunggu, kami sedang memprosesnya.')
     } finally {

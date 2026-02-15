@@ -29,7 +29,8 @@ import {
   Mail,
   Loader2,
   Check,
-  Megaphone
+  Megaphone,
+  ChevronDown
 } from 'lucide-react'
 
 type PersistedConfigDraft = {
@@ -55,6 +56,8 @@ export function ConfigRoute() {
   const storyTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const [instantEnabled, setInstantEnabled] = useState<boolean | null>(null)
   const [deliveryDelayHours, setDeliveryDelayHours] = useState<number | null>(null)
+  const [manualConfirmationEnabled, setManualConfirmationEnabled] = useState(false)
+  const [isOrderSummaryOpen, setIsOrderSummaryOpen] = useState(false)
 
   // Countdown timer logic to match LandingRoute
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, mins: 0 })
@@ -106,9 +109,10 @@ export function ConfigRoute() {
     apiGet<{
       emailOtpEnabled?: boolean
       agreementEnabled?: boolean
-      publicSiteConfig?: any
+      publicSiteConfig?: unknown
       instantEnabled?: boolean
       deliveryDelayHours?: number
+      manualConfirmationEnabled?: boolean
     }>('/api/public/settings')
       .then((res) => {
         if (cancelled) return
@@ -116,9 +120,15 @@ export function ConfigRoute() {
         setAgreementEnabled(res?.agreementEnabled ?? false)
         setInstantEnabled(typeof res?.instantEnabled === 'boolean' ? res.instantEnabled : null)
         setDeliveryDelayHours(typeof res?.deliveryDelayHours === 'number' ? res.deliveryDelayHours : null)
+        setManualConfirmationEnabled(Boolean(res?.manualConfirmationEnabled))
         
         // Resolve hero video URL
-        const landing = res?.publicSiteConfig?.landing
+        type PublicSiteConfigMaybe = { landing?: { heroMedia?: { videoUrl?: unknown } } }
+        const publicSiteConfig = res?.publicSiteConfig
+        const landing =
+          publicSiteConfig && typeof publicSiteConfig === 'object'
+            ? (publicSiteConfig as PublicSiteConfigMaybe).landing
+            : undefined
         const heroMedia = landing?.heroMedia
         const rawVideoUrl = heroMedia?.videoUrl
         if (typeof rawVideoUrl === 'string' && rawVideoUrl.trim()) {
@@ -175,8 +185,8 @@ export function ConfigRoute() {
       language: 'Indonesian',
     },
     whatsappNumber: '',
-    email: '',
-    emailVerificationId: '',
+    email: undefined,
+    emailVerificationId: undefined,
     extraNotes: '',
   }
 
@@ -191,6 +201,7 @@ export function ConfigRoute() {
 
   const form = useForm<OrderInput>({
     // NOTE: keep build stable across Zod typings changes between deps.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(OrderInputSchema as any),
     mode: 'onTouched',
     defaultValues: DEFAULT_ORDER_INPUT,
@@ -668,7 +679,13 @@ export function ConfigRoute() {
   }
 
   const onSubmit = async (data: OrderInput) => {
-    if (emailOtpEnabled && (!emailVerified || !data.emailVerificationId)) {
+    if (!manualConfirmationEnabled) {
+      if (!data.email) {
+        setError('Masukkan alamat email untuk melanjutkan.')
+        return
+      }
+    }
+    if (!manualConfirmationEnabled && emailOtpEnabled && (!emailVerified || !data.emailVerificationId)) {
       setError('Verifikasi email dulu sebelum lanjut ke checkout.')
       return
     }
@@ -679,11 +696,43 @@ export function ConfigRoute() {
     setLoading(true)
     setError(null)
     try {
-      const payload = { ...data, whatsappNumber: data.whatsappNumber }
-      if (!emailOtpEnabled) delete (payload as Record<string, unknown>).emailVerificationId
+      const payload: Record<string, unknown> = { ...data, whatsappNumber: data.whatsappNumber }
+      if (manualConfirmationEnabled) {
+        delete payload.email
+        delete payload.emailVerificationId
+      } else if (!emailOtpEnabled) {
+        delete payload.emailVerificationId
+      }
       if (agreementEnabled) (payload as Record<string, unknown>).agreementAccepted = true
       const res = await apiPost<{ orderId: string }>('/api/orders/draft', payload)
       clearDraft()
+
+      if (manualConfirmationEnabled) {
+        const adminNumber = '62895370231680'
+        const recipient = String(data.recipientName ?? '').trim()
+        const occasion = String(data.occasion ?? '').trim()
+        const wa = String(data.whatsappNumber ?? '').trim()
+        const extraNotes = String(data.extraNotes ?? '').trim()
+
+        const message = [
+          'Halo Admin Laguin,',
+          '',
+          'Saya ingin melakukan konfirmasi pesanan pembuatan lagu.',
+          '',
+          `Order ID: ${res.orderId}`,
+          `Nama penerima: ${recipient || '-'}`,
+          `Momen/acara: ${occasion || '-'}`,
+          `Nomor WhatsApp saya: ${wa || '-'}`,
+          ...(extraNotes ? ['', `Catatan tambahan: ${extraNotes}`] : []),
+          '',
+          'Mohon dibantu untuk memproses pesanan ini. Terima kasih.',
+        ].join('\n')
+
+        const url = `https://wa.me/${adminNumber}?text=${encodeURIComponent(message)}`
+        window.location.assign(url)
+        return
+      }
+
       navigate(`/checkout?orderId=${encodeURIComponent(res.orderId)}`)
     } catch (err: unknown) {
       setError(getErrorMessage(err, 'Something went wrong. Please try again.'))
@@ -702,36 +751,40 @@ export function ConfigRoute() {
 
   return (
     <div className="min-h-screen bg-[#FFF5F7] font-sans text-gray-900 pb-32">
-      {/* Top Banner */}
-      <div className="bg-[#E11D48] px-4 py-2 text-center text-xs font-bold text-white uppercase tracking-wide">
+      {/* Top Banner - Hide on mobile if possible or make super compact */}
+      <div className="bg-[#E11D48] px-4 py-1.5 text-center text-[9px] sm:text-xs font-bold text-white uppercase tracking-wide hidden sm:block">
         🎁 {timeLeft.days} hari {timeLeft.hours} jam {timeLeft.mins} menit menuju Valentine • Dikirim {deliveryEta.sentenceLower}
       </div>
 
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-rose-100 bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-md items-center justify-between px-4 py-3">
-          <img src="/logo.png" alt="Laguin - Musikmu Ceritamu" className="h-10 w-auto object-contain" />
-          <div className="text-right">
-             <span className="text-xs text-gray-400 line-through">Rp 497.000</span>{' '}
-             <span className="text-lg font-bold text-[#E11D48]">GRATIS</span>{' '}
-             <Badge variant="destructive" className="ml-1 text-[10px] px-1 py-0 h-5">11 sisa</Badge>
+      <header className="sticky top-0 z-50 border-b border-rose-100 bg-white/95 backdrop-blur-sm shadow-sm">
+        <div className="mx-auto flex max-w-md items-center justify-between px-4 py-2">
+          <img src="/logo.png" alt="Laguin - Musikmu Ceritamu" className="h-8 w-auto object-contain" />
+          <div className="text-right flex items-center gap-1">
+             <span className="text-[10px] text-gray-400 line-through">Rp 497k</span>
+             <span className="text-sm font-bold text-[#E11D48]">GRATIS</span>
+             <Badge variant="destructive" className="ml-1 text-[9px] px-1 py-0 h-4 min-w-[36px] justify-center">11 sisa</Badge>
           </div>
         </div>
-        {/* Progress Bar inside Header */}
-        <div className="px-4 pb-2">
-           <div className="flex gap-1 h-1">
-             {[0, 1, 2, 3, 4]
-               .filter((i) => agreementEnabled || i > 0)
-               .map((i) => (
-               <div key={i} className={`flex-1 rounded-full transition-all duration-300 ${i < step ? 'bg-green-500' : i === step ? 'bg-[#E11D48]' : 'bg-gray-200'}`} />
-             ))}
-           </div>
-           {step === 0 && <div className="mt-1 text-center text-[10px] font-medium text-gray-400">Pengumuman</div>}
-           {step > 1 && <div className="mt-1 text-center text-[10px] font-medium text-gray-400">Lagu untuk {currentRecipient}</div>}
+        {/* Progress Bar inside Header - Ultra Compact */}
+        <div className="w-full h-0.5 bg-gray-100 flex">
+           {[0, 1, 2, 3, 4]
+             .filter((i) => agreementEnabled || i > 0)
+             .map((i) => (
+             <div key={i} className={`flex-1 transition-all duration-500 ${i <= step ? 'bg-[#E11D48]' : 'bg-transparent'}`} />
+           ))}
         </div>
+        {/* Step Indicator Text - Floating below header if needed, but keeping it minimal for now */}
+        {step > 0 && step < 4 && (
+          <div className="absolute top-full left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-rose-50 py-1 text-center">
+             <div className="text-[10px] font-medium text-gray-400">
+               {step === 1 ? 'Siapa penerimanya?' : step === 2 ? 'Pilih vibe musik' : 'Tulis ceritamu'}
+             </div>
+          </div>
+        )}
       </header>
 
-      <main className="mx-auto max-w-md px-4 py-8">
+      <main className="mx-auto max-w-md px-4 py-4 sm:py-8">
         <form onSubmit={form.handleSubmit(onSubmit)}>
           
           {/* STEP 0: ANNOUNCEMENT - halaman pengumuman */}
@@ -739,19 +792,19 @@ export function ConfigRoute() {
             <div className="flex flex-col items-center justify-start animate-in fade-in slide-in-from-bottom-4 duration-500 pb-4">
               <Card className="w-full overflow-hidden border-rose-200 bg-white shadow-xl">
                 {/* Header */}
-                <div className="bg-[#E11D48] px-3 py-2.5 flex items-center justify-center gap-2 text-white shadow-sm">
-                  <Megaphone className="h-4 w-4 shrink-0" />
-                  <span className="text-xs font-bold uppercase tracking-wide">Kado Valentine Paling Romantis</span>
+                <div className="bg-[#E11D48] px-3 py-2 flex items-center justify-center gap-2 text-white shadow-sm">
+                  <Megaphone className="h-3.5 w-3.5 shrink-0" />
+                  <span className="text-[10px] font-bold uppercase tracking-wide">Kado Valentine Paling Romantis</span>
                 </div>
 
                 <CardContent className="p-0">
-                  <div className="p-4 text-center space-y-3">
-                    <h2 className="text-base font-bold text-gray-900 leading-snug mx-auto max-w-[280px]">
-                      Rekam emosi mereka saat mendengar lagu untuk menang <span className="text-[#E11D48]">Rp 3.000.000!</span>
+                  <div className="p-3 text-center space-y-2">
+                    <h2 className="text-sm font-bold text-gray-900 leading-snug mx-auto max-w-[260px]">
+                      Rekam emosi mereka saat mendengar lagu untuk menang <span className="text-[#E11D48]">Rp 1.000.000!</span>
                     </h2>
-                    
-                    {/* Video Container - Optimized size */}
-                    <div className="relative mx-auto rounded-lg overflow-hidden bg-gray-100 shadow-md ring-1 ring-gray-200 w-[140px] aspect-[9/16] sm:w-[160px]">
+
+                    {/* Video Centered */}
+                    <div className="relative mx-auto rounded-lg overflow-hidden bg-gray-100 shadow-md ring-1 ring-gray-200 w-[110px] aspect-[9/16]">
                        {heroVideoUrl ? (
                          <video 
                            src={heroVideoUrl} 
@@ -762,74 +815,65 @@ export function ConfigRoute() {
                            className="w-full h-full object-cover"
                          />
                        ) : (
-                         <div className="flex items-center justify-center h-full text-gray-400 text-[10px]">Video preview</div>
+                         <div className="flex items-center justify-center h-full text-gray-400 text-[9px]">Video preview</div>
                        )}
+                    </div>
+
+                    {/* Warranty Box Below Video */}
+                    <div className="mx-auto max-w-[280px]">
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-[10px] text-green-800 shadow-sm text-center">
+                        <p className="font-bold mb-0.5 flex items-center justify-center gap-1"><span className="text-base">🤑</span> GARANSI UANG TUNAI</p>
+                        <p className="leading-tight opacity-90">Setiap video reaksi yang jelas <span className="font-bold underline decoration-green-500/50">pasti dapat Rp 75.000</span>.</p>
+                      </div>
+                      <p className="text-[9px] text-gray-400 italic mt-1 text-center">*Syarat dan ketentuan berlaku</p>
                     </div>
                   </div>
 
-                  {/* How it works - Compact Timeline */}
-                  <div className="bg-gradient-to-b from-rose-50/80 to-white px-5 py-4 border-t border-rose-100">
-                    <h3 className="text-sm font-bold text-gray-900 mb-3 text-center uppercase tracking-wider text-[10px] text-rose-500">Cara Ikutan</h3>
+                  {/* How it works - Ultra Compact Timeline */}
+                  <div className="bg-gradient-to-b from-rose-50/80 to-white px-4 py-3 border-t border-rose-100">
+                    <h3 className="text-[10px] font-bold text-rose-500 mb-2 text-center uppercase tracking-wider">Cara Ikutan</h3>
                     
-                    <div className="space-y-0">
+                    <div className="grid grid-cols-3 gap-2">
                       {/* Step 1 */}
-                      <div className="flex gap-3">
-                        <div className="flex flex-col items-center">
-                          <div className="w-6 h-6 rounded-full bg-[#E11D48] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm ring-2 ring-white">1</div>
-                          <div className="w-0.5 h-full bg-rose-200 min-h-[20px]"></div>
-                        </div>
-                        <div className="pb-4 pt-0.5">
-                          <p className="font-bold text-sm text-gray-800 leading-none">Buat Lagu Gratis</p>
-                          <p className="text-[11px] text-gray-500 mt-1 leading-tight">Biasanya Rp 497.000 (Hemat 100%).</p>
-                        </div>
+                      <div className="flex flex-col items-center text-center">
+                        <div className="w-5 h-5 rounded-full bg-[#E11D48] text-white flex items-center justify-center text-[10px] font-bold mb-1 shadow-sm">1</div>
+                        <p className="font-bold text-[10px] text-gray-800 leading-tight">Buat Lagu Gratis</p>
+                        <p className="text-[9px] text-gray-500 leading-none mt-0.5">Hemat 100%</p>
                       </div>
 
                       {/* Step 2 */}
-                      <div className="flex gap-3">
-                        <div className="flex flex-col items-center">
-                          <div className="w-6 h-6 rounded-full bg-[#E11D48] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm ring-2 ring-white">2</div>
-                          <div className="w-0.5 h-full bg-rose-200 min-h-[20px]"></div>
-                        </div>
-                        <div className="pb-4 pt-0.5">
-                          <p className="font-bold text-sm text-gray-800 leading-none">Rekam Video Reaksinya</p>
-                          <div className="text-[11px] text-gray-500 mt-1 space-y-0.5 leading-tight">
-                            <p>• Format portrait (9:16)</p>
-                            <p>• Minimal durasi 1 menit</p>
-                            <p>• Pastikan suara lagu terdengar</p>
-                          </div>
-                        </div>
+                      <div className="flex flex-col items-center text-center">
+                        <div className="w-5 h-5 rounded-full bg-[#E11D48] text-white flex items-center justify-center text-[10px] font-bold mb-1 shadow-sm">2</div>
+                        <p className="font-bold text-[10px] text-gray-800 leading-tight">Rekam Reaksinya</p>
+                        <p className="text-[9px] text-gray-500 leading-none mt-0.5">Wajib Video!</p>
                       </div>
 
                       {/* Step 3 */}
-                      <div className="flex gap-3">
-                        <div className="flex flex-col items-center">
-                          <div className="w-6 h-6 rounded-full bg-[#E11D48] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm ring-2 ring-white">3</div>
-                        </div>
-                        <div className="pt-0.5">
-                          <p className="font-bold text-sm text-gray-800 leading-none">Kirim & Menang</p>
-                          <p className="text-[11px] text-gray-500 mt-1 leading-tight">
-                            Kirim ke WhatsApp kami dalam 24 jam.
-                          </p>
-                        </div>
+                      <div className="flex flex-col items-center text-center">
+                        <div className="w-5 h-5 rounded-full bg-[#E11D48] text-white flex items-center justify-center text-[10px] font-bold mb-1 shadow-sm">3</div>
+                        <p className="font-bold text-[10px] text-gray-800 leading-tight">Kirim & Menang</p>
+                        <p className="text-[9px] text-gray-500 leading-none mt-0.5">Dapat Cuan!</p>
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              <p className="text-center text-[10px] text-gray-400 mt-3 animate-pulse">Scroll ke bawah untuk mulai 👇</p>
+              <p className="text-center text-[9px] text-gray-400 mt-2 animate-pulse">Klik tombol di bawah untuk mulai 👇</p>
             </div>
           )}
 
           {/* STEP 1: WHO IS IT FOR? */}
           {step === 1 && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="text-center space-y-2">
-                <Heart className="mx-auto h-8 w-8 text-rose-400 fill-rose-100" />
-                <h1 className="text-3xl font-serif font-bold text-gray-900">Siapa orang beruntung itu?</h1>
-                <p className="text-gray-500">Kami akan memasukkan <strong className="text-gray-900">namanya</strong> ke dalam lirik lagu</p>
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2">
+              <div className="text-center space-y-1">
+                <h1 className="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
+                  <Heart className="h-5 w-5 text-rose-400 fill-rose-100" />
+                  Siapa penerimanya?
+                </h1>
+                <p className="text-xs text-gray-500">Namanya akan ada di dalam lirik</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-3 gap-2">
                 {['Pasangan', 'Suami', 'Pacar', 'Tunangan', 'Istri', 'Lainnya'].map((rel) => (
                   <SelectionChip
                     key={rel}
@@ -840,45 +884,47 @@ export function ConfigRoute() {
                       setRelationship(rel)
                       setValue('extraNotes', `Relasi dengan penerima: ${rel}`)
                     }}
-                    className={relationship === rel ? "bg-[#E11D48] border-[#E11D48] text-white" : ""}
+                    className={relationship === rel ? "bg-[#E11D48] border-[#E11D48] text-white w-full shadow-md shadow-rose-100 px-2 py-3" : "w-full bg-white shadow-sm px-2 py-3"}
                   />
                 ))}
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Nama Panggilannya</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Nama Panggilannya</label>
                 <Input 
                   {...register('recipientName')} 
                   placeholder="cth. Salsa" 
-                  className="h-14 rounded-xl border-gray-300 text-lg shadow-sm focus-visible:ring-[#E11D48]"
+                  className="h-11 rounded-xl border-gray-300 text-base shadow-sm focus-visible:ring-[#E11D48]"
                 />
                 {errors.recipientName && <p className="text-xs text-[#E11D48]">{errors.recipientName.message}</p>}
-                <div className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
-                  <Sparkles className="h-3 w-3" />
+                <div className="flex items-center gap-1.5 text-[10px] text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-100">
+                  <Sparkles className="h-3 w-3 shrink-0" />
                   Nama ini akan dinyanyikan dalam lirik!
                 </div>
               </div>
 
-              <div className="text-center text-xs text-gray-400">
-                Bergabung dengan 2,847 wanita yang membuat pasangannya menangis bahagia
+              <div className="text-center text-[10px] text-gray-400 mt-4">
+                Bergabung dengan 2,847 orang yang membuat pasangannya menangis bahagia
               </div>
             </div>
           )}
 
           {/* STEP 2: VIBE */}
           {step === 2 && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="text-center space-y-2">
-                <Music className="mx-auto h-8 w-8 text-rose-400" />
-                <h1 className="text-3xl font-serif font-bold text-gray-900">Pilih vibe untuk {currentRecipient}</h1>
-                <p className="text-gray-500">Gaya musik apa yang dia suka?</p>
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2">
+              <div className="text-center space-y-1">
+                <h1 className="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
+                  <Music className="h-5 w-5 text-rose-400" />
+                  Pilih Vibe
+                </h1>
+                <p className="text-xs text-gray-500">Sesuaikan dengan selera musiknya</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 {[
                   { id: 'Country', label: 'Country', desc: 'Bercerita & tulus', icon: '🤠' },
                   { id: 'Acoustic', label: 'Acoustic', desc: 'Hangat & intim', icon: '🎸' },
-                  { id: 'Pop Ballad', label: 'Pop Ballad', desc: 'Modern & emosional', icon: '🎹', badge: 'Pilihan terbaik' },
+                  { id: 'Pop Ballad', label: 'Pop Ballad', desc: 'Modern & emosional', icon: '🎹', badge: 'Best' },
                   { id: 'R&B Soul', label: 'R&B Soul', desc: 'Halus & romantis', icon: '🌙' },
                   { id: 'Rock', label: 'Rock', desc: 'Kuat & penuh gairah', icon: '⚡' },
                   { id: 'Piano Ballad', label: 'Piano Ballad', desc: 'Elegan & abadi', icon: '🎻' },
@@ -887,36 +933,36 @@ export function ConfigRoute() {
                     key={g.id}
                     label={g.label}
                     description={g.desc}
-                    icon={<span className="text-2xl">{g.icon}</span>}
+                    icon={<span className="text-xl">{g.icon}</span>}
                     badge={g.badge}
                     selected={genre === g.id}
                     onClick={() => setValue('musicPreferences.genre', g.id)}
-                    className={genre === g.id ? "bg-[#E11D48] border-[#E11D48] text-white ring-2 ring-rose-200" : ""}
+                    className={genre === g.id ? "bg-[#E11D48] border-[#E11D48] text-white ring-2 ring-rose-200 shadow-md p-3" : "bg-white shadow-sm p-3"}
                   />
                 ))}
               </div>
 
-              <div className="rounded-xl bg-white p-4 shadow-sm border border-gray-100 text-center space-y-3">
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Suara Penyanyi</label>
-                <div className="flex justify-center gap-6">
+              <div className="rounded-xl bg-white p-3 shadow-sm border border-gray-100 text-center space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Suara Penyanyi</label>
+                <div className="flex justify-center gap-4">
                   {['Female', 'Male', 'Surprise me'].map((v) => (
-                    <label key={v} className="flex items-center gap-2 cursor-pointer">
+                    <label key={v} className="flex items-center gap-1.5 cursor-pointer bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 hover:bg-gray-100 transition-colors">
                       <input 
                         type="radio" 
                         value={v} 
                         {...register('musicPreferences.voiceStyle')}
-                        className="text-[#E11D48] focus:ring-[#E11D48]" 
+                        className="text-[#E11D48] focus:ring-[#E11D48] w-3 h-3" 
                       />
-                      <span className="text-sm font-medium">{v === 'Female' ? 'Wanita' : v === 'Male' ? 'Pria' : 'Kejutkan saya'}</span>
+                      <span className="text-xs font-medium">{v === 'Female' ? 'Wanita' : v === 'Male' ? 'Pria' : 'Bebas'}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
-              <div className="rounded-xl bg-white p-4 shadow-sm border border-gray-100 text-center space-y-3">
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Bahasa lirik</label>
+              <div className="rounded-xl bg-white p-3 shadow-sm border border-gray-100 text-center space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Bahasa lirik</label>
                 <select
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#E11D48]"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#E11D48]"
                   value={language || 'Indonesian'}
                   onChange={(e) => setValue('musicPreferences.language', e.target.value)}
                 >
@@ -929,27 +975,29 @@ export function ConfigRoute() {
 
           {/* STEP 3: STORY */}
           {step === 3 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="text-center space-y-2">
-                <PenLine className="mx-auto h-8 w-8 text-rose-400" />
-                <h1 className="text-3xl font-serif font-bold text-gray-900">Ceritakan kisahmu</h1>
-                <p className="text-gray-500">Ini akan menjadi lirik. <span className="text-[#E11D48] font-medium">Beberapa kalimat saja sudah cukup!</span></p>
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2">
+              <div className="text-center space-y-1">
+                <h1 className="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
+                  <PenLine className="h-5 w-5 text-rose-400" />
+                  Ceritakan kisahmu
+                </h1>
+                <p className="text-xs text-gray-500">Ini akan menjadi lirik. <span className="text-[#E11D48] font-medium">Beberapa kalimat saja!</span></p>
               </div>
 
-              <div className="rounded-xl bg-rose-50 border border-rose-100 p-4 space-y-3 text-xs text-gray-600">
-                <div className="flex gap-3 items-start">
+              <div className="rounded-xl bg-rose-50 border border-rose-100 p-3 space-y-2 text-xs text-gray-600">
+                <div className="flex gap-2 items-start">
                   <span className="text-[#E11D48] font-bold mt-0.5">•</span>
-                  <span>Semakin kaya detail yang kamu berikan, semakin kuat emosi dalam lagunya.</span>
+                  <span>Semakin kaya detail, semakin kuat emosinya.</span>
                 </div>
-                <div className="flex gap-3 items-start">
+                <div className="flex gap-2 items-start">
                   <span className="text-[#E11D48] font-bold mt-0.5">•</span>
-                  <span>Ceritakan momen pertemuan, hal yang kamu cintai darinya, kenangan gila, hingga saat-saat kalian tertawa dan menangis bersama.</span>
+                  <span>Ceritakan pertemuan, hal yang dicintai, atau kenangan lucu.</span>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                  <Sparkles className="h-3 w-3" /> Ketuk untuk menambah:
+                  <Sparkles className="h-3 w-3" /> Ide Topik:
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {['Awal bertemu', 'Yang aku suka darinya', 'Jokes internal kami', 'Mimpi masa depan'].map((prompt) => (
@@ -963,10 +1011,6 @@ export function ConfigRoute() {
                 </div>
               </div>
 
-              <div className="rounded-xl bg-rose-50 p-4 text-xs text-gray-600 italic border border-rose-100">
-                <span className="font-bold not-italic text-rose-600">Contoh:</span> "Kami bertemu di pernikahan teman 3 tahun lalu. Dia selalu membuatku tertawa setiap hari. Aku suka bagaimana dia selalu membawakanku kopi di tempat tidur."
-              </div>
-
               <div className="space-y-2">
                 <Textarea 
                   {...storyRegister}
@@ -974,7 +1018,7 @@ export function ConfigRoute() {
                     storyRegister.ref(el)
                     storyTextareaRef.current = el
                   }}
-                  rows={6} 
+                  rows={5} 
                   placeholder="Mulai ketik ceritamu di sini..." 
                   maxLength={4000}
                   className="rounded-xl border-gray-300 text-base shadow-sm focus-visible:ring-[#E11D48] resize-none p-4"
@@ -989,7 +1033,7 @@ export function ConfigRoute() {
                     </div>
                     {storyQuality.label}
                   </div>
-                  <span className="text-gray-400">{storyText.length} / 4000 chars</span>
+                  <span className="text-gray-400">{storyText.length} / 4000</span>
                 </div>
               </div>
             </div>
@@ -997,16 +1041,66 @@ export function ConfigRoute() {
 
           {/* STEP 4: REVIEW / CHECKOUT */}
           {step === 4 && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="text-center space-y-2">
-                <PartyPopper className="mx-auto h-8 w-8 text-yellow-500" />
-                <h1 className="text-3xl font-serif font-bold text-gray-900">Semua siap!</h1>
-                <p className="text-gray-500">Kemana kami harus mengirim lagu {currentRecipient}?</p>
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2">
+              <div className="text-center space-y-1">
+                <PartyPopper className="mx-auto h-6 w-6 text-yellow-500" />
+                <h1 className="text-2xl font-serif font-bold text-gray-900">Semua siap!</h1>
+                <p className="text-sm text-gray-500">
+                  {manualConfirmationEnabled
+                    ? 'Konfirmasi pesanan via WhatsApp'
+                    : `Kirim lagu ${currentRecipient} ke mana?`}
+                </p>
               </div>
 
               <div className="space-y-4">
+                 {/* Compact Order Summary Accordion */}
+                 <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                    <button 
+                      type="button"
+                      onClick={() => setIsOrderSummaryOpen(!isOrderSummaryOpen)}
+                      className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">💝</span>
+                        <div className="flex flex-col items-start">
+                          <span className="text-xs font-bold text-gray-700">Ringkasan Pesanan</span>
+                          <span className="text-[10px] text-gray-500">{genre}, {language || 'Indonesian'}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[#E11D48]">GRATIS</span>
+                        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOrderSummaryOpen ? 'rotate-180' : ''}`} />
+                      </div>
+                    </button>
+                    
+                    {isOrderSummaryOpen && (
+                      <div className="p-4 text-xs space-y-2 border-t border-gray-100 animate-in slide-in-from-top-1">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Untuk</span>
+                          <span className="font-bold text-gray-900">{recipientName}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Gaya & Suara</span>
+                          <span className="font-bold text-gray-900">{genre} ({form.getValues('musicPreferences.voiceStyle')})</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Bahasa</span>
+                          <span className="font-bold text-gray-900">{language || 'Indonesian'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Estimasi</span>
+                          <span className="font-bold text-green-600 flex items-center gap-1"><Zap className="h-3 w-3" /> {deliveryEta.short}</span>
+                        </div>
+                        <Separator className="my-2" />
+                        <div className="bg-rose-50 p-2 rounded text-rose-700 italic">
+                          "{storyText.length > 50 ? storyText.slice(0, 50) + '...' : storyText}"
+                        </div>
+                      </div>
+                    )}
+                 </div>
+
                  <div className="space-y-1">
-                   <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Nomor WhatsApp</label>
+                   <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Nomor WhatsApp</label>
                    <Controller
                      name="whatsappNumber"
                      control={form.control}
@@ -1038,190 +1132,162 @@ export function ConfigRoute() {
                     {errors.whatsappNumber && <p className="text-xs text-[#E11D48]">{errors.whatsappNumber.message}</p>}
                  </div>
 
-                 <div className="space-y-1">
-                   <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Alamat Email</label>
-                   <div className="relative">
-                     <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
-                       <Mail className="h-5 w-5" />
-                     </div>
-                     <Input
-                       {...register('email')}
-                       placeholder="nama@email.com"
-                       type="email"
-                       disabled={emailVerified}
-                       className={`h-12 rounded-xl border-gray-300 shadow-sm focus-visible:ring-[#E11D48] pl-10 ${emailVerified ? 'bg-gray-50 cursor-not-allowed' : ''}`}
-                     />
-                   </div>
-                    {errors.email && <p className="text-xs text-[#E11D48]">{errors.email.message}</p>}
-                    {emailVerified && (
-                      <p className="text-xs text-green-600 flex items-center gap-1">
-                        <Check className="h-3 w-3" /> Email terkunci setelah verifikasi
-                      </p>
-                    )}
-                 </div>
-
-                 {emailOtpEnabled ? (
-                   <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
-                     <div className="flex items-center justify-between gap-3">
-                       <div className="text-sm font-bold text-gray-900">Verifikasi Email</div>
-                       {emailVerified ? (
-                         <div className="inline-flex items-center gap-1 text-xs font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-1 rounded-full">
-                           <Check className="h-3.5 w-3.5" /> Terverifikasi
+                 {!manualConfirmationEnabled ? (
+                   <>
+                     <div className="space-y-1">
+                       <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Alamat Email</label>
+                       <div className="relative">
+                         <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
+                           <Mail className="h-4 w-4" />
                          </div>
-                       ) : null}
-                     </div>
-
-                     {emailVerified ? (
-                       <div className="bg-green-50 border border-green-100 rounded-lg p-3 text-sm text-green-800">
-                         <p className="font-medium">✓ Email <span className="font-bold">{email}</span> sudah terverifikasi</p>
-                         <p className="text-xs mt-1 text-green-700">Kamu bisa melanjutkan ke checkout.</p>
+                         <Input
+                           {...register('email')}
+                           placeholder="nama@email.com"
+                           type="email"
+                           disabled={emailVerified}
+                           className={`h-12 rounded-xl border-gray-300 shadow-sm focus-visible:ring-[#E11D48] pl-10 ${emailVerified ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                         />
                        </div>
-                     ) : (
-                       <>
-                         <div className="flex gap-3">
-                           <Button
-                             type="button"
-                             variant="outline"
-                             className="h-11 rounded-xl border-gray-200"
-                             onClick={() => void sendEmailOtp()}
-                             disabled={
-                               otpSending ||
-                               otpVerifying ||
-                               !email ||
-                               Boolean(errors.email) ||
-                               resendCooldownSec > 0 ||
-                               hasEnteredOtp
-                             }
-                           >
-                             {otpSending ? (
-                               <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Mengirim...</span>
-                             ) : hasEnteredOtp ? (
-                               'Verifikasi kode di bawah'
-                             ) : resendCooldownSec > 0 ? (
-                               `Kirim ulang (${resendCooldownSec}s)`
-                             ) : (
-                               'Kirim kode verifikasi'
-                             )}
-                           </Button>
+                       {errors.email && <p className="text-xs text-[#E11D48]">{errors.email.message}</p>}
+                     </div>
+
+                     {emailOtpEnabled ? (
+                       <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm space-y-3">
+                         <div className="flex items-center justify-between gap-3">
+                           <div className="text-xs font-bold text-gray-900 uppercase tracking-wider">Verifikasi Email</div>
+                           {emailVerified ? (
+                             <div className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded-full">
+                               <Check className="h-3 w-3" /> OK
+                             </div>
+                           ) : null}
                          </div>
 
-                         {emailVerificationId && !emailVerified ? (
-                           <div className="space-y-3">
-                             <div className="text-xs text-gray-500">
-                               Masukkan 4 digit kode OTP yang kami kirim ke <span className="font-semibold text-gray-800">{email}</span>
+                         {emailVerified ? (
+                           <div className="text-xs text-green-800 flex items-center gap-2">
+                             <div className="h-6 w-6 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                               <Check className="h-3.5 w-3.5 text-green-600" />
                              </div>
-                             <div className="flex gap-2 justify-center">
-                               {[0, 1, 2, 3].map((i) => (
-                                 <Input
-                                   key={i}
-                                   ref={(el) => { otpRefs.current[i] = el }}
-                                   value={otpDigits[i] ?? ''}
-                                   onChange={(e) => handleOtpChange(i, e.target.value)}
-                                   onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                                   onPaste={i === 0 ? handleOtpPaste : undefined}
-                                   inputMode="numeric"
-                                   pattern="[0-9]*"
-                                   type="tel"
-                                   maxLength={1}
-                                   className="h-12 w-12 text-center text-lg font-bold rounded-xl border-gray-300 shadow-sm focus-visible:ring-[#E11D48]"
-                                 />
-                               ))}
+                             <div>
+                               Email <span className="font-bold">{email}</span> terverifikasi.
                              </div>
-                             <Button
-                               type="button"
-                               className="h-11 w-full rounded-xl bg-gray-900 text-white hover:bg-gray-800"
-                               onClick={() => void verifyEmailOtp()}
-                               disabled={otpVerifying || otpDigits.some((d) => !d)}
-                             >
-                               {otpVerifying ? (
-                                 <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Memverifikasi...</span>
-                               ) : (
-                                 'Verifikasi kode'
-                               )}
-                             </Button>
                            </div>
-                         ) : null}
+                         ) : (
+                           <>
+                             <div className="flex gap-2">
+                               <Button
+                                 type="button"
+                                 variant="outline"
+                                 size="sm"
+                                 className="h-10 rounded-lg border-gray-200 w-full text-xs"
+                                 onClick={() => void sendEmailOtp()}
+                                 disabled={
+                                   otpSending ||
+                                   otpVerifying ||
+                                   !email ||
+                                   Boolean(errors.email) ||
+                                   resendCooldownSec > 0 ||
+                                   hasEnteredOtp
+                                 }
+                               >
+                                 {otpSending ? (
+                                   <span className="flex items-center gap-2">
+                                     <Loader2 className="h-3 w-3 animate-spin" /> Mengirim...
+                                   </span>
+                                 ) : hasEnteredOtp ? (
+                                   'Cek kode di emailmu'
+                                 ) : resendCooldownSec > 0 ? (
+                                   `Kirim ulang (${resendCooldownSec}s)`
+                                 ) : (
+                                   'Kirim Kode Verifikasi'
+                                 )}
+                               </Button>
+                             </div>
 
-                         {otpError && typeof otpError === 'string' ? (
-                           <p className="text-xs text-[#E11D48]">{otpError}</p>
-                         ) : null}
-                       </>
-                     )}
-                   </div>
+                             {emailVerificationId && !emailVerified ? (
+                               <div className="space-y-2 pt-1">
+                                 <div className="flex gap-2 justify-center">
+                                   {[0, 1, 2, 3].map((i) => (
+                                     <Input
+                                       key={i}
+                                       ref={(el) => {
+                                         otpRefs.current[i] = el
+                                       }}
+                                       value={otpDigits[i] ?? ''}
+                                       onChange={(e) => handleOtpChange(i, e.target.value)}
+                                       onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                                       onPaste={i === 0 ? handleOtpPaste : undefined}
+                                       inputMode="numeric"
+                                       pattern="[0-9]*"
+                                       type="tel"
+                                       maxLength={1}
+                                       className="h-10 w-10 text-center text-lg font-bold rounded-lg border-gray-300 shadow-sm focus-visible:ring-[#E11D48]"
+                                     />
+                                   ))}
+                                 </div>
+                                 <Button
+                                   type="button"
+                                   size="sm"
+                                   className="h-9 w-full rounded-lg bg-gray-900 text-white hover:bg-gray-800 text-xs"
+                                   onClick={() => void verifyEmailOtp()}
+                                   disabled={otpVerifying || otpDigits.some((d) => !d)}
+                                 >
+                                   {otpVerifying ? 'Memverifikasi...' : 'Verifikasi Kode'}
+                                 </Button>
+                               </div>
+                             ) : null}
+
+                             {otpError && typeof otpError === 'string' ? (
+                               <p className="text-[10px] text-[#E11D48] text-center">{otpError}</p>
+                             ) : null}
+                           </>
+                         )}
+                       </div>
+                     ) : null}
+                   </>
                  ) : null}
 
                  {agreementEnabled ? (
-                   <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
-                     <label className="flex items-start gap-3 cursor-pointer">
+                   <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm space-y-2">
+                     <label className="flex items-start gap-2 cursor-pointer">
                        <input
                          type="checkbox"
                          checked={agreementAccepted}
                          onChange={(e) => setAgreementAccepted(e.target.checked)}
-                         className="mt-1 h-4 w-4 rounded border-gray-300 text-[#E11D48] focus:ring-[#E11D48]"
+                         className="mt-1 h-3.5 w-3.5 rounded border-gray-300 text-[#E11D48] focus:ring-[#E11D48]"
                        />
-                       <span className="text-sm text-gray-700">
-                         Saya menyetujui untuk mengirimkan rekaman reaksi dan respons emosional penerima lagu kepada Laguin.id, untuk keperluan promosi dan peningkatan layanan.
+                       <span className="text-xs text-gray-600 leading-tight">
+                         Saya setuju mengirimkan video reaksi untuk keperluan promosi Laguin.id.
                        </span>
                      </label>
-                     <p className="text-xs font-semibold text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-100">
-                       Hadiah sebesar Rp 3.000.000 akan diberikan kepada pemenang dengan video reaksi terbaik.
+                     <p className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-1.5 rounded border border-amber-100">
+                       🏆 Hadiah Rp 1.000.000 untuk video reaksi terbaik.
                      </p>
                    </div>
                  ) : null}
 
-                 <Card className="overflow-hidden border-gray-200 shadow-sm">
-                   <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 flex items-center gap-2">
-                     <span className="text-lg">💝</span> <span className="text-sm font-bold text-gray-700">Pesanan Lagumu</span>
-                   </div>
-                   <CardContent className="p-4 text-sm space-y-3">
-                     <div className="flex justify-between">
-                       <span className="text-gray-500">Untuk</span>
-                       <span className="font-bold text-gray-900">{recipientName}</span>
+                 <div className="rounded-xl bg-green-50 p-3 border border-green-100 space-y-2">
+                   <div className="text-[10px] font-bold text-green-800 uppercase tracking-wider">Selanjutnya:</div>
+                   <div className="space-y-1.5 text-xs text-green-900">
+                     <div className="flex gap-2 items-start">
+                       <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-green-200 text-[9px] font-bold text-green-700 mt-0.5">1</div>
+                      <span className="leading-tight">{manualConfirmationEnabled ? 'Admin memproses pesanan' : 'Kami membuat lagu personalmu'}</span>
                      </div>
-                     <div className="flex justify-between">
-                       <span className="text-gray-500">Gaya</span>
-                       <span className="font-bold text-gray-900">{genre}</span>
-                     </div>
-                   <div className="flex justify-between">
-                     <span className="text-gray-500">Bahasa</span>
-                     <span className="font-bold text-gray-900">{language || 'Indonesian'}</span>
-                   </div>
-                     <div className="flex justify-between">
-                       <span className="text-gray-500">Pengiriman</span>
-                      <span className="font-bold text-green-600 flex items-center gap-1"><Zap className="h-3 w-3" /> {deliveryEta.label}</span>
-                     </div>
-                     <Separator />
-                     <div className="flex justify-between items-center pt-1">
-                       <span className="text-gray-500">Total</span>
-                       <div className="flex items-center gap-2">
-                         <span className="text-gray-400 line-through text-xs">Rp 497.000</span>
-                         <span className="font-bold text-[#E11D48] text-xl">GRATIS</span>
-                       </div>
-                     </div>
-                   </CardContent>
-                 </Card>
-
-                 <div className="rounded-xl bg-green-50 p-4 border border-green-100 space-y-3">
-                   <div className="text-xs font-bold text-green-800 uppercase tracking-wider">Apa selanjutnya?</div>
-                   <div className="space-y-2 text-sm text-green-900">
-                     <div className="flex gap-2">
-                       <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-200 text-[10px] font-bold text-green-700">1</div>
-                       <span>Kami membuat lagu personalmu</span>
-                     </div>
-                     <div className="flex gap-2">
-                       <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-200 text-[10px] font-bold text-green-700">2</div>
-                      <span>Dikirim via email & notifikasi WhatsApp <span className="font-bold">{deliveryEta.sentenceLower}</span></span>
-                     </div>
-                     <div className="flex gap-2">
-                       <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-200 text-[10px] font-bold text-green-700">3</div>
-                       <span>Putar untuknya dan lihat dia menangis 😭</span>
+                     <div className="flex gap-2 items-start">
+                       <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-green-200 text-[9px] font-bold text-green-700 mt-0.5">2</div>
+                      {manualConfirmationEnabled ? (
+                        <span className="leading-tight">Lanjut chat admin WhatsApp untuk konfirmasi.</span>
+                      ) : (
+                        <span className="leading-tight">
+                          Dikirim via email & WA <span className="font-bold">{deliveryEta.sentenceLower}</span>
+                        </span>
+                      )}
                      </div>
                    </div>
                  </div>
 
                  <div className="flex justify-center gap-4 text-[10px] text-gray-400">
                    <div className="flex items-center gap-1"><ShieldCheck className="h-3 w-3" /> Checkout aman</div>
-                  <div className="flex items-center gap-1"><Clock className="h-3 w-3" /> Pengiriman {deliveryEta.short}</div>
+                  <div className="flex items-center gap-1"><Clock className="h-3 w-3" /> {deliveryEta.short}</div>
                  </div>
               </div>
             </div>
@@ -1256,7 +1322,7 @@ export function ConfigRoute() {
                    onClick={step < 4 ? (e) => { e.preventDefault(); handleNext(); } : undefined}
                   disabled={
                     loading ||
-                    (step === 4 && emailOtpEnabled && !emailVerified) ||
+                    (step === 4 && !manualConfirmationEnabled && emailOtpEnabled && !emailVerified) ||
                     (step === 4 && agreementEnabled && !agreementAccepted)
                   }
                  >
@@ -1264,7 +1330,7 @@ export function ConfigRoute() {
                     step === 1 ? 'Pilih vibenya ->' : 
                     step === 2 ? 'Tambahkan ceritamu ->' : 
                     step === 3 ? 'Hampir selesai! ->' : 
-                    loading ? 'Memproses...' : (agreementEnabled && !agreementAccepted ? 'Centang persetujuan' : emailOtpEnabled ? (emailVerified ? 'Ke checkout — GRATIS' : 'Verifikasi email dulu') : 'Ke checkout — GRATIS')}
+                    loading ? 'Memproses...' : (agreementEnabled && !agreementAccepted ? 'Centang persetujuan' : manualConfirmationEnabled ? 'Konfirmasi via WhatsApp' : emailOtpEnabled ? (emailVerified ? 'Ke checkout — GRATIS' : 'Verifikasi email dulu') : 'Ke checkout — GRATIS')}
                  </Button>
                </div>
              </div>

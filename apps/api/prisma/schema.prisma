@@ -46,6 +46,7 @@ model Settings {
   paymentsEnabled  Boolean  @default(false)
   emailOtpEnabled Boolean  @default(true)
   agreementEnabled Boolean @default(false)
+  manualConfirmationEnabled Boolean @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }

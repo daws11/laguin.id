@@ -13,6 +13,7 @@ import { prisma } from './lib/prisma'
 import { addOrderEvent } from './lib/events'
 import { processOrderGeneration, failOrder } from './pipeline/generation'
 import { deliverCompletedOrder } from './delivery/deliver'
+import { getOrCreateSettings } from './lib/settings'
 
 function toErrorDetails(e: unknown): {
   name: string
@@ -146,6 +147,10 @@ async function generationTick() {
 }
 
 async function deliveryTick() {
+  const settings = await getOrCreateSettings()
+  const manualConfirmationEnabled = (settings as any).manualConfirmationEnabled ?? false
+  if (manualConfirmationEnabled) return
+
   const orderId = await pickNextDeliverableOrderId()
   if (!orderId) return
 

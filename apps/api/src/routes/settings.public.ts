@@ -11,6 +11,7 @@ export const publicSettingsRoutes: FastifyPluginAsync = async (app) => {
       agreementEnabled: s.agreementEnabled ?? false,
       instantEnabled: s.instantEnabled ?? true,
       deliveryDelayHours: s.deliveryDelayHours ?? 24,
+      manualConfirmationEnabled: (s as any).manualConfirmationEnabled ?? false,
     }
   })
 }

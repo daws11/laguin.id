@@ -28,7 +28,7 @@ export const OrderInputSchema = z.object({
   yourName: z.string().min(1).optional(), // Made optional to match flow
   recipientName: z.string().min(1),
   whatsappNumber: z.string().min(6), // Made required for WhatsApp flow
-  email: z.string().email(),
+  email: z.string().email().optional(),
   emailVerificationId: z.string().optional(),
   occasion: z.string(),
   story: z.string().min(1),

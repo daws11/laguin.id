@@ -1104,10 +1104,10 @@ export function LandingRoute() {
            <p className="text-gray-600 text-base sm:text-lg">Beri dia hadiah yang tak akan pernah dia lupakan. Gabung <strong>2,847 wanita</strong> yang membuat pasangannya menangis terharu.</p>
            
            <div className="pt-4">
-             <Button asChild size="lg" className="h-16 px-12 rounded-full bg-[#E11D48] text-xl font-bold shadow-2xl shadow-rose-300 hover:bg-rose-700 hover:scale-105 transition-all">
-               <Link to="/config">
-                 Buat Lagunya — GRATIS
-                 <span className="ml-2 text-sm font-normal line-through opacity-70">Rp 497.000</span>
+             <Button asChild size="lg" className="h-auto min-h-[4rem] px-6 py-4 sm:px-12 rounded-full bg-[#E11D48] text-lg sm:text-xl font-bold shadow-2xl shadow-rose-300 hover:bg-rose-700 hover:scale-105 transition-all">
+               <Link to="/config" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 leading-none">
+                 <span>Buat Lagunya — GRATIS</span>
+                 <span className="text-xs sm:text-sm font-normal line-through opacity-80 text-rose-100">Rp 497.000</span>
                </Link>
              </Button>
            </div>
@@ -1149,10 +1149,10 @@ export function LandingRoute() {
              <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-green-500" /> {deliveryEta.short}</span>
              <span className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-green-500" /> Garansi</span>
            </div>
-           <Button asChild size="lg" className="w-full h-14 rounded-xl bg-[#E11D48] text-lg font-bold shadow-lg shadow-rose-200 hover:bg-rose-700 active:scale-95 transition-all">
-            <Link to="/config">
-              Buat Lagunya — GRATIS
-              <Badge variant="secondary" className="ml-2 bg-white/20 text-white hover:bg-white/30 text-xs">
+           <Button asChild size="lg" className="w-full h-auto min-h-[3.5rem] py-2 rounded-xl bg-[#E11D48] text-lg font-bold shadow-lg shadow-rose-200 hover:bg-rose-700 active:scale-95 transition-all">
+            <Link to="/config" className="flex items-center justify-center gap-2 flex-wrap text-center leading-tight">
+              <span>Buat Lagunya — GRATIS</span>
+              <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/30 text-xs whitespace-nowrap">
                 (11 sisa)
               </Badge>
             </Link>

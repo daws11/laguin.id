@@ -22,10 +22,11 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
 
     const input = parsed.data
     const customerName = input.yourName ?? input.recipientName
+    const settings = await getOrCreateSettings()
+    const manualConfirmationEnabled = (settings as any).manualConfirmationEnabled ?? false
     const emailLower = normalizeEmail(input.email)
     const whatsappNumber = normalizeWhatsappNumber(input.whatsappNumber)
 
-    const settings = await getOrCreateSettings()
     const emailOtpEnabled = settings.emailOtpEnabled ?? true
     const agreementEnabled = settings.agreementEnabled ?? false
 
@@ -33,7 +34,9 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ error: 'Centang persetujuan untuk melanjutkan.' })
     }
 
-    if (emailOtpEnabled) {
+    // When manual confirmation is enabled, the public flow must NOT require email/OTP.
+    // Admin will manually coordinate confirmation/delivery out-of-band.
+    if (!manualConfirmationEnabled && emailOtpEnabled) {
       // Enforce that email has been verified (OTP) before creating draft order.
       const verificationId = input.emailVerificationId
       if (!verificationId) {
@@ -62,8 +65,8 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
     if (!whatsappNumber) {
       return reply.code(400).send({ error: 'Nomor WhatsApp tidak valid.' })
     }
-    if (!emailLower) {
-      return reply.code(400).send({ error: 'Email tidak valid.' })
+    if (!manualConfirmationEnabled) {
+      if (!emailLower) return reply.code(400).send({ error: 'Email tidak valid.' })
     }
 
     const existingByWhatsapp = await prisma.customer.findUnique({
@@ -76,17 +79,19 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
         .send({ error: 'Nomor WhatsApp sudah terdaftar. Setiap nomor WhatsApp hanya bisa mendaftar sekali.' })
     }
 
-    const existingByEmail = await prisma.customer.findFirst({
-      where: { emailLower },
-      select: { id: true },
-    })
-    if (existingByEmail) {
-      return reply.code(409).send({ error: 'Email sudah terdaftar. Setiap email hanya bisa mendaftar sekali.' })
+    if (!manualConfirmationEnabled) {
+      const existingByEmail = await prisma.customer.findFirst({
+        where: { emailLower },
+        select: { id: true },
+      })
+      if (existingByEmail) {
+        return reply.code(409).send({ error: 'Email sudah terdaftar. Setiap email hanya bisa mendaftar sekali.' })
+      }
     }
 
     const normalizedInput = {
       ...input,
-      email: input.email.trim(),
+      ...(typeof input.email === 'string' ? { email: input.email.trim() } : {}),
       whatsappNumber,
     }
 
@@ -96,8 +101,12 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
         data: {
           name: customerName,
           whatsappNumber,
-          email: normalizedInput.email,
-          emailLower,
+          ...(manualConfirmationEnabled
+            ? { email: null, emailLower: null }
+            : {
+                email: (normalizedInput as any).email,
+                emailLower,
+              }),
         },
         select: { id: true },
       })
@@ -131,7 +140,7 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       req,
       eventName: 'Lead',
       eventId: `order_created:${order.id}`,
-      email: normalizedInput.email,
+      email: manualConfirmationEnabled ? null : ((normalizedInput as any).email ?? null),
       phone: whatsappNumber,
       externalId: customer.id,
       customData: {
