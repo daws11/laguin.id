@@ -812,12 +812,41 @@ export function LandingContentConfigSection({
                             />
                         </label>
                         <div className="space-y-1">
-                            <label className="text-xs font-medium text-muted-foreground">{t.deliveryDelay ?? 'Delivery delay (hours) (when instant is OFF)'}</label>
-                            <Input
-                                type="number"
-                                value={draft.creationDelivery.deliveryDelayHours}
-                                onChange={(e) => setDraft(d => ({ ...d, creationDelivery: { ...d.creationDelivery, deliveryDelayHours: Number(e.target.value) } }))}
-                            />
+                            <label className="text-xs font-medium text-muted-foreground">{t.deliveryDelay ?? 'Delivery delay (when instant is OFF)'}</label>
+                            <div className="flex gap-2">
+                                <Input
+                                    type="number"
+                                    min={0}
+                                    className="flex-1"
+                                    value={(() => {
+                                        const h = draft.creationDelivery.deliveryDelayHours
+                                        const unit = draft.creationDelivery.deliveryDelayUnit ?? (h >= 24 && h % 24 === 0 ? 'days' : 'hours')
+                                        return unit === 'days' ? h / 24 : h
+                                    })()}
+                                    onChange={(e) => {
+                                        const val = Number(e.target.value)
+                                        const unit = draft.creationDelivery.deliveryDelayUnit ?? (draft.creationDelivery.deliveryDelayHours >= 24 && draft.creationDelivery.deliveryDelayHours % 24 === 0 ? 'days' : 'hours')
+                                        const hours = unit === 'days' ? val * 24 : val
+                                        setDraft(d => ({ ...d, creationDelivery: { ...d.creationDelivery, deliveryDelayHours: hours, deliveryDelayUnit: unit as 'hours' | 'days' } }))
+                                    }}
+                                />
+                                <select
+                                    className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                                    value={draft.creationDelivery.deliveryDelayUnit ?? (draft.creationDelivery.deliveryDelayHours >= 24 && draft.creationDelivery.deliveryDelayHours % 24 === 0 ? 'days' : 'hours')}
+                                    onChange={(e) => {
+                                        const newUnit = e.target.value as 'hours' | 'days'
+                                        const curH = draft.creationDelivery.deliveryDelayHours
+                                        const curUnit = draft.creationDelivery.deliveryDelayUnit ?? (curH >= 24 && curH % 24 === 0 ? 'days' : 'hours')
+                                        let newHours = curH
+                                        if (curUnit === 'hours' && newUnit === 'days') newHours = Math.max(24, Math.round(curH / 24) * 24)
+                                        if (curUnit === 'days' && newUnit === 'hours') newHours = curH
+                                        setDraft(d => ({ ...d, creationDelivery: { ...d.creationDelivery, deliveryDelayHours: newHours, deliveryDelayUnit: newUnit } }))
+                                    }}
+                                >
+                                    <option value="hours">Jam</option>
+                                    <option value="days">Hari</option>
+                                </select>
+                            </div>
                         </div>
                         <div className="space-y-1">
                             <label className="text-xs font-medium text-muted-foreground">Harga Pembayaran (IDR) — 0 = gratis</label>
