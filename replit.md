@@ -44,6 +44,14 @@ A monorepo application for creating personalized songs for special occasions. Bu
 - Shared package must be built before other packages (`npm run build -w shared`)
 
 ## Recent Changes
+- 2026-02-16: Performance optimizations for landing page speed
+  - Added @fastify/compress for brotli/gzip compression on all API responses and static files
+  - Route-level code splitting with React.lazy() (Admin, Config, Checkout lazy-loaded; Landing stays eager)
+  - Vite manual chunks: vendor-react, vendor-ui, vendor-form split for better browser caching
+  - Font loading optimized: preload + async media swap to avoid render-blocking
+  - Below-fold images use loading="lazy"
+  - Production static assets: immutable Cache-Control for hashed assets, no-cache for HTML
+  - Initial JS bundle reduced from 648KB to 237KB (72KB gzipped) for landing page visitors
 - 2026-02-16: Per-theme WhatsApp field visibility
   - Added whatsappEnabled to creationDelivery in theme settings (default: true)
   - Toggle in theme editor Creation & Delivery section
