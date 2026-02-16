@@ -56,6 +56,18 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
       ],
     },
   },
+  trustBadges: {
+    badge1: '24h Delivery',
+    badge2: 'Secure',
+    badge3: '11 kuota sisa',
+  },
+  statsBar: {
+    items: [
+      { val: '99%', label: 'Menangis' },
+      { val: '24h', label: 'Pengiriman' },
+      { val: '2,847', label: 'Lagu Terkirim' },
+    ],
+  },
   activityToast: {
     enabled: true,
     intervalMs: 10000,
@@ -141,6 +153,8 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
   const colors = cfg?.colors && typeof cfg.colors === 'object' ? cfg.colors : {}
   const cd = cfg?.creationDelivery && typeof cfg.creationDelivery === 'object' ? cfg.creationDelivery : {}
   const toast = cfg?.activityToast && typeof cfg.activityToast === 'object' ? cfg.activityToast : {}
+  const tb = cfg?.trustBadges && typeof cfg.trustBadges === 'object' ? cfg.trustBadges : {}
+  const sb = cfg?.statsBar && typeof cfg.statsBar === 'object' ? cfg.statsBar : {}
   const toastItems = safeArr(toast?.items, (x) => ({
     fullName: asString(x?.fullName, ''),
     city: asString(x?.city, ''),
@@ -201,6 +215,20 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
         },
         playlist: playlist.length ? playlist : defaultPublicSiteDraft.landing.audioSamples.playlist,
       },
+    },
+    trustBadges: {
+      badge1: asString(tb?.badge1, defaultPublicSiteDraft.trustBadges.badge1),
+      badge2: asString(tb?.badge2, defaultPublicSiteDraft.trustBadges.badge2),
+      badge3: asString(tb?.badge3, defaultPublicSiteDraft.trustBadges.badge3),
+    },
+    statsBar: {
+      items: (() => {
+        const raw = safeArr(sb?.items, (x) => ({
+          val: asString(x?.val, ''),
+          label: asString(x?.label, ''),
+        })).filter((x) => x.val || x.label)
+        return raw.length ? raw : defaultPublicSiteDraft.statsBar.items
+      })(),
     },
     activityToast: {
       enabled: asBool(toast?.enabled, defaultPublicSiteDraft.activityToast.enabled),
@@ -301,6 +329,19 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
 
   const logoUrl = draft.logoUrl.trim() || defaultPublicSiteDraft.logoUrl
 
-  return { logoUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery }
+  const nextTrustBadges = {
+    badge1: draft.trustBadges.badge1.trim(),
+    badge2: draft.trustBadges.badge2.trim(),
+    badge3: draft.trustBadges.badge3.trim(),
+  }
+
+  const nextStatsBar = {
+    items: draft.statsBar.items.map((x) => ({
+      val: x.val.trim(),
+      label: x.label.trim(),
+    })).filter((x) => x.val || x.label),
+  }
+
+  return { logoUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, trustBadges: nextTrustBadges, statsBar: nextStatsBar }
 }
 

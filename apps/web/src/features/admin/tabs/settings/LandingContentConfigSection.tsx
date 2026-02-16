@@ -8,7 +8,7 @@ import { resolveApiUrl } from '@/lib/http'
 import * as adminApi from '@/features/admin/api'
 import { moveItem, parseToastItemsJson } from '@/features/admin/publicSiteDraft'
 import type { PublicSiteDraft } from '@/features/admin/types'
-import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap, Palette, ImagePlus } from 'lucide-react'
+import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap, Palette, ImagePlus, ShieldCheck, BarChart3 } from 'lucide-react'
 
 interface LandingContentConfigProps {
   draft: PublicSiteDraft
@@ -55,6 +55,7 @@ export function LandingContentConfigSection({
     { id: 'landing-media', label: 'Hero Media', icon: ImageIcon, group: 'Landing Page' },
     { id: 'landing-overlay', label: 'Hero Overlay', icon: Type, group: 'Landing Page' },
     { id: 'landing-player', label: 'Hero Player', icon: PlayCircle, group: 'Landing Page' },
+    { id: 'trust-stats', label: 'Trust & Stats', icon: ShieldCheck, group: 'Landing Page' },
     { id: 'music', label: 'Music Playlist', icon: Music, group: 'Content' },
     { id: 'toast', label: 'Activity Toast', icon: MessageSquare, group: 'Content' },
     { id: 'creation-delivery', label: t.creationDelivery ?? 'Creation & Delivery', icon: Zap, group: 'System' },
@@ -756,6 +757,103 @@ export function LandingContentConfigSection({
                         </div>
                     </div>
                 </div>
+            )}
+
+            {activeTab === 'trust-stats' && (
+              <div className="space-y-4 animate-in fade-in duration-300">
+                <div className="pb-2 border-b">
+                  <h3 className="text-base font-semibold">Trust Badges</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Teks badge kepercayaan di bawah tombol CTA.</p>
+                </div>
+                <div className="grid gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Badge 1 (kiri)</label>
+                    <Input
+                      className="h-8 text-sm"
+                      placeholder="24h Delivery"
+                      value={draft.trustBadges.badge1}
+                      onChange={(e) => setDraft(d => ({ ...d, trustBadges: { ...d.trustBadges, badge1: e.target.value } }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Badge 2 (tengah)</label>
+                    <Input
+                      className="h-8 text-sm"
+                      placeholder="Secure"
+                      value={draft.trustBadges.badge2}
+                      onChange={(e) => setDraft(d => ({ ...d, trustBadges: { ...d.trustBadges, badge2: e.target.value } }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Badge 3 (kanan)</label>
+                    <Input
+                      className="h-8 text-sm"
+                      placeholder="11 kuota sisa"
+                      value={draft.trustBadges.badge3}
+                      onChange={(e) => setDraft(d => ({ ...d, trustBadges: { ...d.trustBadges, badge3: e.target.value } }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="pb-2 border-b pt-4">
+                  <h3 className="text-base font-semibold">Stats Bar</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Angka statistik yang ditampilkan di halaman landing.</p>
+                </div>
+                <div className="space-y-3">
+                  {draft.statsBar.items.map((item, idx) => (
+                    <div key={idx} className="flex gap-2 items-end">
+                      <div className="flex-1 space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Nilai {idx + 1}</label>
+                        <Input
+                          className="h-8 text-sm"
+                          placeholder="99%"
+                          value={item.val}
+                          onChange={(e) => setDraft(d => {
+                            const items = [...d.statsBar.items]
+                            items[idx] = { ...items[idx], val: e.target.value }
+                            return { ...d, statsBar: { ...d.statsBar, items } }
+                          })}
+                        />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Label {idx + 1}</label>
+                        <Input
+                          className="h-8 text-sm"
+                          placeholder="Menangis"
+                          value={item.label}
+                          onChange={(e) => setDraft(d => {
+                            const items = [...d.statsBar.items]
+                            items[idx] = { ...items[idx], label: e.target.value }
+                            return { ...d, statsBar: { ...d.statsBar, items } }
+                          })}
+                        />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0 text-destructive hover:text-destructive"
+                        onClick={() => setDraft(d => ({
+                          ...d,
+                          statsBar: { ...d.statsBar, items: d.statsBar.items.filter((_, i) => i !== idx) }
+                        }))}
+                      >
+                        &times;
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setDraft(d => ({
+                      ...d,
+                      statsBar: { ...d.statsBar, items: [...d.statsBar.items, { val: '', label: '' }] }
+                    }))}
+                  >
+                    + Tambah Stat
+                  </Button>
+                </div>
+              </div>
             )}
 
             {activeTab === 'creation-delivery' && (

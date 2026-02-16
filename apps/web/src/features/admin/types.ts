@@ -96,6 +96,14 @@ export type PublicSiteDraft = {
       playlist: LandingPlaylistItem[]
     }
   }
+  trustBadges: {
+    badge1: string
+    badge2: string
+    badge3: string
+  }
+  statsBar: {
+    items: { val: string; label: string }[]
+  }
   activityToast: {
     enabled: boolean
     intervalMs: number

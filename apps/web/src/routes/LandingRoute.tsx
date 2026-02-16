@@ -55,6 +55,8 @@ type PublicSiteConfig = {
       playlist?: Array<{ title?: string; subtitle?: string; ctaLabel?: string; audioUrl?: string | null }>
     }
   }
+  trustBadges?: { badge1?: string; badge2?: string; badge3?: string }
+  statsBar?: { items?: Array<{ val?: string; label?: string }> }
   activityToast?: ActivityToastConfig
   colors?: { accentColor?: string; bgColor1?: string; bgColor2?: string }
 }
@@ -608,6 +610,17 @@ export function LandingRoute() {
   const audioSamples = landing.audioSamples ?? defaultPublicSiteConfig.landing!.audioSamples!
   const heroPlayer = landing.heroPlayer ?? defaultPublicSiteConfig.landing!.heroPlayer!
 
+  const trustBadge1 = site.trustBadges?.badge1 || deliveryEta.short + ' Delivery'
+  const trustBadge2 = site.trustBadges?.badge2 || 'Secure'
+  const trustBadge3 = site.trustBadges?.badge3 || '11 kuota sisa'
+  const statsItems = (site.statsBar?.items && site.statsBar.items.length > 0)
+    ? site.statsBar.items.map(s => ({ val: s.val || '', label: s.label || '' }))
+    : [
+        { val: '99%', label: 'Menangis' },
+        { val: deliveryEta.short, label: 'Pengiriman' },
+        { val: '2,847', label: 'Lagu Terkirim' },
+      ]
+
   const heroHeadlineLine1 =
     typeof landing.heroHeadline?.line1 === 'string' && landing.heroHeadline.line1.trim()
       ? landing.heroHeadline.line1
@@ -893,11 +906,11 @@ export function LandingRoute() {
               
               {/* Footer Trust Info - Compact */}
               <div className="flex items-center justify-center md:justify-start gap-2 text-[9px] font-bold text-gray-400 uppercase tracking-tighter sm:tracking-wider sm:text-xs">
-                <span className="flex items-center gap-0.5"><Zap className="h-2.5 w-2.5 text-amber-500" /> {deliveryEta.short} Delivery</span>
+                <span className="flex items-center gap-0.5"><Zap className="h-2.5 w-2.5 text-amber-500" /> {trustBadge1}</span>
                 <span>•</span>
-                <span className="flex items-center gap-0.5"><ShieldCheck className="h-2.5 w-2.5 text-green-500" /> Secure</span>
+                <span className="flex items-center gap-0.5"><ShieldCheck className="h-2.5 w-2.5 text-green-500" /> {trustBadge2}</span>
                 <span>•</span>
-                <span className="text-[var(--theme-accent)]">11 kuota sisa</span>
+                <span className="text-[var(--theme-accent)]">{trustBadge3}</span>
               </div>
             </div>
           </div>
@@ -980,12 +993,8 @@ export function LandingRoute() {
         {/* STATS BAR */}
         <section className="py-8 border-y border-[var(--theme-accent-soft)] bg-white/50 backdrop-blur-sm -mx-2 px-2 sm:-mx-4 sm:px-4 md:-mx-6 md:px-6">
           <div className="flex flex-wrap justify-center gap-8 md:gap-24 text-center">
-             {[
-               { val: '99%', label: 'Menangis' },
-               { val: deliveryEta.short, label: 'Pengiriman' },
-               { val: '2,847', label: 'Lagu Terkirim' },
-             ].map((stat) => (
-               <div key={stat.label}>
+             {statsItems.map((stat, idx) => (
+               <div key={idx}>
                  <div className="text-3xl md:text-4xl font-bold text-[var(--theme-accent)] font-serif">{stat.val}</div>
                  <div className="text-xs uppercase font-bold text-gray-400 tracking-wider">{stat.label}</div>
                </div>
