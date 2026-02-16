@@ -112,6 +112,7 @@ export function ConfigRoute() {
     let cancelled = false
     apiGet<{
       emailOtpEnabled?: boolean
+      whatsappEnabled?: boolean
       agreementEnabled?: boolean
       publicSiteConfig?: unknown
       instantEnabled?: boolean
@@ -121,6 +122,7 @@ export function ConfigRoute() {
       .then((res) => {
         if (cancelled) return
         setEmailOtpEnabled(res?.emailOtpEnabled ?? true)
+        setWhatsappEnabled(res?.whatsappEnabled ?? true)
         setAgreementEnabled(res?.agreementEnabled ?? false)
         setInstantEnabled(typeof res?.instantEnabled === 'boolean' ? res.instantEnabled : null)
         setDeliveryDelayHours(typeof res?.deliveryDelayHours === 'number' ? res.deliveryDelayHours : null)
@@ -157,6 +159,7 @@ export function ConfigRoute() {
 
   // Email verification (OTP) state for checkout step
   const [emailOtpEnabled, setEmailOtpEnabled] = useState(true)
+  const [whatsappEnabled, setWhatsappEnabled] = useState(true)
   const [agreementEnabled, setAgreementEnabled] = useState(false)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [heroVideoUrl, setHeroVideoUrl] = useState<string | null>(null)
@@ -694,7 +697,10 @@ export function ConfigRoute() {
     try {
       // Clear any previous server-side field errors.
       form.clearErrors('whatsappNumber')
-      const payload: Record<string, unknown> = { ...data, whatsappNumber: data.whatsappNumber }
+      const payload: Record<string, unknown> = { ...data, whatsappNumber: whatsappEnabled ? data.whatsappNumber : '' }
+      if (!whatsappEnabled) {
+        delete payload.whatsappNumber
+      }
       if (manualConfirmationEnabled) {
         delete payload.email
         delete payload.emailVerificationId
@@ -738,11 +744,13 @@ export function ConfigRoute() {
       navigate(`/checkout?orderId=${encodeURIComponent(res.orderId)}`)
     } catch (err: unknown) {
       const msg = getErrorMessage(err, 'Something went wrong. Please try again.')
-      // Prefer showing the message right under the WhatsApp field (most common failure here).
-      form.setError('whatsappNumber', { type: 'server', message: msg })
-      whatsappSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      // Keep only one warning: show it under the WhatsApp field.
-      setError(null)
+      if (whatsappEnabled) {
+        form.setError('whatsappNumber', { type: 'server', message: msg })
+        whatsappSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        setError(null)
+      } else {
+        setError(msg)
+      }
     } finally {
       setLoading(false)
     }
@@ -1143,6 +1151,7 @@ export function ConfigRoute() {
                     )}
                  </div>
 
+                 {whatsappEnabled && (
                  <div className="space-y-1">
                    <div ref={whatsappSectionRef} />
                    <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Nomor WhatsApp</label>
@@ -1160,12 +1169,10 @@ export function ConfigRoute() {
                            <Input
                              value={local}
                              onChange={(e) => {
-                               // Clear server error as user edits.
                                setError(null)
                                form.clearErrors('whatsappNumber')
                                 const raw = e.target.value.replace(/\D/g, '')
                                 let normalizedLocal = raw.replace(/^0+/, '')
-                                // Prevent double-prefix if user pastes +62/62 into the local-part field.
                                 if (normalizedLocal.startsWith('62')) normalizedLocal = normalizedLocal.slice(2)
                                 field.onChange(`62${normalizedLocal}`)
                              }}
@@ -1181,6 +1188,7 @@ export function ConfigRoute() {
                    />
                     {errors.whatsappNumber && <p className="text-xs text-[var(--theme-accent)]">{errors.whatsappNumber.message}</p>}
                  </div>
+                 )}
 
                  {!manualConfirmationEnabled ? (
                    <>

@@ -83,7 +83,7 @@ model PromptTemplate {
 model Customer {
   id            String   @id @default(cuid())
   name          String
-  whatsappNumber String  @unique
+  whatsappNumber String?  @unique
   email         String?
   // Normalized (trimmed + lowercased) email used for uniqueness checks.
   // NOTE: Existing legacy rows may keep `email` but have a synthetic `emailLower` suffix

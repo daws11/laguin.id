@@ -102,6 +102,7 @@ export type PublicSiteDraft = {
   creationDelivery: {
     instantEnabled: boolean
     emailOtpEnabled: boolean
+    whatsappEnabled: boolean
     agreementEnabled: boolean
     manualConfirmationEnabled: boolean
     deliveryDelayHours: number

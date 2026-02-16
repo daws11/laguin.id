@@ -25,7 +25,7 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
     const customerName = input.yourName ?? input.recipientName
     const settings = await getOrCreateSettings()
     const emailLower = normalizeEmail(input.email)
-    const whatsappNumber = normalizeWhatsappNumber(input.whatsappNumber)
+    const whatsappNumber = input.whatsappNumber ? normalizeWhatsappNumber(input.whatsappNumber) : null
 
     let themeCD: any = null
     if (themeSlug) {
@@ -40,6 +40,7 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
 
     const manualConfirmationEnabled = themeCD ? (themeCD.manualConfirmationEnabled ?? false) : ((settings as any).manualConfirmationEnabled ?? false)
     const emailOtpEnabled = themeCD ? (themeCD.emailOtpEnabled ?? true) : (settings.emailOtpEnabled ?? true)
+    const whatsappEnabled = themeCD ? (themeCD.whatsappEnabled ?? true) : true
     const agreementEnabled = themeCD ? (themeCD.agreementEnabled ?? false) : (settings.agreementEnabled ?? false)
 
     if (agreementEnabled && !(input as { agreementAccepted?: boolean }).agreementAccepted) {
@@ -71,28 +72,26 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
-    // Lifetime one-time registration:
-    // - WhatsApp number may only register once
-    // - Email may only register once (case-insensitive)
-    if (!whatsappNumber) {
-      return reply.code(400).send({ error: 'Nomor WhatsApp tidak valid.' })
+    if (whatsappEnabled) {
+      if (!whatsappNumber) {
+        return reply.code(400).send({ error: 'Nomor WhatsApp tidak valid.' })
+      }
+      const existingByWhatsapp = await prisma.customer.findUnique({
+        where: { whatsappNumber },
+        select: { id: true },
+      })
+      if (existingByWhatsapp) {
+        return reply
+          .code(409)
+          .send({
+            error: 'duplicate_whatsapp',
+            message:
+              'Nomor WhatsApp ini sudah terdaftar dan pernah digunakan untuk membuat pesanan. Untuk menjaga keamanan dan kualitas layanan, setiap nomor WhatsApp hanya dapat melakukan pemesanan satu kali.',
+          })
+      }
     }
     if (!manualConfirmationEnabled) {
       if (!emailLower) return reply.code(400).send({ error: 'Email tidak valid.' })
-    }
-
-    const existingByWhatsapp = await prisma.customer.findUnique({
-      where: { whatsappNumber },
-      select: { id: true },
-    })
-    if (existingByWhatsapp) {
-      return reply
-        .code(409)
-        .send({
-          error: 'duplicate_whatsapp',
-          message:
-            'Nomor WhatsApp ini sudah terdaftar dan pernah digunakan untuk membuat pesanan. Untuk menjaga keamanan dan kualitas layanan, setiap nomor WhatsApp hanya dapat melakukan pemesanan satu kali.',
-        })
     }
 
     if (!manualConfirmationEnabled) {
@@ -116,7 +115,7 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       customer = await prisma.customer.create({
         data: {
           name: customerName,
-          whatsappNumber,
+          whatsappNumber: whatsappEnabled ? whatsappNumber : null,
           ...(manualConfirmationEnabled
             ? { email: null, emailLower: null }
             : {

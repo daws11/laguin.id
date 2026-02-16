@@ -27,6 +27,7 @@ export const publicSettingsRoutes: FastifyPluginAsync = async (app) => {
     return {
       publicSiteConfig: themeSettings ?? s.publicSiteConfig ?? null,
       emailOtpEnabled: cd ? (cd.emailOtpEnabled ?? true) : (s.emailOtpEnabled ?? true),
+      whatsappEnabled: cd ? (cd.whatsappEnabled ?? true) : true,
       agreementEnabled: cd ? (cd.agreementEnabled ?? false) : (s.agreementEnabled ?? false),
       instantEnabled: cd ? (cd.instantEnabled ?? true) : (s.instantEnabled ?? true),
       deliveryDelayHours: cd ? (cd.deliveryDelayHours ?? 24) : (s.deliveryDelayHours ?? 24),

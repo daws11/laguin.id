@@ -44,6 +44,12 @@ A monorepo application for creating personalized songs for special occasions. Bu
 - Shared package must be built before other packages (`npm run build -w shared`)
 
 ## Recent Changes
+- 2026-02-16: Per-theme WhatsApp field visibility
+  - Added whatsappEnabled to creationDelivery in theme settings (default: true)
+  - Toggle in theme editor Creation & Delivery section
+  - ConfigRoute hides WhatsApp field when disabled; order created without WhatsApp number
+  - Backend skips WhatsApp validation when disabled; Customer.whatsappNumber made nullable
+  - Shared OrderInputSchema whatsappNumber made optional
 - 2026-02-16: Per-theme logo customization
   - Added logoUrl to theme settings JSON (PublicSiteDraft type)
   - New "Logo" tab in theme editor (Appearance group) with URL input, file upload, and preview

@@ -69,6 +69,7 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
   creationDelivery: {
     instantEnabled: true,
     emailOtpEnabled: true,
+    whatsappEnabled: true,
     agreementEnabled: false,
     manualConfirmationEnabled: false,
     deliveryDelayHours: 24,
@@ -207,6 +208,7 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
     creationDelivery: {
       instantEnabled: asBool(cd?.instantEnabled, defaultPublicSiteDraft.creationDelivery.instantEnabled),
       emailOtpEnabled: asBool(cd?.emailOtpEnabled, defaultPublicSiteDraft.creationDelivery.emailOtpEnabled),
+      whatsappEnabled: asBool(cd?.whatsappEnabled, defaultPublicSiteDraft.creationDelivery.whatsappEnabled),
       agreementEnabled: asBool(cd?.agreementEnabled, defaultPublicSiteDraft.creationDelivery.agreementEnabled),
       manualConfirmationEnabled: asBool(cd?.manualConfirmationEnabled, defaultPublicSiteDraft.creationDelivery.manualConfirmationEnabled),
       deliveryDelayHours: asNumber(cd?.deliveryDelayHours, defaultPublicSiteDraft.creationDelivery.deliveryDelayHours),
@@ -277,6 +279,7 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
   const nextCreationDelivery = {
     instantEnabled: draft.creationDelivery.instantEnabled,
     emailOtpEnabled: draft.creationDelivery.emailOtpEnabled,
+    whatsappEnabled: draft.creationDelivery.whatsappEnabled,
     agreementEnabled: draft.creationDelivery.agreementEnabled,
     manualConfirmationEnabled: draft.creationDelivery.manualConfirmationEnabled,
     deliveryDelayHours: draft.creationDelivery.deliveryDelayHours,

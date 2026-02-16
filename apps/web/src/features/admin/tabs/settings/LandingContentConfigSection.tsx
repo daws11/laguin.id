@@ -785,6 +785,15 @@ export function LandingContentConfigSection({
                             />
                         </label>
                         <label className="flex items-center justify-between gap-2 rounded border p-3 bg-background cursor-pointer hover:bg-muted/40 transition-colors">
+                            <span className="text-sm font-medium">{t.whatsappEnabled ?? 'Show WhatsApp field'}</span>
+                            <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                checked={draft.creationDelivery.whatsappEnabled}
+                                onChange={(e) => setDraft(d => ({ ...d, creationDelivery: { ...d.creationDelivery, whatsappEnabled: e.target.checked } }))}
+                            />
+                        </label>
+                        <label className="flex items-center justify-between gap-2 rounded border p-3 bg-background cursor-pointer hover:bg-muted/40 transition-colors">
                             <span className="text-sm font-medium">{t.agreementEnabled ?? 'Checkout agreement'}</span>
                             <input
                                 type="checkbox"
