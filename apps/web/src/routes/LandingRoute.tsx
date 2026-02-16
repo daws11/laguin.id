@@ -143,14 +143,15 @@ function CountdownTimer() {
   }, [])
 
   return (
-    <div className="bg-[#E11D48] px-3 py-2 text-center text-[10px] sm:text-xs font-bold text-white uppercase tracking-wide leading-snug">
-      <span className="whitespace-normal">
-        💝 Valentine's dalam {time.d}h {time.h}j {time.m}m {time.s}d lagi
-      </span>
-      <span className="hidden sm:inline"> • </span>
-      <span className="block sm:inline mt-0.5 sm:mt-0">
-        <span className="line-through opacity-70">Rp 497rb</span> <span className="text-white">GRATIS</span> (100 pertama)
-      </span>
+    <div className="bg-[#E11D48] px-3 py-1.5 text-center text-[9px] sm:text-xs font-bold text-white uppercase tracking-tight leading-none">
+      <div className="flex items-center justify-center gap-1.5 flex-wrap">
+        <span>💝 Valentine's dalam {time.d}h {time.h}j {time.m}m {time.s}d lagi</span>
+        <span className="opacity-50 text-[8px]">•</span>
+        <span className="flex items-center gap-1">
+          <span className="line-through opacity-70">Rp 497rb</span>
+          <span>GRATIS (100 pertama)</span>
+        </span>
+      </div>
     </div>
   )
 }
@@ -649,20 +650,20 @@ export function LandingRoute() {
       {/* Sticky Top Banner */}
       <div className="sticky top-0 z-50">
         <CountdownTimer />
-        <div className="border-b border-rose-100 bg-white/95 px-2 sm:px-4 py-3 backdrop-blur-sm">
+        <div className="border-b border-rose-100 bg-white/95 px-2 sm:px-4 py-2 backdrop-blur-sm">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-3">
             <Link to="/" className="flex items-center gap-2">
-              <img src="/logo.png" alt="Laguin.id - Lagumu, Ceritamu" className="h-10 w-auto object-contain" />
+              <img src="/logo.png" alt="Laguin.id - Lagumu, Ceritamu" className="h-8 w-auto object-contain" />
             </Link>
-            <div className="text-right flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3">
-              <div className="hidden md:block text-xs font-medium text-rose-600 bg-rose-50 px-3 py-1 rounded-full">
+            <div className="text-right flex flex-col items-end gap-0.5 sm:flex-row sm:items-center sm:gap-3">
+              <div className="hidden md:block text-[10px] font-medium text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
                 💝 Spesial Valentine
               </div>
-              <div className="leading-tight">
-                <span className="text-xs text-gray-400 line-through">Rp 497.000</span>{' '}
-                <span className="text-base sm:text-lg font-bold text-[#E11D48]">GRATIS</span>
-                <Badge variant="destructive" className="ml-1 h-5 px-1 py-0 text-[10px] align-middle">
-                  11 kuota gratis tersisa!
+              <div className="leading-tight flex items-center gap-1.5">
+                <span className="text-[10px] text-gray-400 line-through">Rp 497rb</span>
+                <span className="text-sm sm:text-lg font-bold text-[#E11D48]">GRATIS</span>
+                <Badge variant="destructive" className="h-4 px-1 py-0 text-[9px]">
+                  11 kuota!
                 </Badge>
               </div>
             </div>
@@ -670,34 +671,32 @@ export function LandingRoute() {
         </div>
       </div>
 
-      <main className="mx-auto max-w-7xl w-full px-2 sm:px-4 md:px-6 pt-6 sm:pt-12 space-y-12 sm:space-y-20">
+      <main className="mx-auto max-w-7xl w-full px-2 sm:px-4 md:px-6 pt-2 sm:pt-12 space-y-8 sm:space-y-20">
         {/* HERO SECTION */}
-        <section ref={heroRef} aria-labelledby="hero-title" className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 items-center">
+        <section ref={heroRef} aria-labelledby="hero-title" className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 md:gap-12 items-center">
           {/* TOP CONTENT (Left on Desktop) */}
-          <div className="text-center md:text-left space-y-4 md:space-y-6 md:col-start-1 md:row-start-1">
-            {/* Social proof - Simple Star Rating for Mobile Match */}
-            <div className="flex flex-col items-center md:items-start justify-center gap-1.5">
-              <div className="flex text-amber-400 gap-0.5">
+          <div className="text-center md:text-left space-y-3 md:space-y-6 md:col-start-1 md:row-start-1">
+            {/* Social proof - More compact for fold visibility */}
+            <div className="flex flex-row items-center justify-center md:justify-start gap-2">
+              <div className="flex text-amber-400 gap-0.5 scale-90 origin-left">
                 <Star className="h-4 w-4 fill-current" />
                 <Star className="h-4 w-4 fill-current" />
                 <Star className="h-4 w-4 fill-current" />
                 <Star className="h-4 w-4 fill-current" />
                 <Star className="h-4 w-4 fill-current" />
               </div>
-              <span className="text-sm font-medium text-gray-600">2,847 pria menangis terharu</span>
+              <span className="text-xs font-medium text-gray-500">2,847 menangis bahagia</span>
             </div>
 
-            {/* Main headline */}
-            <h1 id="hero-title" className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight tracking-tight">
+            {/* Main headline - Reduced size on mobile */}
+            <h1 id="hero-title" className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight">
               <span className="text-gray-900">Valentine kali ini,</span>
-              <br />
-              <span className="text-[#E11D48]">buat dia menangis.</span>
+              <br className="hidden sm:inline" /> <span className="text-[#E11D48]">buat dia menangis.</span>
             </h1>
 
-            {/* Body paragraph */}
-            <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-lg mx-auto md:mx-0">
-              Sebuah lagu personal dengan <strong className="text-gray-900">namanya</strong> di lirik.
-              <br className="hidden sm:inline" /> Dikirim dalam 24 jam.
+            {/* Body paragraph - Compact */}
+            <p className="text-sm sm:text-lg text-gray-600 leading-normal max-w-lg mx-auto md:mx-0">
+              Lagu personal dengan <strong className="text-gray-900">namanya</strong> di lirik. Dikirim dalam 24 jam.
             </p>
           </div>
 
@@ -772,45 +771,39 @@ export function LandingRoute() {
           </div>
 
           {/* BOTTOM CONTENT (Left Bottom on Desktop) */}
-          <div className="text-center md:text-left space-y-5 md:space-y-6 md:col-start-1 md:row-start-2">
-            {/* Trust Badges */}
-            <div className="flex flex-wrap justify-center md:justify-start gap-x-4 gap-y-2 text-xs sm:text-sm font-medium text-gray-600">
+          <div className="text-center md:text-left space-y-4 md:space-y-6 md:col-start-1 md:row-start-2">
+            {/* Trust Badges - Hidden or very small on ultra-mobile if needed, but let's just make it tighter */}
+            <div className="flex flex-wrap justify-center md:justify-start gap-x-3 gap-y-1 text-[10px] sm:text-sm font-medium text-gray-500">
               <span className="flex items-center gap-1">
-                <div className="rounded-full bg-green-100 p-0.5">
-                  <Check className="h-3 w-3 text-green-600" />
-                </div>
+                <Check className="h-3 w-3 text-green-600" />
                 Kualitas Studio
               </span>
               <span className="flex items-center gap-1">
-                <div className="rounded-full bg-green-100 p-0.5">
-                  <Check className="h-3 w-3 text-green-600" />
-                </div>
+                <Check className="h-3 w-3 text-green-600" />
                 98% Menangis
               </span>
               <span className="flex items-center gap-1">
-                <div className="rounded-full bg-green-100 p-0.5">
-                  <Check className="h-3 w-3 text-green-600" />
-                </div>
+                <Check className="h-3 w-3 text-green-600" />
                 Revisi Gratis
               </span>
             </div>
 
-            {/* CTA Button */}
-            <div className="space-y-3">
-              <Button asChild size="lg" className="w-full sm:w-auto h-14 px-8 rounded-full bg-[#E11D48] text-lg font-bold shadow-xl shadow-rose-200/50 hover:bg-rose-600 hover:scale-105 transition-all duration-300">
+            {/* CTA Button - Pulled up */}
+            <div className="space-y-2">
+              <Button asChild size="lg" className="w-full sm:w-auto h-12 sm:h-14 px-8 rounded-full bg-[#E11D48] text-base sm:text-lg font-bold shadow-lg shadow-rose-200/50 hover:bg-rose-600 hover:scale-105 transition-all duration-300">
                 <Link to="/config" className="flex items-center justify-center gap-2">
-                  Buat Lagunya — GRATIS
-                  <span className="text-rose-200 line-through font-normal text-base ml-1">Rp 497rb</span>
+                  Buat Lagu — GRATIS
+                  <span className="text-rose-200 line-through font-normal text-sm sm:text-base ml-1">Rp 497rb</span>
                 </Link>
               </Button>
               
-              {/* Footer Trust Info */}
-              <div className="flex flex-wrap justify-center md:justify-start items-center gap-3 text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-amber-500" /> 24h Delivery</span>
-                <span className="hidden sm:inline">•</span>
-                <span className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-green-500" /> Secure</span>
-                <span className="hidden sm:inline">•</span>
-                <span className="text-rose-500">11 kuota gratis</span>
+              {/* Footer Trust Info - Compact */}
+              <div className="flex items-center justify-center md:justify-start gap-2 text-[9px] font-bold text-gray-400 uppercase tracking-tighter sm:tracking-wider sm:text-xs">
+                <span className="flex items-center gap-0.5"><Zap className="h-2.5 w-2.5 text-amber-500" /> 24h Delivery</span>
+                <span>•</span>
+                <span className="flex items-center gap-0.5"><ShieldCheck className="h-2.5 w-2.5 text-green-500" /> Secure</span>
+                <span>•</span>
+                <span className="text-rose-500">11 kuota sisa</span>
               </div>
             </div>
           </div>
