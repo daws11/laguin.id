@@ -50,6 +50,7 @@ export function LandingContentConfigSection({
 
   const menuItems = [
     { id: 'colors', label: 'Colors', icon: Palette, group: 'Appearance' },
+    { id: 'hero-text', label: 'Hero Text', icon: Type, group: 'Landing Page' },
     { id: 'landing-media', label: 'Hero Media', icon: ImageIcon, group: 'Landing Page' },
     { id: 'landing-overlay', label: 'Hero Overlay', icon: Type, group: 'Landing Page' },
     { id: 'landing-player', label: 'Hero Player', icon: PlayCircle, group: 'Landing Page' },
@@ -638,6 +639,76 @@ export function LandingContentConfigSection({
                                 <div className="ml-2 text-xs text-muted-foreground">
                                     <span className="font-medium" style={{ color: draft.colors.accentColor }}>Sample accent text</span>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'hero-text' && (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="pb-2 border-b">
+                        <h3 className="text-base font-semibold">Hero Text</h3>
+                        <p className="text-xs text-muted-foreground mt-1">Headline, subtext, and footer call-to-action shown on the landing page.</p>
+                    </div>
+                    <div className="space-y-5">
+                        <div className="space-y-3">
+                            <h4 className="text-sm font-bold">Hero Headline</h4>
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-muted-foreground">Line 1 (dark text)</label>
+                                <Input
+                                    value={draft.landing.heroHeadline.line1}
+                                    onChange={(e) => setDraft(d => ({ ...d, landing: { ...d.landing, heroHeadline: { ...d.landing.heroHeadline, line1: e.target.value } } }))}
+                                    placeholder="Valentine kali ini,"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-muted-foreground">Line 2 (accent color)</label>
+                                <Input
+                                    value={draft.landing.heroHeadline.line2}
+                                    onChange={(e) => setDraft(d => ({ ...d, landing: { ...d.landing, heroHeadline: { ...d.landing.heroHeadline, line2: e.target.value } } }))}
+                                    placeholder="buat dia menangis."
+                                />
+                            </div>
+                            <div className="rounded-lg border p-3 space-y-1">
+                                <p className="text-[10px] font-medium text-muted-foreground">Preview</p>
+                                <div className="font-serif text-2xl font-bold leading-tight">
+                                    <span className="text-gray-900">{draft.landing.heroHeadline.line1 || 'Valentine kali ini,'}</span>{' '}
+                                    <span style={{ color: draft.colors.accentColor }}>{draft.landing.heroHeadline.line2 || 'buat dia menangis.'}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Hero Subtext</label>
+                            <p className="text-[10px] text-muted-foreground">Short description below the headline. Use &lt;strong&gt; for bold text.</p>
+                            <Textarea
+                                value={draft.landing.heroSubtext}
+                                onChange={(e) => setDraft(d => ({ ...d, landing: { ...d.landing, heroSubtext: e.target.value } }))}
+                                placeholder="Lagu personal dengan <strong>namanya</strong> di lirik. Dikirim dalam 24 jam."
+                                className="h-16"
+                            />
+                        </div>
+
+                        <div className="border-t pt-4 space-y-3">
+                            <h4 className="text-sm font-bold">Footer Call-to-Action</h4>
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-muted-foreground">Headline</label>
+                                <Input
+                                    value={draft.landing.footerCta.headline}
+                                    onChange={(e) => setDraft(d => ({ ...d, landing: { ...d.landing, footerCta: { ...d.landing.footerCta, headline: e.target.value } } }))}
+                                    placeholder="Jangan biarkan Valentine berlalu"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-muted-foreground">Subtitle</label>
+                                <p className="text-[10px] text-muted-foreground">Use &lt;strong&gt; for bold text.</p>
+                                <Textarea
+                                    value={draft.landing.footerCta.subtitle}
+                                    onChange={(e) => setDraft(d => ({ ...d, landing: { ...d.landing, footerCta: { ...d.landing.footerCta, subtitle: e.target.value } } }))}
+                                    placeholder="Beri dia hadiah yang tak akan pernah dia lupakan."
+                                    className="h-16"
+                                />
                             </div>
                         </div>
                     </div>

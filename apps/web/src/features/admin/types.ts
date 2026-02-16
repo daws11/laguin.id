@@ -48,6 +48,15 @@ export type ThemeColors = {
 export type PublicSiteDraft = {
   colors: ThemeColors
   landing: {
+    heroHeadline: {
+      line1: string
+      line2: string
+    }
+    heroSubtext: string
+    footerCta: {
+      headline: string
+      subtitle: string
+    }
     heroMedia: {
       mode: 'image' | 'video'
       imageUrl: string

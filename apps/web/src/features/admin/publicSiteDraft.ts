@@ -9,6 +9,15 @@ export const defaultThemeColors = {
 export const defaultPublicSiteDraft: PublicSiteDraft = {
   colors: { ...defaultThemeColors },
   landing: {
+    heroHeadline: {
+      line1: 'Valentine kali ini,',
+      line2: 'buat dia menangis.',
+    },
+    heroSubtext: 'Lagu personal dengan <strong>namanya</strong> di lirik. Dikirim dalam 24 jam.',
+    footerCta: {
+      headline: 'Jangan biarkan Valentine berlalu',
+      subtitle: 'Beri dia hadiah yang tak akan pernah dia lupakan. Gabung <strong>2,847 wanita</strong> yang membuat pasangannya menangis terharu.',
+    },
     heroMedia: {
       mode: 'image',
       imageUrl: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=2940&auto=format&fit=crop',
@@ -122,6 +131,8 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
     audioUrl: asString(x?.audioUrl, ''),
   })).filter((x) => x.title || x.subtitle || x.audioUrl)
 
+  const heroHeadline = landing?.heroHeadline && typeof landing.heroHeadline === 'object' ? landing.heroHeadline : {}
+  const footerCta = landing?.footerCta && typeof landing.footerCta === 'object' ? landing.footerCta : {}
   const colors = cfg?.colors && typeof cfg.colors === 'object' ? cfg.colors : {}
   const cd = cfg?.creationDelivery && typeof cfg.creationDelivery === 'object' ? cfg.creationDelivery : {}
   const toast = cfg?.activityToast && typeof cfg.activityToast === 'object' ? cfg.activityToast : {}
@@ -143,6 +154,15 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
       bgColor2: asString(colors?.bgColor2, defaultThemeColors.bgColor2),
     },
     landing: {
+      heroHeadline: {
+        line1: asString(heroHeadline?.line1, defaultPublicSiteDraft.landing.heroHeadline.line1),
+        line2: asString(heroHeadline?.line2, defaultPublicSiteDraft.landing.heroHeadline.line2),
+      },
+      heroSubtext: asString(landing?.heroSubtext, defaultPublicSiteDraft.landing.heroSubtext),
+      footerCta: {
+        headline: asString(footerCta?.headline, defaultPublicSiteDraft.landing.footerCta.headline),
+        subtitle: asString(footerCta?.subtitle, defaultPublicSiteDraft.landing.footerCta.subtitle),
+      },
       heroMedia: {
         mode,
         imageUrl: imageUrl.trim() ? imageUrl : defaultPublicSiteDraft.landing.heroMedia.imageUrl,
@@ -194,6 +214,15 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
 
 export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
   const nextLanding: any = {
+    heroHeadline: {
+      line1: draft.landing.heroHeadline.line1.trim(),
+      line2: draft.landing.heroHeadline.line2.trim(),
+    },
+    heroSubtext: draft.landing.heroSubtext.trim(),
+    footerCta: {
+      headline: draft.landing.footerCta.headline.trim(),
+      subtitle: draft.landing.footerCta.subtitle.trim(),
+    },
     heroMedia: {
       imageUrl: draft.landing.heroMedia.imageUrl.trim(),
       videoUrl: draft.landing.heroMedia.mode === 'video' ? draft.landing.heroMedia.videoUrl.trim() || null : null,

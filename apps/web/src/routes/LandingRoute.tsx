@@ -21,10 +21,17 @@ import { cn } from '@/lib/utils'
 import { ActivityToast, type ActivityToastConfig } from '@/components/activity-toast/ActivityToast'
 import { HeroPlayerInline } from './HeroPlayerInline.tsx'
 
+function sanitizeHtml(html: string): string {
+  return html.replace(/<\/?(?!strong|em|br\s*\/?)([a-z][a-z0-9]*)\b[^>]*>/gi, '')
+}
+
 // --- Components ---
 
 type PublicSiteConfig = {
   landing?: {
+    heroHeadline?: { line1?: string; line2?: string }
+    heroSubtext?: string
+    footerCta?: { headline?: string; subtitle?: string }
     heroMedia?: { imageUrl?: string; videoUrl?: string | null }
     heroOverlay?: {
       quote?: string
@@ -60,6 +67,12 @@ type PublicSettingsResponse = {
 
 const defaultPublicSiteConfig: PublicSiteConfig = {
   landing: {
+    heroHeadline: { line1: 'Valentine kali ini,', line2: 'buat dia menangis.' },
+    heroSubtext: 'Lagu personal dengan <strong>namanya</strong> di lirik. Dikirim dalam 24 jam.',
+    footerCta: {
+      headline: 'Jangan biarkan Valentine berlalu',
+      subtitle: 'Beri dia hadiah yang tak akan pernah dia lupakan. Gabung <strong>2,847 wanita</strong> yang membuat pasangannya menangis terharu.',
+    },
     heroMedia: {
       imageUrl: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=2940&auto=format&fit=crop',
       videoUrl: null,
@@ -556,6 +569,27 @@ export function LandingRoute() {
   const audioSamples = landing.audioSamples ?? defaultPublicSiteConfig.landing!.audioSamples!
   const heroPlayer = landing.heroPlayer ?? defaultPublicSiteConfig.landing!.heroPlayer!
 
+  const heroHeadlineLine1 =
+    typeof landing.heroHeadline?.line1 === 'string' && landing.heroHeadline.line1.trim()
+      ? landing.heroHeadline.line1
+      : defaultPublicSiteConfig.landing!.heroHeadline!.line1!
+  const heroHeadlineLine2 =
+    typeof landing.heroHeadline?.line2 === 'string' && landing.heroHeadline.line2.trim()
+      ? landing.heroHeadline.line2
+      : defaultPublicSiteConfig.landing!.heroHeadline!.line2!
+  const heroSubtext =
+    typeof landing.heroSubtext === 'string' && landing.heroSubtext.trim()
+      ? landing.heroSubtext
+      : defaultPublicSiteConfig.landing!.heroSubtext!
+  const footerCtaHeadline =
+    typeof landing.footerCta?.headline === 'string' && landing.footerCta.headline.trim()
+      ? landing.footerCta.headline
+      : defaultPublicSiteConfig.landing!.footerCta!.headline!
+  const footerCtaSubtitle =
+    typeof landing.footerCta?.subtitle === 'string' && landing.footerCta.subtitle.trim()
+      ? landing.footerCta.subtitle
+      : defaultPublicSiteConfig.landing!.footerCta!.subtitle!
+
   const heroImageUrl =
     typeof heroMedia.imageUrl === 'string' && heroMedia.imageUrl.trim()
       ? resolveAsset(heroMedia.imageUrl)
@@ -713,14 +747,12 @@ export function LandingRoute() {
 
             {/* Main headline - Reduced size on mobile */}
             <h1 id="hero-title" className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight">
-              <span className="text-gray-900">Valentine kali ini,</span>
-              <br className="hidden sm:inline" /> <span className="text-[var(--theme-accent)]">buat dia menangis.</span>
+              <span className="text-gray-900">{heroHeadlineLine1}</span>
+              <br className="hidden sm:inline" /> <span className="text-[var(--theme-accent)]">{heroHeadlineLine2}</span>
             </h1>
 
             {/* Body paragraph - Compact */}
-            <p className="text-sm sm:text-lg text-gray-600 leading-normal max-w-lg mx-auto md:mx-0">
-              Lagu personal dengan <strong className="text-gray-900">namanya</strong> di lirik. Dikirim dalam 24 jam.
-            </p>
+            <p className="text-sm sm:text-lg text-gray-600 leading-normal max-w-lg mx-auto md:mx-0" dangerouslySetInnerHTML={{ __html: sanitizeHtml(heroSubtext) }} />
           </div>
 
           {/* MEDIA CONTENT (Middle on Mobile, Right on Desktop) */}
@@ -1119,8 +1151,8 @@ export function LandingRoute() {
 
         {/* FOOTER CTA */}
         <section className="text-center space-y-6 pb-12">
-           <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">Jangan biarkan Valentine berlalu</h2>
-           <p className="text-gray-600 text-base sm:text-lg">Beri dia hadiah yang tak akan pernah dia lupakan. Gabung <strong>2,847 wanita</strong> yang membuat pasangannya menangis terharu.</p>
+           <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">{footerCtaHeadline}</h2>
+           <p className="text-gray-600 text-base sm:text-lg" dangerouslySetInnerHTML={{ __html: sanitizeHtml(footerCtaSubtitle) }} />
            
            <div className="pt-4">
              <Button asChild size="lg" className="h-auto min-h-[4rem] px-6 py-4 sm:px-12 rounded-full bg-[var(--theme-accent)] text-lg sm:text-xl font-bold shadow-2xl shadow-[var(--theme-accent-soft)] hover:opacity-90 hover:scale-105 transition-all">
