@@ -1,6 +1,13 @@
 import type { PublicSiteDraft, Settings, ToastItem } from './types'
 
+export const defaultThemeColors = {
+  accentColor: '#E11D48',
+  bgColor1: '#FFF5F7',
+  bgColor2: '#FFFFFF',
+}
+
 export const defaultPublicSiteDraft: PublicSiteDraft = {
+  colors: { ...defaultThemeColors },
   landing: {
     heroMedia: {
       mode: 'image',
@@ -115,6 +122,7 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
     audioUrl: asString(x?.audioUrl, ''),
   })).filter((x) => x.title || x.subtitle || x.audioUrl)
 
+  const colors = cfg?.colors && typeof cfg.colors === 'object' ? cfg.colors : {}
   const cd = cfg?.creationDelivery && typeof cfg.creationDelivery === 'object' ? cfg.creationDelivery : {}
   const toast = cfg?.activityToast && typeof cfg.activityToast === 'object' ? cfg.activityToast : {}
   const toastItems = safeArr(toast?.items, (x) => ({
@@ -129,6 +137,11 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
     heroMedia?.videoUrl && typeof heroMedia.videoUrl === 'string' && heroMedia.videoUrl.trim() ? 'video' : 'image'
 
   return {
+    colors: {
+      accentColor: asString(colors?.accentColor, defaultThemeColors.accentColor),
+      bgColor1: asString(colors?.bgColor1, defaultThemeColors.bgColor1),
+      bgColor2: asString(colors?.bgColor2, defaultThemeColors.bgColor2),
+    },
     landing: {
       heroMedia: {
         mode,
@@ -238,6 +251,12 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
     deliveryDelayHours: draft.creationDelivery.deliveryDelayHours,
   }
 
-  return { landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery }
+  const nextColors = {
+    accentColor: draft.colors.accentColor.trim() || defaultThemeColors.accentColor,
+    bgColor1: draft.colors.bgColor1.trim() || defaultThemeColors.bgColor1,
+    bgColor2: draft.colors.bgColor2.trim() || defaultThemeColors.bgColor2,
+  }
+
+  return { colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery }
 }
 

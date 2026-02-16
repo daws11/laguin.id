@@ -8,7 +8,7 @@ import { resolveApiUrl } from '@/lib/http'
 import * as adminApi from '@/features/admin/api'
 import { moveItem, parseToastItemsJson } from '@/features/admin/publicSiteDraft'
 import type { PublicSiteDraft } from '@/features/admin/types'
-import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap } from 'lucide-react'
+import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap, Palette } from 'lucide-react'
 
 interface LandingContentConfigProps {
   draft: PublicSiteDraft
@@ -49,6 +49,7 @@ export function LandingContentConfigSection({
   const toastItemsEndIdx = Math.min(toastItemsStartIdx + TOAST_ITEMS_PAGE_SIZE, toastItemsTotal)
 
   const menuItems = [
+    { id: 'colors', label: 'Colors', icon: Palette, group: 'Appearance' },
     { id: 'landing-media', label: 'Hero Media', icon: ImageIcon, group: 'Landing Page' },
     { id: 'landing-overlay', label: 'Hero Overlay', icon: Type, group: 'Landing Page' },
     { id: 'landing-player', label: 'Hero Player', icon: PlayCircle, group: 'Landing Page' },
@@ -562,6 +563,82 @@ export function LandingContentConfigSection({
                                      </div>
                                  )
                              })}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'colors' && (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="pb-2 border-b">
+                        <h3 className="text-base font-semibold">Colors</h3>
+                        <p className="text-xs text-muted-foreground mt-1">Set the main accent and background colors for this theme.</p>
+                    </div>
+                    <div className="space-y-4">
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Accent Color</label>
+                            <p className="text-[10px] text-muted-foreground">Main brand color used for buttons, links, and highlights.</p>
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="color"
+                                    className="h-10 w-14 rounded border cursor-pointer"
+                                    value={draft.colors.accentColor}
+                                    onChange={(e) => setDraft(d => ({ ...d, colors: { ...d.colors, accentColor: e.target.value } }))}
+                                />
+                                <Input
+                                    className="flex-1 font-mono text-sm"
+                                    value={draft.colors.accentColor}
+                                    onChange={(e) => setDraft(d => ({ ...d, colors: { ...d.colors, accentColor: e.target.value } }))}
+                                    placeholder="#E11D48"
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Background Color 1</label>
+                            <p className="text-[10px] text-muted-foreground">Soft background for header, sections, and badges.</p>
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="color"
+                                    className="h-10 w-14 rounded border cursor-pointer"
+                                    value={draft.colors.bgColor1}
+                                    onChange={(e) => setDraft(d => ({ ...d, colors: { ...d.colors, bgColor1: e.target.value } }))}
+                                />
+                                <Input
+                                    className="flex-1 font-mono text-sm"
+                                    value={draft.colors.bgColor1}
+                                    onChange={(e) => setDraft(d => ({ ...d, colors: { ...d.colors, bgColor1: e.target.value } }))}
+                                    placeholder="#FFF5F7"
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Background Color 2</label>
+                            <p className="text-[10px] text-muted-foreground">Main page background color.</p>
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="color"
+                                    className="h-10 w-14 rounded border cursor-pointer"
+                                    value={draft.colors.bgColor2}
+                                    onChange={(e) => setDraft(d => ({ ...d, colors: { ...d.colors, bgColor2: e.target.value } }))}
+                                />
+                                <Input
+                                    className="flex-1 font-mono text-sm"
+                                    value={draft.colors.bgColor2}
+                                    onChange={(e) => setDraft(d => ({ ...d, colors: { ...d.colors, bgColor2: e.target.value } }))}
+                                    placeholder="#FFFFFF"
+                                />
+                            </div>
+                        </div>
+                        <div className="rounded-lg border p-3 space-y-2">
+                            <p className="text-xs font-medium">Preview</p>
+                            <div className="flex gap-3 items-center">
+                                <div className="h-10 w-10 rounded-lg border shadow-sm" style={{ backgroundColor: draft.colors.accentColor }} title="Accent" />
+                                <div className="h-10 w-10 rounded-lg border shadow-sm" style={{ backgroundColor: draft.colors.bgColor1 }} title="BG 1" />
+                                <div className="h-10 w-10 rounded-lg border shadow-sm" style={{ backgroundColor: draft.colors.bgColor2 }} title="BG 2" />
+                                <div className="ml-2 text-xs text-muted-foreground">
+                                    <span className="font-medium" style={{ color: draft.colors.accentColor }}>Sample accent text</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

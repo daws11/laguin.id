@@ -49,6 +49,7 @@ type PublicSiteConfig = {
     }
   }
   activityToast?: ActivityToastConfig
+  colors?: { accentColor?: string; bgColor1?: string; bgColor2?: string }
 }
 
 type PublicSettingsResponse = {
@@ -144,7 +145,7 @@ function CountdownTimer() {
   }, [])
 
   return (
-    <div className="bg-[#E11D48] px-3 py-1.5 text-center text-[9px] sm:text-xs font-bold text-white uppercase tracking-tight leading-none">
+    <div className="bg-[var(--theme-accent)] px-3 py-1.5 text-center text-[9px] sm:text-xs font-bold text-white uppercase tracking-tight leading-none">
       <div className="flex items-center justify-center gap-1.5 flex-wrap">
         <span>💝 Valentine's dalam {time.d}h {time.h}j {time.m}m {time.s}d lagi</span>
         <span className="opacity-50 text-[8px]">•</span>
@@ -173,7 +174,7 @@ function HighlightedTitle({ title }: { title: string }) {
   return (
     <>
       {parsed.before}
-      <span className="text-[#E11D48]">{parsed.name}</span>
+      <span className="text-[var(--theme-accent)]">{parsed.name}</span>
       {parsed.after}
     </>
   )
@@ -293,7 +294,7 @@ function FeaturedAudioPlayer({
     <div className="space-y-5">
       {/* Song info header */}
       <div className="flex items-start gap-4">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#E11D48]/90 text-rose-100">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[var(--theme-accent)] text-[var(--theme-accent-soft)]">
           <Heart className="h-6 w-6" fill="currentColor" />
         </div>
         <div className="flex-1 min-w-0">
@@ -319,7 +320,7 @@ function FeaturedAudioPlayer({
       <div className="space-y-1">
         <div className="h-1 w-full overflow-hidden rounded-full bg-gray-100">
           <div
-            className="h-full bg-rose-300 transition-all duration-150"
+            className="h-full bg-[var(--theme-accent)] transition-all duration-150"
             style={{ width: `${progressPct}%` }}
           />
         </div>
@@ -346,7 +347,7 @@ function FeaturedAudioPlayer({
           disabled={!hasAudio}
           className={cn(
             'flex h-14 w-14 items-center justify-center rounded-full text-white transition-transform',
-            hasAudio ? 'bg-[#E11D48] hover:bg-rose-600 active:scale-95' : 'bg-gray-300 cursor-not-allowed'
+            hasAudio ? 'bg-[var(--theme-accent)] hover:opacity-90 active:scale-95' : 'bg-gray-300 cursor-not-allowed'
           )}
           aria-label={playing ? 'Pause' : 'Play'}
         >
@@ -541,6 +542,14 @@ export function LandingRoute() {
   }
 
   const site = (publicSiteConfig ?? defaultPublicSiteConfig) as PublicSiteConfig
+
+  const themeColors = (publicSiteConfig as any)?.colors
+  const themeStyle = {
+    '--theme-accent': themeColors?.accentColor || '#E11D48',
+    '--theme-accent-soft': themeColors?.bgColor1 || '#FFF5F7',
+    '--theme-bg': themeColors?.bgColor2 || '#FFFFFF',
+  } as React.CSSProperties
+
   const landing = site.landing ?? defaultPublicSiteConfig.landing!
   const heroMedia = landing.heroMedia ?? defaultPublicSiteConfig.landing!.heroMedia!
   const heroOverlay = landing.heroOverlay ?? defaultPublicSiteConfig.landing!.heroOverlay!
@@ -658,24 +667,24 @@ export function LandingRoute() {
     : defaultPublicSiteConfig.activityToast) as ActivityToastConfig
 
   return (
-    <div className="min-h-screen bg-[#FFF5F7] font-sans pb-32 overflow-x-hidden">
+    <div className="min-h-screen bg-[var(--theme-accent-soft)] font-sans pb-32 overflow-x-hidden" style={themeStyle}>
       <ActivityToast config={toastConfig} />
 
       {/* Sticky Top Banner */}
       <div className="sticky top-0 z-50">
         <CountdownTimer />
-        <div className="border-b border-rose-100 bg-white/95 px-2 sm:px-4 py-2 backdrop-blur-sm">
+        <div className="border-b border-[var(--theme-accent-soft)] bg-white/95 px-2 sm:px-4 py-2 backdrop-blur-sm">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-3">
             <Link to={themeSlug ? `/${themeSlug}` : '/'} className="flex items-center gap-2">
               <img src="/logo.png" alt="Laguin.id - Lagumu, Ceritamu" className="h-8 w-auto object-contain" />
             </Link>
             <div className="text-right flex flex-col items-end gap-0.5 sm:flex-row sm:items-center sm:gap-3">
-              <div className="hidden md:block text-[10px] font-medium text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
+              <div className="hidden md:block text-[10px] font-medium text-[var(--theme-accent)] bg-[var(--theme-accent-soft)] px-2 py-0.5 rounded-full">
                 💝 Spesial Valentine
               </div>
               <div className="leading-tight flex items-center gap-1.5">
                 <span className="text-[10px] text-gray-400 line-through">Rp 497rb</span>
-                <span className="text-sm sm:text-lg font-bold text-[#E11D48]">GRATIS</span>
+                <span className="text-sm sm:text-lg font-bold text-[var(--theme-accent)]">GRATIS</span>
                 <Badge variant="destructive" className="h-4 px-1 py-0 text-[9px]">
                   11 kuota!
                 </Badge>
@@ -705,7 +714,7 @@ export function LandingRoute() {
             {/* Main headline - Reduced size on mobile */}
             <h1 id="hero-title" className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight">
               <span className="text-gray-900">Valentine kali ini,</span>
-              <br className="hidden sm:inline" /> <span className="text-[#E11D48]">buat dia menangis.</span>
+              <br className="hidden sm:inline" /> <span className="text-[var(--theme-accent)]">buat dia menangis.</span>
             </h1>
 
             {/* Body paragraph - Compact */}
@@ -763,7 +772,7 @@ export function LandingRoute() {
                      className="h-16 w-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4 hover:scale-110 transition-transform"
                      aria-label="Play hero song"
                    >
-                     <div className="h-12 w-12 rounded-full bg-[#E11D48] flex items-center justify-center pl-1 shadow-lg">
+                     <div className="h-12 w-12 rounded-full bg-[var(--theme-accent)] flex items-center justify-center pl-1 shadow-lg">
                        <Play className="h-6 w-6 text-white" fill="currentColor" />
                      </div>
                    </button>
@@ -804,10 +813,10 @@ export function LandingRoute() {
 
             {/* CTA Button - Pulled up */}
             <div className="space-y-2">
-              <Button asChild size="lg" className="w-full sm:w-auto h-12 sm:h-14 px-8 rounded-full bg-[#E11D48] text-base sm:text-lg font-bold shadow-lg shadow-rose-200/50 hover:bg-rose-600 hover:scale-105 transition-all duration-300">
+              <Button asChild size="lg" className="w-full sm:w-auto h-12 sm:h-14 px-8 rounded-full bg-[var(--theme-accent)] text-base sm:text-lg font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90 hover:scale-105 transition-all duration-300">
                 <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center justify-center gap-2">
                   Buat Lagu — GRATIS
-                  <span className="text-rose-200 line-through font-normal text-sm sm:text-base ml-1">Rp 497rb</span>
+                  <span className="text-[var(--theme-accent-soft)] line-through font-normal text-sm sm:text-base ml-1">Rp 497rb</span>
                 </Link>
               </Button>
               
@@ -817,7 +826,7 @@ export function LandingRoute() {
                 <span>•</span>
                 <span className="flex items-center gap-0.5"><ShieldCheck className="h-2.5 w-2.5 text-green-500" /> Secure</span>
                 <span>•</span>
-                <span className="text-rose-500">11 kuota sisa</span>
+                <span className="text-[var(--theme-accent)]">11 kuota sisa</span>
               </div>
             </div>
           </div>
@@ -826,17 +835,17 @@ export function LandingRoute() {
         {/* AUDIO SAMPLES SECTION */}
         <section aria-labelledby="audio-samples-title" className="space-y-8 max-w-4xl mx-auto">
           <div className="text-center space-y-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-1.5 text-sm font-bold uppercase tracking-wider text-[#E11D48]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--theme-accent-soft)] bg-[var(--theme-accent-soft)] px-4 py-1.5 text-sm font-bold uppercase tracking-wider text-[var(--theme-accent)]">
               <Play className="h-3.5 w-3.5" fill="currentColor" />
               Tekan Putar
             </div>
             <h2 id="audio-samples-title" className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">
-              Dengar <span className="text-[#E11D48] italic">namanya</span> di lagu asli
+              Dengar <span className="text-[var(--theme-accent)] italic">namanya</span> di lagu asli
             </h2>
             <p className="text-gray-500">Lagu asli yang kami buat. Nama asli. Air mata asli.</p>
           </div>
 
-          <div className="bg-white rounded-3xl p-5 sm:p-6 md:p-10 shadow-xl border border-rose-100/50">
+          <div className="bg-white rounded-3xl p-5 sm:p-6 md:p-10 shadow-xl border border-[var(--theme-accent-soft)]">
             <FeaturedAudioPlayer
               track={currentTrack}
               allTracks={allTracks}
@@ -867,11 +876,11 @@ export function LandingRoute() {
                     }}
                     className={cn(
                       'flex w-full items-center gap-4 px-2 py-4 rounded-lg transition-colors text-left',
-                      selectedTrackIndex === i ? 'bg-rose-50/70' : 'hover:bg-gray-50',
+                      selectedTrackIndex === i ? 'bg-[var(--theme-accent-soft)]' : 'hover:bg-gray-50',
                       t.audioUrl ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'
                     )}
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-100 text-[#E11D48]">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--theme-accent-soft)] text-[var(--theme-accent)]">
                       <Music className="h-5 w-5" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -888,9 +897,9 @@ export function LandingRoute() {
 
             <div className="mt-10 text-center space-y-4">
               <p className="text-gray-600">
-                Bayangkan mendengar <span className="text-[#E11D48] font-medium italic">namanya</span> di lagu seperti ini...
+                Bayangkan mendengar <span className="text-[var(--theme-accent)] font-medium italic">namanya</span> di lagu seperti ini...
               </p>
-              <Button asChild size="lg" className="h-12 px-8 rounded-xl bg-[#E11D48] font-bold shadow-lg shadow-rose-200/50 hover:bg-rose-600">
+              <Button asChild size="lg" className="h-12 px-8 rounded-xl bg-[var(--theme-accent)] font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90">
                 <Link to={themeSlug ? `/${themeSlug}/config` : '/config'}>Buat Lagunya — GRATIS</Link>
               </Button>
             </div>
@@ -898,7 +907,7 @@ export function LandingRoute() {
         </section>
 
         {/* STATS BAR */}
-        <section className="py-8 border-y border-rose-100 bg-white/50 backdrop-blur-sm -mx-2 px-2 sm:-mx-4 sm:px-4 md:-mx-6 md:px-6">
+        <section className="py-8 border-y border-[var(--theme-accent-soft)] bg-white/50 backdrop-blur-sm -mx-2 px-2 sm:-mx-4 sm:px-4 md:-mx-6 md:px-6">
           <div className="flex flex-wrap justify-center gap-8 md:gap-24 text-center">
              {[
                { val: '99%', label: 'Menangis' },
@@ -906,7 +915,7 @@ export function LandingRoute() {
                { val: '2,847', label: 'Lagu Terkirim' },
              ].map((stat) => (
                <div key={stat.label}>
-                 <div className="text-3xl md:text-4xl font-bold text-[#E11D48] font-serif">{stat.val}</div>
+                 <div className="text-3xl md:text-4xl font-bold text-[var(--theme-accent)] font-serif">{stat.val}</div>
                  <div className="text-xs uppercase font-bold text-gray-400 tracking-wider">{stat.label}</div>
                </div>
              ))}
@@ -917,7 +926,7 @@ export function LandingRoute() {
         <section aria-labelledby="comparison-title" className="space-y-10 text-center max-w-5xl mx-auto">
           <div className="space-y-2">
             <h2 id="comparison-title" className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">
-              Kado yang akan dia <span className="text-gray-400 line-through decoration-rose-500">lupakan</span> vs. yang akan dia <span className="text-[#E11D48] italic">putar ulang</span>
+              Kado yang akan dia <span className="text-gray-400 line-through decoration-[var(--theme-accent)]">lupakan</span> vs. yang akan dia <span className="text-[var(--theme-accent)] italic">putar ulang</span>
             </h2>
           </div>
 
@@ -950,23 +959,23 @@ export function LandingRoute() {
              </div>
 
              {/* Right Column */}
-             <div className="bg-white rounded-3xl p-8 border-2 border-[#E11D48] shadow-xl relative overflow-hidden transform md:scale-105 z-10">
-               <div className="absolute top-4 right-4 bg-[#E11D48] text-white text-[10px] font-bold px-3 py-1 rounded-full">HARGA TERBAIK</div>
+             <div className="bg-white rounded-3xl p-8 border-2 border-[var(--theme-accent)] shadow-xl relative overflow-hidden transform md:scale-105 z-10">
+               <div className="absolute top-4 right-4 bg-[var(--theme-accent)] text-white text-[10px] font-bold px-3 py-1 rounded-full">HARGA TERBAIK</div>
                <div className="h-full flex flex-col items-center justify-center space-y-6">
-                 <div className="h-20 w-20 bg-rose-100 rounded-full flex items-center justify-center text-4xl shadow-inner">
+                 <div className="h-20 w-20 bg-[var(--theme-accent-soft)] rounded-full flex items-center justify-center text-4xl shadow-inner">
                    🎵
                  </div>
                  <div className="space-y-1">
                    <h3 className="text-2xl font-bold text-gray-900">Lagu Personal Untuknya</h3>
-                   <div className="text-[#E11D48] font-bold text-3xl">GRATIS <span className="text-gray-300 line-through text-lg font-normal">Rp 497.000</span></div>
+                   <div className="text-[var(--theme-accent)] font-bold text-3xl">GRATIS <span className="text-gray-300 line-through text-lg font-normal">Rp 497.000</span></div>
                  </div>
-                 <ul className="text-left space-y-3 text-gray-600 bg-rose-50 p-6 rounded-2xl w-full">
-                   <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[#E11D48]" /> <strong>Namanya</strong> dalam lirik</li>
-                   <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[#E11D48]" /> Cerita & kenangan kalian</li>
-                   <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[#E11D48]" /> Audio kualitas studio</li>
-                   <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[#E11D48]" /> Dikirim {deliveryEta.sentenceLower}</li>
+                 <ul className="text-left space-y-3 text-gray-600 bg-[var(--theme-accent-soft)] p-6 rounded-2xl w-full">
+                   <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[var(--theme-accent)]" /> <strong>Namanya</strong> dalam lirik</li>
+                   <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[var(--theme-accent)]" /> Cerita & kenangan kalian</li>
+                   <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[var(--theme-accent)]" /> Audio kualitas studio</li>
+                   <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[var(--theme-accent)]" /> Dikirim {deliveryEta.sentenceLower}</li>
                  </ul>
-                 <div className="font-bold text-[#E11D48] uppercase tracking-widest text-sm">Diputar Selamanya ✅</div>
+                 <div className="font-bold text-[var(--theme-accent)] uppercase tracking-widest text-sm">Diputar Selamanya ✅</div>
                </div>
              </div>
           </div>
@@ -975,13 +984,13 @@ export function LandingRoute() {
         {/* SOCIAL PROOF / REVIEWS */}
         <section className="space-y-10">
           <div className="text-center space-y-2">
-            <div className="text-[#E11D48] text-sm font-bold uppercase tracking-wider">Reaksi Nyata</div>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">"Dia <span className="text-[#E11D48] italic">tidak pernah</span> menangis"</h2>
+            <div className="text-[var(--theme-accent)] text-sm font-bold uppercase tracking-wider">Reaksi Nyata</div>
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">"Dia <span className="text-[var(--theme-accent)] italic">tidak pernah</span> menangis"</h2>
             <p className="text-gray-600">...mereka semua bilang begitu. 98% salah.</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-[#E11D48] text-white p-8 rounded-3xl shadow-lg transform md:-rotate-1 hover:rotate-0 transition-transform">
+            <div className="bg-[var(--theme-accent)] text-white p-8 rounded-3xl shadow-lg transform md:-rotate-1 hover:rotate-0 transition-transform">
                <div className="flex text-yellow-300 mb-4">
                  {[1,2,3,4,5].map(i => <Star key={i} className="h-4 w-4 fill-current" />)}
                </div>
@@ -1024,7 +1033,7 @@ export function LandingRoute() {
                  {[1,2,3,4,5].map(i => <Star key={i} className="h-4 w-4 fill-current" />)}
                </div>
                <p className="font-medium text-gray-800 text-lg mb-6 leading-relaxed">
-                 "Doi terpaksa <strong className="text-[#E11D48]">minggirin mobil</strong> — katanya burem kena air mata. 15 tahun nikah, akhirnya bisa bikin doi nangis juga 😂"
+                 "Doi terpaksa <strong className="text-[var(--theme-accent)]">minggirin mobil</strong> — katanya burem kena air mata. 15 tahun nikah, akhirnya bisa bikin doi nangis juga 😂"
                </p>
                <div className="flex items-center gap-3">
                  <img src="https://images.unsplash.com/photo-1613447895590-97f008b7fff3?w=100&h=100&fit=crop" alt="" className="w-10 h-10 rounded-full border-2 border-gray-100 object-cover" />
@@ -1040,8 +1049,8 @@ export function LandingRoute() {
         {/* HOW IT WORKS */}
         <section aria-labelledby="how-it-works-title" className="space-y-10">
           <div className="text-center space-y-2">
-            <h2 className="text-[#E11D48] text-sm font-bold uppercase tracking-wider">Proses Mudah</h2>
-            <h2 id="how-it-works-title" className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">Tiga langkah menuju <span className="text-[#E11D48] italic">tangis bahagia</span></h2>
+            <h2 className="text-[var(--theme-accent)] text-sm font-bold uppercase tracking-wider">Proses Mudah</h2>
+            <h2 id="how-it-works-title" className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">Tiga langkah menuju <span className="text-[var(--theme-accent)] italic">tangis bahagia</span></h2>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
@@ -1051,7 +1060,7 @@ export function LandingRoute() {
               { step: 3, icon: '😭', title: 'Lihat dia terharu', desc: `Dikirim ${deliveryEta.sentenceLower} via WhatsApp. Dia akan menyimpannya selamanya.` },
             ].map((s) => (
               <div key={s.step} className="flex flex-col items-center text-center gap-4 rounded-3xl border border-gray-100 bg-white p-8 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-3xl font-bold text-rose-500 shadow-sm">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--theme-accent-soft)] text-3xl font-bold text-[var(--theme-accent)] shadow-sm">
                   {s.step}
                 </div>
                 <div>
@@ -1063,7 +1072,7 @@ export function LandingRoute() {
           </div>
 
           <div className="text-center pt-4">
-            <Button asChild size="lg" className="h-14 px-10 rounded-full bg-[#E11D48] text-lg font-bold shadow-xl shadow-rose-200 hover:bg-rose-700">
+            <Button asChild size="lg" className="h-14 px-10 rounded-full bg-[var(--theme-accent)] text-lg font-bold shadow-xl shadow-[var(--theme-accent-soft)] hover:opacity-90">
                <Link to={themeSlug ? `/${themeSlug}/config` : '/config'}>Buat Lagunya — GRATIS</Link>
             </Button>
           </div>
@@ -1094,13 +1103,13 @@ export function LandingRoute() {
 
         {/* FAQ */}
         <section aria-labelledby="faq-title" className="space-y-10 max-w-3xl mx-auto pb-8">
-          <h2 id="faq-title" className="text-center font-serif text-3xl font-bold text-gray-900">Pertanyaan <span className="text-[#E11D48] italic">Cepat</span></h2>
+          <h2 id="faq-title" className="text-center font-serif text-3xl font-bold text-gray-900">Pertanyaan <span className="text-[var(--theme-accent)] italic">Cepat</span></h2>
           <div className="space-y-4">
              {faqItems.map((faq, i) => (
                <div key={i} className="group rounded-2xl border border-gray-100 bg-white p-6 hover:shadow-md transition-all cursor-default">
                  <h3 className="font-bold text-gray-900 text-lg mb-2 flex justify-between items-center">
                    {faq.q}
-                   <span className="text-rose-200 group-hover:text-rose-500 transition-colors text-2xl">↓</span>
+                   <span className="text-[var(--theme-accent-soft)] group-hover:text-[var(--theme-accent)] transition-colors text-2xl">↓</span>
                  </h3>
                  <p className="text-gray-600 leading-relaxed">{faq.a}</p>
                </div>
@@ -1114,10 +1123,10 @@ export function LandingRoute() {
            <p className="text-gray-600 text-base sm:text-lg">Beri dia hadiah yang tak akan pernah dia lupakan. Gabung <strong>2,847 wanita</strong> yang membuat pasangannya menangis terharu.</p>
            
            <div className="pt-4">
-             <Button asChild size="lg" className="h-auto min-h-[4rem] px-6 py-4 sm:px-12 rounded-full bg-[#E11D48] text-lg sm:text-xl font-bold shadow-2xl shadow-rose-300 hover:bg-rose-700 hover:scale-105 transition-all">
+             <Button asChild size="lg" className="h-auto min-h-[4rem] px-6 py-4 sm:px-12 rounded-full bg-[var(--theme-accent)] text-lg sm:text-xl font-bold shadow-2xl shadow-[var(--theme-accent-soft)] hover:opacity-90 hover:scale-105 transition-all">
                <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 leading-none">
                  <span>Buat Lagunya — GRATIS</span>
-                 <span className="text-xs sm:text-sm font-normal line-through opacity-80 text-rose-100">Rp 497.000</span>
+                 <span className="text-xs sm:text-sm font-normal line-through opacity-80 text-[var(--theme-accent-soft)]">Rp 497.000</span>
                </Link>
              </Button>
            </div>
@@ -1159,7 +1168,7 @@ export function LandingRoute() {
              <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-green-500" /> {deliveryEta.short}</span>
              <span className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-green-500" /> Garansi</span>
            </div>
-           <Button asChild size="lg" className="w-full h-auto min-h-[3.5rem] py-2 rounded-xl bg-[#E11D48] text-lg font-bold shadow-lg shadow-rose-200 hover:bg-rose-700 active:scale-95 transition-all">
+           <Button asChild size="lg" className="w-full h-auto min-h-[3.5rem] py-2 rounded-xl bg-[var(--theme-accent)] text-lg font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90 active:scale-95 transition-all">
             <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center justify-center gap-2 flex-wrap text-center leading-tight">
               <span>Buat Lagunya — GRATIS</span>
               <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/30 text-xs whitespace-nowrap">

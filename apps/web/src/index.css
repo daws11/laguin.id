@@ -11,6 +11,10 @@ body {
 
 @layer base {
   :root {
+    --theme-accent: #E11D48;
+    --theme-accent-soft: #FFF5F7;
+    --theme-bg: #FFFFFF;
+
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;

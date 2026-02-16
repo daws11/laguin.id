@@ -22,8 +22,10 @@ A monorepo application for creating personalized songs for special occasions. Bu
 - Root `/` renders the default theme (set in admin Settings)
 - Theme context provided via `ThemeProvider` -> `useThemeSlug()` hook
 - Orders, drafts, page views all tagged with `themeSlug`
-- Admin: Themes tab for CRUD with visual form editor (Hero Media, Overlay, Player, Music, Toast, Creation & Delivery)
+- Admin: Themes tab for CRUD with visual form editor (Colors, Hero Media, Overlay, Player, Music, Toast, Creation & Delivery)
 - Admin Settings tab shows only global/system settings (WhatsApp, API Keys)
+- Per-theme colors: accentColor, bgColor1 (soft bg), bgColor2 (page bg) via CSS custom properties
+- CSS variables: --theme-accent, --theme-accent-soft, --theme-bg applied to all public pages
 - Creation & Delivery settings (instant delivery, email OTP, agreement, manual confirmation, delay) are per-theme
 - Backend and order pipeline use theme-specific Creation & Delivery settings with global fallback
 - Theme filter on Orders and Funnel admin tabs

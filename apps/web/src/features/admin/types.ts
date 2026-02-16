@@ -39,7 +39,14 @@ export type Settings = {
 export type LandingPlaylistItem = { title: string; subtitle: string; ctaLabel: string; audioUrl: string }
 export type ToastItem = { fullName: string; city: string; recipientName: string }
 
+export type ThemeColors = {
+  accentColor: string
+  bgColor1: string
+  bgColor2: string
+}
+
 export type PublicSiteDraft = {
+  colors: ThemeColors
   landing: {
     heroMedia: {
       mode: 'image' | 'video'

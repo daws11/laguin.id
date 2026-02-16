@@ -16,7 +16,7 @@ export function VibeCard({ selected, label, description, icon, badge, className,
       className={cn(
         "relative flex flex-col items-center justify-center rounded-xl border p-4 text-center transition-all hover:shadow-sm",
         selected
-          ? "border-rose-500 bg-rose-500 text-white shadow-md ring-2 ring-rose-200 ring-offset-2"
+          ? "border-[var(--theme-accent)] bg-[var(--theme-accent)] text-white shadow-md ring-2 ring-[var(--theme-accent-soft)] ring-offset-2"
           : "bg-white text-gray-700 hover:border-gray-300",
         className
       )}
@@ -29,7 +29,7 @@ export function VibeCard({ selected, label, description, icon, badge, className,
       )}
       <div className="mb-2 text-2xl">{icon}</div>
       <div className="font-bold">{label}</div>
-      <div className={cn("text-xs", selected ? "text-rose-100" : "text-gray-500")}>{description}</div>
+      <div className={cn("text-xs", selected ? "text-white/80" : "text-gray-500")}>{description}</div>
     </button>
   )
 }

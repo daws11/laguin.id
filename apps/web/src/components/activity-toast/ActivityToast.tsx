@@ -222,19 +222,19 @@ export function ActivityToast({ config }: { config?: ActivityToastConfig | null 
       <div
         className={cn(
           // Responsive width: fill small screens with padding, but cap on larger screens.
-          'w-[240px] max-w-[calc(100vw-1.5rem)] md:w-[360px] rounded-2xl border border-rose-100 bg-white/95 backdrop-blur px-3 py-2.5 md:px-4 md:py-3 shadow-xl transition-all duration-300',
+          'w-[240px] max-w-[calc(100vw-1.5rem)] md:w-[360px] rounded-2xl border border-[var(--theme-accent-soft)] bg-white/95 backdrop-blur px-3 py-2.5 md:px-4 md:py-3 shadow-xl transition-all duration-300',
           visible ? 'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 translate-y-2',
         )}
       >
         <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--theme-accent-soft)] text-[var(--theme-accent)]">
             ♪
           </div>
           <div className="min-w-0 flex-1">
             <div className="truncate text-xs font-bold text-gray-900 md:text-sm">{item.fullName}</div>
             <div className="text-[10px] text-gray-500 md:text-xs">{item.city}</div>
             <div className="mt-1 text-[10px] text-gray-700 md:text-xs">
-              Baru saja membuat <span className="font-semibold text-rose-600">Lagu</span> untuk{' '}
+              Baru saja membuat <span className="font-semibold text-[var(--theme-accent)]">Lagu</span> untuk{' '}
               <span className="font-semibold text-gray-900">{item.recipientName}</span>
             </div>
           </div>

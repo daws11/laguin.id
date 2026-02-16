@@ -142,6 +142,7 @@ export function ConfigRoute() {
            setHeroVideoUrl(resolved)
         }
 
+        setPublicSiteConfig(publicSiteConfig ?? null)
         setSettingsLoaded(true)
       })
       .catch(() => {
@@ -158,6 +159,7 @@ export function ConfigRoute() {
   const [agreementEnabled, setAgreementEnabled] = useState(false)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [heroVideoUrl, setHeroVideoUrl] = useState<string | null>(null)
+  const [publicSiteConfig, setPublicSiteConfig] = useState<unknown>(null)
   const [emailVerificationId, setEmailVerificationId] = useState<string | null>(null)
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', ''])
   const otpRefs = useRef<Array<HTMLInputElement | null>>([])
@@ -766,40 +768,47 @@ export function ConfigRoute() {
     if (!error) return
   }, [error])
 
+  const themeColors = (publicSiteConfig as any)?.colors
+  const themeStyle = {
+    '--theme-accent': themeColors?.accentColor || '#E11D48',
+    '--theme-accent-soft': themeColors?.bgColor1 || '#FFF5F7',
+    '--theme-bg': themeColors?.bgColor2 || '#FFFFFF',
+  } as React.CSSProperties
+
   if (!isHydrated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFF5F7]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#E11D48]" />
+      <div className="min-h-screen flex items-center justify-center bg-[var(--theme-accent-soft)]">
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--theme-accent)]" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#FFF5F7] font-sans text-gray-900 pb-32">
+    <div className="min-h-screen bg-[var(--theme-accent-soft)] font-sans text-gray-900 pb-32" style={themeStyle}>
       {/* Top Banner - Hide on mobile if possible or make super compact */}
-      <div className="bg-[#E11D48] px-4 py-1.5 text-center text-[9px] sm:text-xs font-bold text-white uppercase tracking-wide hidden sm:block">
+      <div className="bg-[var(--theme-accent)] px-4 py-1.5 text-center text-[9px] sm:text-xs font-bold text-white uppercase tracking-wide hidden sm:block">
         🎁 {timeLeft.days} hari {timeLeft.hours} jam {timeLeft.mins} menit menuju Valentine • Dikirim {deliveryEta.sentenceLower}
       </div>
 
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-rose-100 bg-white/95 backdrop-blur-sm shadow-sm">
+      <header className="sticky top-0 z-50 border-b border-[var(--theme-accent-soft)] bg-white/95 backdrop-blur-sm shadow-sm">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-2">
           <img src="/logo.png" alt="Laguin - Musikmu Ceritamu" className="h-8 sm:h-10 w-auto object-contain" />
           <div className="text-right flex items-center gap-1.5">
              <span className="text-[10px] sm:text-xs text-gray-400 line-through">Rp 497k</span>
-             <span className="text-sm sm:text-lg font-bold text-[#E11D48]">GRATIS</span>
+             <span className="text-sm sm:text-lg font-bold text-[var(--theme-accent)]">GRATIS</span>
              <Badge variant="destructive" className="ml-1 text-[9px] sm:text-[10px] px-1.5 py-0 h-4 sm:h-5 min-w-[36px] justify-center">11 sisa</Badge>
           </div>
         </div>
         {/* Progress Bar inside Header - Ultra Compact */}
         <div className="w-full h-0.5 bg-gray-100 flex">
            {[0, 1, 2, 3, 4].map((i) => (
-             <div key={i} className={`flex-1 transition-all duration-500 ${i <= step ? 'bg-[#E11D48]' : 'bg-transparent'}`} />
+             <div key={i} className={`flex-1 transition-all duration-500 ${i <= step ? 'bg-[var(--theme-accent)]' : 'bg-transparent'}`} />
            ))}
         </div>
         {/* Step Indicator Text - Floating below header if needed, but keeping it minimal for now */}
         {step > 0 && step < 4 && (
-          <div className="absolute top-full left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-rose-50 py-1 text-center">
+          <div className="absolute top-full left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-[var(--theme-accent-soft)] py-1 text-center">
              <div className="text-[10px] font-medium text-gray-400">
                {step === 1 ? 'Siapa penerimanya?' : step === 2 ? 'Pilih vibe musik' : 'Tulis ceritamu'}
              </div>
@@ -813,9 +822,9 @@ export function ConfigRoute() {
           {/* STEP 0: ANNOUNCEMENT - halaman pengumuman */}
           {step === 0 && (
             <div className="flex flex-col items-center justify-start animate-in fade-in slide-in-from-bottom-4 duration-500 pb-4 max-w-2xl mx-auto">
-              <Card className="w-full overflow-hidden border-rose-200 bg-white shadow-xl">
+              <Card className="w-full overflow-hidden border-[var(--theme-accent-soft)] bg-white shadow-xl">
                 {/* Header */}
-                <div className="bg-[#E11D48] px-4 py-3 flex items-center justify-center gap-2 text-white shadow-sm">
+                <div className="bg-[var(--theme-accent)] px-4 py-3 flex items-center justify-center gap-2 text-white shadow-sm">
                   <Megaphone className="h-4 w-4 shrink-0" />
                   <span className="text-xs sm:text-sm font-bold uppercase tracking-wider">Kado Valentine Paling Romantis</span>
                 </div>
@@ -823,7 +832,7 @@ export function ConfigRoute() {
                 <CardContent className="p-0">
                   <div className="p-4 sm:p-8 text-center space-y-4 sm:space-y-6">
                     <h2 className="text-sm sm:text-xl md:text-2xl font-bold text-gray-900 leading-snug mx-auto max-w-lg">
-                      Rekam emosi mereka saat mendengar lagu untuk menang <span className="text-[#E11D48]">Rp 1.000.000!</span>
+                      Rekam emosi mereka saat mendengar lagu untuk menang <span className="text-[var(--theme-accent)]">Rp 1.000.000!</span>
                     </h2>
 
                     {/* Video Centered */}
@@ -853,27 +862,27 @@ export function ConfigRoute() {
                   </div>
 
                   {/* How it works - Ultra Compact Timeline */}
-                  <div className="bg-gradient-to-b from-rose-50/80 to-white px-4 py-6 sm:py-10 border-t border-rose-100">
-                    <h3 className="text-[10px] sm:text-xs font-bold text-rose-500 mb-4 sm:mb-8 text-center uppercase tracking-widest">Cara Ikutan</h3>
+                  <div className="bg-gradient-to-b from-[var(--theme-accent-soft)] to-white px-4 py-6 sm:py-10 border-t border-[var(--theme-accent-soft)]">
+                    <h3 className="text-[10px] sm:text-xs font-bold text-[var(--theme-accent)] mb-4 sm:mb-8 text-center uppercase tracking-widest">Cara Ikutan</h3>
                     
                     <div className="grid grid-cols-3 gap-4 sm:gap-8 max-w-lg mx-auto">
                       {/* Step 1 */}
                       <div className="flex flex-col items-center text-center">
-                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#E11D48] text-white flex items-center justify-center text-xs sm:text-sm font-bold mb-2 shadow-sm">1</div>
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[var(--theme-accent)] text-white flex items-center justify-center text-xs sm:text-sm font-bold mb-2 shadow-sm">1</div>
                         <p className="font-bold text-[10px] sm:text-sm text-gray-800 leading-tight">Buat Lagu Gratis</p>
                         <p className="text-[9px] sm:text-xs text-gray-500 leading-none mt-1">Hemat 100%</p>
                       </div>
 
                       {/* Step 2 */}
                       <div className="flex flex-col items-center text-center">
-                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#E11D48] text-white flex items-center justify-center text-xs sm:text-sm font-bold mb-2 shadow-sm">2</div>
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[var(--theme-accent)] text-white flex items-center justify-center text-xs sm:text-sm font-bold mb-2 shadow-sm">2</div>
                         <p className="font-bold text-[10px] sm:text-sm text-gray-800 leading-tight">Rekam Reaksinya</p>
                         <p className="text-[9px] sm:text-xs text-gray-500 leading-none mt-1">Wajib Video!</p>
                       </div>
 
                       {/* Step 3 */}
                       <div className="flex flex-col items-center text-center">
-                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#E11D48] text-white flex items-center justify-center text-xs sm:text-sm font-bold mb-2 shadow-sm">3</div>
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[var(--theme-accent)] text-white flex items-center justify-center text-xs sm:text-sm font-bold mb-2 shadow-sm">3</div>
                         <p className="font-bold text-[10px] sm:text-sm text-gray-800 leading-tight">Kirim & Menang</p>
                         <p className="text-[9px] sm:text-xs text-gray-500 leading-none mt-1">Dapat Cuan!</p>
                       </div>
@@ -890,7 +899,7 @@ export function ConfigRoute() {
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2">
               <div className="text-center space-y-1">
                 <h1 className="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
-                  <Heart className="h-5 w-5 text-rose-400 fill-rose-100" />
+                  <Heart className="h-5 w-5 text-[var(--theme-accent)] fill-[var(--theme-accent-soft)]" />
                   Siapa penerimanya?
                 </h1>
                 <p className="text-xs text-gray-500">Namanya akan ada di dalam lirik</p>
@@ -907,7 +916,7 @@ export function ConfigRoute() {
                       setRelationship(rel)
                       setValue('extraNotes', `Relasi dengan penerima: ${rel}`)
                     }}
-                    className={relationship === rel ? "bg-[#E11D48] border-[#E11D48] text-white w-full shadow-md shadow-rose-100 px-2 py-3" : "w-full bg-white shadow-sm px-2 py-3"}
+                    className={relationship === rel ? "bg-[var(--theme-accent)] border-[var(--theme-accent)] text-white w-full shadow-md shadow-[var(--theme-accent-soft)] px-2 py-3" : "w-full bg-white shadow-sm px-2 py-3"}
                   />
                 ))}
               </div>
@@ -917,9 +926,9 @@ export function ConfigRoute() {
                 <Input 
                   {...register('recipientName')} 
                   placeholder="cth. Salsa" 
-                  className="h-11 rounded-xl border-gray-300 text-base shadow-sm focus-visible:ring-[#E11D48]"
+                  className="h-11 rounded-xl border-gray-300 text-base shadow-sm focus-visible:ring-[var(--theme-accent)]"
                 />
-                {errors.recipientName && <p className="text-xs text-[#E11D48]">{errors.recipientName.message}</p>}
+                {errors.recipientName && <p className="text-xs text-[var(--theme-accent)]">{errors.recipientName.message}</p>}
                 <div className="flex items-center gap-1.5 text-[10px] text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-100">
                   <Sparkles className="h-3 w-3 shrink-0" />
                   Nama ini akan dinyanyikan dalam lirik!
@@ -937,7 +946,7 @@ export function ConfigRoute() {
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2">
               <div className="text-center space-y-1">
                 <h1 className="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
-                  <Music className="h-5 w-5 text-rose-400" />
+                  <Music className="h-5 w-5 text-[var(--theme-accent)]" />
                   Pilih Vibe
                 </h1>
                 <p className="text-xs text-gray-500">Sesuaikan dengan selera musiknya</p>
@@ -960,7 +969,7 @@ export function ConfigRoute() {
                     badge={g.badge}
                     selected={genre === g.id}
                     onClick={() => setValue('musicPreferences.genre', g.id)}
-                    className={genre === g.id ? "bg-[#E11D48] border-[#E11D48] text-white ring-2 ring-rose-200 shadow-md p-3" : "bg-white shadow-sm p-3"}
+                    className={genre === g.id ? "bg-[var(--theme-accent)] border-[var(--theme-accent)] text-white ring-2 ring-[var(--theme-accent-soft)] shadow-md p-3" : "bg-white shadow-sm p-3"}
                   />
                 ))}
               </div>
@@ -974,7 +983,7 @@ export function ConfigRoute() {
                         type="radio" 
                         value={v} 
                         {...register('musicPreferences.voiceStyle')}
-                        className="text-[#E11D48] focus:ring-[#E11D48] w-3 h-3" 
+                        className="text-[var(--theme-accent)] focus:ring-[var(--theme-accent)] w-3 h-3" 
                       />
                       <span className="text-xs font-medium">{v === 'Female' ? 'Wanita' : v === 'Male' ? 'Pria' : 'Bebas'}</span>
                     </label>
@@ -985,7 +994,7 @@ export function ConfigRoute() {
               <div className="rounded-xl bg-white p-3 shadow-sm border border-gray-100 text-center space-y-2">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Bahasa lirik</label>
                 <select
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#E11D48]"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)]"
                   value={language || 'Indonesian'}
                   onChange={(e) => setValue('musicPreferences.language', e.target.value)}
                 >
@@ -1001,19 +1010,19 @@ export function ConfigRoute() {
             <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2">
               <div className="text-center space-y-1">
                 <h1 className="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
-                  <PenLine className="h-5 w-5 text-rose-400" />
+                  <PenLine className="h-5 w-5 text-[var(--theme-accent)]" />
                   Ceritakan kisahmu
                 </h1>
-                <p className="text-xs text-gray-500">Ini akan menjadi lirik. <span className="text-[#E11D48] font-medium">Beberapa kalimat saja!</span></p>
+                <p className="text-xs text-gray-500">Ini akan menjadi lirik. <span className="text-[var(--theme-accent)] font-medium">Beberapa kalimat saja!</span></p>
               </div>
 
-              <div className="rounded-xl bg-rose-50 border border-rose-100 p-3 space-y-2 text-xs text-gray-600">
+              <div className="rounded-xl bg-[var(--theme-accent-soft)] border border-[var(--theme-accent-soft)] p-3 space-y-2 text-xs text-gray-600">
                 <div className="flex gap-2 items-start">
-                  <span className="text-[#E11D48] font-bold mt-0.5">•</span>
+                  <span className="text-[var(--theme-accent)] font-bold mt-0.5">•</span>
                   <span>Semakin kaya detail, semakin kuat emosinya.</span>
                 </div>
                 <div className="flex gap-2 items-start">
-                  <span className="text-[#E11D48] font-bold mt-0.5">•</span>
+                  <span className="text-[var(--theme-accent)] font-bold mt-0.5">•</span>
                   <span>Ceritakan pertemuan, hal yang dicintai, atau kenangan lucu.</span>
                 </div>
               </div>
@@ -1044,7 +1053,7 @@ export function ConfigRoute() {
                   rows={5} 
                   placeholder="Mulai ketik ceritamu di sini..." 
                   maxLength={4000}
-                  className="rounded-xl border-gray-300 text-base shadow-sm focus-visible:ring-[#E11D48] resize-none p-4"
+                  className="rounded-xl border-gray-300 text-base shadow-sm focus-visible:ring-[var(--theme-accent)] resize-none p-4"
                 />
                 <div className="flex justify-between text-xs">
                   <div className={["flex items-center gap-2 font-medium", storyQuality.text].join(' ')}>
@@ -1091,7 +1100,7 @@ export function ConfigRoute() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-[#E11D48]">GRATIS</span>
+                        <span className="text-xs font-bold text-[var(--theme-accent)]">GRATIS</span>
                         <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOrderSummaryOpen ? 'rotate-180' : ''}`} />
                       </div>
                     </button>
@@ -1115,7 +1124,7 @@ export function ConfigRoute() {
                           <span className="font-bold text-green-600 flex items-center gap-1"><Zap className="h-3 w-3" /> {deliveryEta.short}</span>
                         </div>
                         <Separator className="my-2" />
-                        <div className="bg-rose-50 p-2 rounded text-rose-700 italic">
+                        <div className="bg-[var(--theme-accent-soft)] p-2 rounded text-[var(--theme-accent)] italic">
                           "{storyText.length > 50 ? storyText.slice(0, 50) + '...' : storyText}"
                         </div>
                       </div>
@@ -1152,13 +1161,13 @@ export function ConfigRoute() {
                              inputMode="numeric"
                              pattern="[0-9]*"
                              type="tel"
-                             className="h-12 rounded-xl border-gray-300 shadow-sm focus-visible:ring-[#E11D48] pl-12"
+                             className="h-12 rounded-xl border-gray-300 shadow-sm focus-visible:ring-[var(--theme-accent)] pl-12"
                            />
                          </div>
                        )
                      }}
                    />
-                    {errors.whatsappNumber && <p className="text-xs text-[#E11D48]">{errors.whatsappNumber.message}</p>}
+                    {errors.whatsappNumber && <p className="text-xs text-[var(--theme-accent)]">{errors.whatsappNumber.message}</p>}
                  </div>
 
                  {!manualConfirmationEnabled ? (
@@ -1174,10 +1183,10 @@ export function ConfigRoute() {
                            placeholder="nama@email.com"
                            type="email"
                            disabled={emailVerified}
-                           className={`h-12 rounded-xl border-gray-300 shadow-sm focus-visible:ring-[#E11D48] pl-10 ${emailVerified ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                           className={`h-12 rounded-xl border-gray-300 shadow-sm focus-visible:ring-[var(--theme-accent)] pl-10 ${emailVerified ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                          />
                        </div>
-                       {errors.email && <p className="text-xs text-[#E11D48]">{errors.email.message}</p>}
+                       {errors.email && <p className="text-xs text-[var(--theme-accent)]">{errors.email.message}</p>}
                      </div>
 
                      {emailOtpEnabled ? (
@@ -1249,7 +1258,7 @@ export function ConfigRoute() {
                                        pattern="[0-9]*"
                                        type="tel"
                                        maxLength={1}
-                                       className="h-10 w-10 text-center text-lg font-bold rounded-lg border-gray-300 shadow-sm focus-visible:ring-[#E11D48]"
+                                       className="h-10 w-10 text-center text-lg font-bold rounded-lg border-gray-300 shadow-sm focus-visible:ring-[var(--theme-accent)]"
                                      />
                                    ))}
                                  </div>
@@ -1266,7 +1275,7 @@ export function ConfigRoute() {
                              ) : null}
 
                              {otpError && typeof otpError === 'string' ? (
-                               <p className="text-[10px] text-[#E11D48] text-center">{otpError}</p>
+                               <p className="text-[10px] text-[var(--theme-accent)] text-center">{otpError}</p>
                              ) : null}
                            </>
                          )}
@@ -1346,7 +1355,7 @@ export function ConfigRoute() {
                  
                  <Button 
                    type="submit" 
-                   className="h-12 sm:h-14 w-full rounded-xl bg-[#E11D48] text-base sm:text-lg font-bold text-white shadow-lg shadow-rose-200 hover:bg-rose-700 active:scale-95 transition-all"
+                   className="h-12 sm:h-14 w-full rounded-xl bg-[var(--theme-accent)] text-base sm:text-lg font-bold text-white shadow-lg shadow-[var(--theme-accent-soft)] hover:bg-[var(--theme-accent)] active:scale-95 transition-all"
                    onClick={step < 4 ? (e) => { e.preventDefault(); handleNext(); } : undefined}
                   disabled={
                     loading ||

@@ -40,9 +40,8 @@ function ChecklistItem({ label, status }: { label: string; status: 'pending' | '
       <div className={cn(
         "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-all duration-500",
         status === 'completed' ? "bg-green-500 border-green-500 text-white" :
-        status === 'loading' ? "border-[#E11D48] text-[#E11D48]" :
-        // Slightly higher contrast so the dot is always visible.
-        "border-rose-200 text-rose-300 bg-white"
+        status === 'loading' ? "border-[var(--theme-accent)] text-[var(--theme-accent)]" :
+        "border-[var(--theme-accent-soft)] text-[var(--theme-accent-soft)] bg-white"
       )}>
         {status === 'completed' ? <Check className="h-3.5 w-3.5" /> :
          status === 'loading' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> :
@@ -51,7 +50,7 @@ function ChecklistItem({ label, status }: { label: string; status: 'pending' | '
       <span className={cn(
         "text-sm font-medium transition-colors duration-300",
         status === 'completed' ? "text-gray-900" :
-        status === 'loading' ? "text-[#E11D48]" :
+        status === 'loading' ? "text-[var(--theme-accent)]" :
         "text-gray-500"
       )}>{label}</span>
     </div>
@@ -74,14 +73,17 @@ export function CheckoutRoute() {
   const hasTrackedInitiateCheckout = useRef(false)
   const hasTrackedPurchase = useRef(false)
 
+  const [themeColors, setThemeColors] = useState<{ accentColor?: string; bgColor1?: string; bgColor2?: string } | null>(null)
+
   useEffect(() => {
     if (!order) return
     let cancelled = false
     const themeParam = order.themeSlug ? `?theme=${encodeURIComponent(order.themeSlug)}` : ''
-    apiGet<{ manualConfirmationEnabled?: boolean }>(`/api/public/settings${themeParam}`)
+    apiGet<{ manualConfirmationEnabled?: boolean; colors?: { accentColor?: string; bgColor1?: string; bgColor2?: string } }>(`/api/public/settings${themeParam}`)
       .then((res) => {
         if (cancelled) return
         setManualConfirmationEnabled(Boolean(res?.manualConfirmationEnabled))
+        if ((res as any)?.colors) setThemeColors((res as any).colors)
       })
       .catch(() => {
         if (!cancelled) setManualConfirmationEnabled(false)
@@ -90,6 +92,12 @@ export function CheckoutRoute() {
       cancelled = true
     }
   }, [order?.themeSlug])
+
+  const themeStyle = {
+    '--theme-accent': themeColors?.accentColor || '#E11D48',
+    '--theme-accent-soft': themeColors?.bgColor1 || '#FFF5F7',
+    '--theme-bg': themeColors?.bgColor2 || '#FFFFFF',
+  } as React.CSSProperties
 
   // Meta Pixel: track InitiateCheckout when the checkout page is loaded.
   // Guard avoids double fire in dev StrictMode / re-mounts.
@@ -219,13 +227,13 @@ export function CheckoutRoute() {
   const showProgressUI = Boolean(order && (order.status === 'processing' || order.status === 'created' || order.status === 'failed' || confirming || hasAttemptedAutoConfirm.current))
 
   return (
-    <div className="min-h-screen bg-[#FFF5F7] font-sans pb-32 pt-10 px-4">
+    <div className="min-h-screen bg-[var(--theme-accent-soft)] font-sans pb-32 pt-10 px-4" style={themeStyle}>
       <div className="mx-auto max-w-lg space-y-8">
         
         {/* Header */}
         <div className="text-center space-y-2">
            <h1 className="font-serif text-3xl font-bold text-gray-900 flex justify-center items-center gap-2">
-             <Music className="text-[#E11D48] h-8 w-8" /> Checkout
+             <Music className="text-[var(--theme-accent)] h-8 w-8" /> Checkout
            </h1>
            <p className="text-gray-500 text-sm">Review pesananmu sebelum kami buatkan lagunya.</p>
         </div>
@@ -234,15 +242,15 @@ export function CheckoutRoute() {
           <p className="text-center text-red-500">Order ID hilang.</p>
         ) : loading ? (
           <div className="flex justify-center py-10">
-            <Loader2 className="h-8 w-8 animate-spin text-[#E11D48]" />
+            <Loader2 className="h-8 w-8 animate-spin text-[var(--theme-accent)]" />
           </div>
         ) : order ? (
           <div className="space-y-6">
             
             {/* Status Card */}
             {showProgressUI && (
-              <Card className="border-rose-100 shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden animate-in fade-in zoom-in duration-300">
-                <div className="h-1.5 bg-[#E11D48] w-full animate-pulse" />
+              <Card className="border-[var(--theme-accent-soft)] shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden animate-in fade-in zoom-in duration-300">
+                <div className="h-1.5 bg-[var(--theme-accent)] w-full animate-pulse" />
                 <CardContent className="p-6 space-y-4">
                   <h3 className="font-bold text-gray-900 text-lg">Status Pesanan</h3>
                   <div className="space-y-1 pl-1">
@@ -252,12 +260,12 @@ export function CheckoutRoute() {
                   </div>
                   
                   <div className={cn(
-                    "bg-rose-50 text-rose-800 text-sm p-4 rounded-xl flex items-start gap-3 mt-4 border border-rose-100 transition-opacity duration-500",
+                    "bg-[var(--theme-accent-soft)] text-[var(--theme-accent)] text-sm p-4 rounded-xl flex items-start gap-3 mt-4 border border-[var(--theme-accent-soft)] transition-opacity duration-500",
                     checklistStep >= 3 ? "opacity-100" : "opacity-0"
                   )}>
-                    <Clock className="h-5 w-5 shrink-0 mt-0.5 text-[#E11D48]" />
+                    <Clock className="h-5 w-5 shrink-0 mt-0.5 text-[var(--theme-accent)]" />
                     <div>
-                      <p className="font-bold text-[#E11D48]">Pesanan Berhasil Diterima</p>
+                      <p className="font-bold text-[var(--theme-accent)]">Pesanan Berhasil Diterima</p>
                       <p className="opacity-90 mt-1">
                         Pesanan kamu sedang diproses. Lagu akan dikirim via email dan akan diberitahukan via WhatsApp setelah selesai.
                       </p>
@@ -304,7 +312,7 @@ export function CheckoutRoute() {
             {/* Actions: Removed auto-confirm button. Only show if error occurs to retry. */}
             {error && order.status === 'created' ? (
                <Button 
-                 className="w-full h-14 rounded-full bg-[#E11D48] text-white text-lg font-bold shadow-xl shadow-rose-200 hover:bg-rose-700 hover:scale-[1.02] transition-all duration-300" 
+                 className="w-full h-14 rounded-full bg-[var(--theme-accent)] text-white text-lg font-bold shadow-xl shadow-[var(--theme-accent-soft)] hover:opacity-90 hover:scale-[1.02] transition-all duration-300" 
                  onClick={() => {
                     hasAttemptedAutoConfirm.current = true
                     confirm()
@@ -323,7 +331,7 @@ export function CheckoutRoute() {
         ) : null}
 
         {error ? (
-          <div className="bg-rose-50 text-rose-800 p-4 rounded-xl text-center text-sm font-medium border border-rose-100">
+          <div className="bg-[var(--theme-accent-soft)] text-[var(--theme-accent)] p-4 rounded-xl text-center text-sm font-medium border border-[var(--theme-accent-soft)]">
             {error}
           </div>
         ) : null}

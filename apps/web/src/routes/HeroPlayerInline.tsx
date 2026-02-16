@@ -124,7 +124,7 @@ export function HeroPlayerInline({
         </button>
 
         {/* Corner badge */}
-        <div className="absolute right-3 top-3 sm:right-4 sm:top-4 rounded-full bg-rose-500/90 px-3 py-1.5 sm:px-4 sm:py-2 text-white text-xs sm:text-sm font-semibold backdrop-blur">
+        <div className="absolute right-3 top-3 sm:right-4 sm:top-4 rounded-full bg-[var(--theme-accent)] px-3 py-1.5 sm:px-4 sm:py-2 text-white text-xs sm:text-sm font-semibold backdrop-blur">
           {cornerBadgeText}
         </div>
 
