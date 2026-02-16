@@ -8,7 +8,7 @@ import { resolveApiUrl } from '@/lib/http'
 import * as adminApi from '@/features/admin/api'
 import { moveItem, parseToastItemsJson } from '@/features/admin/publicSiteDraft'
 import type { PublicSiteDraft } from '@/features/admin/types'
-import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap, Palette, ImagePlus, ShieldCheck, BarChart3 } from 'lucide-react'
+import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap, Palette, ImagePlus, ShieldCheck, BarChart3, Megaphone } from 'lucide-react'
 
 interface LandingContentConfigProps {
   draft: PublicSiteDraft
@@ -51,6 +51,7 @@ export function LandingContentConfigSection({
   const menuItems = [
     { id: 'colors', label: 'Colors', icon: Palette, group: 'Appearance' },
     { id: 'logo', label: 'Logo', icon: ImagePlus, group: 'Appearance' },
+    { id: 'promo-banner', label: 'Promo Banner', icon: Megaphone, group: 'Landing Page' },
     { id: 'hero-text', label: 'Hero Text', icon: Type, group: 'Landing Page' },
     { id: 'landing-media', label: 'Hero Media', icon: ImageIcon, group: 'Landing Page' },
     { id: 'landing-overlay', label: 'Hero Overlay', icon: Type, group: 'Landing Page' },
@@ -688,6 +689,66 @@ export function LandingContentConfigSection({
                         )}
                     </div>
                 </div>
+            )}
+
+            {activeTab === 'promo-banner' && (
+              <div className="space-y-4 animate-in fade-in duration-300">
+                <div className="pb-2 border-b">
+                  <h3 className="text-base font-semibold">Promo Banner</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Banner countdown dan promo yang muncul di atas halaman landing.</p>
+                </div>
+                <div className="grid gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={draft.promoBanner.enabled}
+                      onChange={(e) => setDraft(d => ({ ...d, promoBanner: { ...d.promoBanner, enabled: e.target.checked } }))}
+                      className="h-4 w-4 rounded border-gray-300"
+                    />
+                    <span className="text-sm font-medium">Tampilkan promo banner</span>
+                  </label>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Countdown Label</label>
+                    <Input
+                      className="h-8 text-sm"
+                      placeholder="💝 Valentine's dalam"
+                      value={draft.promoBanner.countdownLabel}
+                      onChange={(e) => setDraft(d => ({ ...d, promoBanner: { ...d.promoBanner, countdownLabel: e.target.value } }))}
+                    />
+                    <p className="text-[10px] text-muted-foreground">Teks sebelum countdown timer. Contoh: "💝 Valentine's dalam"</p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Target Date (YYYY-MM-DD)</label>
+                    <Input
+                      className="h-8 text-sm"
+                      type="date"
+                      value={draft.promoBanner.countdownTargetDate}
+                      onChange={(e) => setDraft(d => ({ ...d, promoBanner: { ...d.promoBanner, countdownTargetDate: e.target.value } }))}
+                    />
+                    <p className="text-[10px] text-muted-foreground">Tanggal target countdown. Format: 2027-02-14</p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Promo Badge Text</label>
+                    <Input
+                      className="h-8 text-sm"
+                      placeholder="💝 Spesial Valentine"
+                      value={draft.promoBanner.promoBadgeText}
+                      onChange={(e) => setDraft(d => ({ ...d, promoBanner: { ...d.promoBanner, promoBadgeText: e.target.value } }))}
+                    />
+                    <p className="text-[10px] text-muted-foreground">Badge yang muncul di header navigasi.</p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Quota Badge Text</label>
+                    <Input
+                      className="h-8 text-sm"
+                      placeholder="11 kuota!"
+                      value={draft.promoBanner.quotaBadgeText}
+                      onChange={(e) => setDraft(d => ({ ...d, promoBanner: { ...d.promoBanner, quotaBadgeText: e.target.value } }))}
+                    />
+                    <p className="text-[10px] text-muted-foreground">Badge kuota di sebelah harga. Kosongkan untuk sembunyikan.</p>
+                  </div>
+                </div>
+              </div>
             )}
 
             {activeTab === 'hero-text' && (

@@ -56,6 +56,13 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
       ],
     },
   },
+  promoBanner: {
+    enabled: true,
+    countdownLabel: "💝 Valentine's dalam",
+    countdownTargetDate: '2027-02-14',
+    promoBadgeText: '💝 Spesial Valentine',
+    quotaBadgeText: '11 kuota!',
+  },
   reviews: {
     sectionLabel: 'Reaksi Nyata',
     sectionHeadline: '"Dia <span class="text-[var(--theme-accent)] italic">tidak pernah</span> menangis"',
@@ -187,6 +194,7 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
   const colors = cfg?.colors && typeof cfg.colors === 'object' ? cfg.colors : {}
   const cd = cfg?.creationDelivery && typeof cfg.creationDelivery === 'object' ? cfg.creationDelivery : {}
   const toast = cfg?.activityToast && typeof cfg.activityToast === 'object' ? cfg.activityToast : {}
+  const pb = cfg?.promoBanner && typeof cfg.promoBanner === 'object' ? cfg.promoBanner : {} as any
   const rv = cfg?.reviews && typeof cfg.reviews === 'object' ? cfg.reviews : {} as any
   const reviewItems = safeArr(rv?.items, (x: any) => ({
     style: (['accent', 'dark-chat', 'white'].includes(x?.style) ? x.style : 'white') as 'accent' | 'dark-chat' | 'white',
@@ -259,6 +267,13 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
         },
         playlist: playlist.length ? playlist : defaultPublicSiteDraft.landing.audioSamples.playlist,
       },
+    },
+    promoBanner: {
+      enabled: typeof pb?.enabled === 'boolean' ? pb.enabled : defaultPublicSiteDraft.promoBanner.enabled,
+      countdownLabel: asString(pb?.countdownLabel, defaultPublicSiteDraft.promoBanner.countdownLabel),
+      countdownTargetDate: asString(pb?.countdownTargetDate, defaultPublicSiteDraft.promoBanner.countdownTargetDate),
+      promoBadgeText: asString(pb?.promoBadgeText, defaultPublicSiteDraft.promoBanner.promoBadgeText),
+      quotaBadgeText: asString(pb?.quotaBadgeText, defaultPublicSiteDraft.promoBanner.quotaBadgeText),
     },
     reviews: {
       sectionLabel: asString(rv?.sectionLabel, defaultPublicSiteDraft.reviews.sectionLabel),
@@ -409,6 +424,14 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
     })),
   }
 
-  return { logoUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, heroCheckmarks: nextHeroCheckmarks, trustBadges: nextTrustBadges, statsBar: nextStatsBar, reviews: nextReviews }
+  const nextPromoBanner = {
+    enabled: draft.promoBanner.enabled,
+    countdownLabel: draft.promoBanner.countdownLabel.trim(),
+    countdownTargetDate: draft.promoBanner.countdownTargetDate.trim(),
+    promoBadgeText: draft.promoBanner.promoBadgeText.trim(),
+    quotaBadgeText: draft.promoBanner.quotaBadgeText.trim(),
+  }
+
+  return { logoUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, heroCheckmarks: nextHeroCheckmarks, trustBadges: nextTrustBadges, statsBar: nextStatsBar, reviews: nextReviews, promoBanner: nextPromoBanner }
 }
 

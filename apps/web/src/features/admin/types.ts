@@ -104,6 +104,13 @@ export type PublicSiteDraft = {
       playlist: LandingPlaylistItem[]
     }
   }
+  promoBanner: {
+    enabled: boolean
+    countdownLabel: string
+    countdownTargetDate: string
+    promoBadgeText: string
+    quotaBadgeText: string
+  }
   reviews: {
     sectionLabel: string
     sectionHeadline: string

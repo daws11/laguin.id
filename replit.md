@@ -44,6 +44,12 @@ A monorepo application for creating personalized songs for special occasions. Bu
 - Shared package must be built before other packages (`npm run build -w shared`)
 
 ## Recent Changes
+- 2026-02-16: Per-theme promo banner (countdown, badges)
+  - Added promoBanner to theme settings (enabled, countdownLabel, countdownTargetDate, promoBadgeText, quotaBadgeText)
+  - New "Promo Banner" tab in theme editor for configuring countdown text, target date, promo badge, and quota badge
+  - CountdownTimer now uses configurable target date and label text
+  - Promo banner can be toggled on/off per theme
+  - Badge texts can be customized or emptied to hide
 - 2026-02-16: Per-theme reviews/testimonials section
   - Added ReviewItem type (style: accent/dark-chat/white, quote, chatMessages, authorName, authorMeta, authorAvatarUrl)
   - Reviews section header (label, headline, subtext) editable per theme

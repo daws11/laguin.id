@@ -58,6 +58,13 @@ type PublicSiteConfig = {
   heroCheckmarks?: string[]
   trustBadges?: { badge1?: string; badge2?: string; badge3?: string }
   statsBar?: { items?: Array<{ val?: string; label?: string }> }
+  promoBanner?: {
+    enabled?: boolean
+    countdownLabel?: string
+    countdownTargetDate?: string
+    promoBadgeText?: string
+    quotaBadgeText?: string
+  }
   reviews?: {
     sectionLabel?: string
     sectionHeadline?: string
@@ -148,19 +155,21 @@ function fmtCurrencyGlobal(amt: number | null | undefined) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amt)
 }
 
-function CountdownTimer({ paymentAmount, originalAmount }: { paymentAmount: number | null; originalAmount: number | null }) {
+function CountdownTimer({ paymentAmount, originalAmount, countdownLabel, countdownTargetDate }: { paymentAmount: number | null; originalAmount: number | null; countdownLabel: string; countdownTargetDate: string }) {
   const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0 })
 
   useEffect(() => {
-    // Target date: February 14, 2026 (or next Feb 14)
-    // Adjust year dynamically to always point to next Valentine's
-    const now = new Date()
-    let targetYear = now.getFullYear()
-    // If today is past Feb 14, target next year
-    if (now.getMonth() > 1 || (now.getMonth() === 1 && now.getDate() > 14)) {
-      targetYear++
+    let targetDate: Date
+    if (countdownTargetDate && /^\d{4}-\d{2}-\d{2}/.test(countdownTargetDate)) {
+      targetDate = new Date(`${countdownTargetDate}T00:00:00`)
+    } else {
+      const now = new Date()
+      let targetYear = now.getFullYear()
+      if (now.getMonth() > 1 || (now.getMonth() === 1 && now.getDate() > 14)) {
+        targetYear++
+      }
+      targetDate = new Date(`${targetYear}-02-14T00:00:00`)
     }
-    const targetDate = new Date(`${targetYear}-02-14T00:00:00`)
 
     const updateTimer = () => {
       const now = new Date()
@@ -179,15 +188,15 @@ function CountdownTimer({ paymentAmount, originalAmount }: { paymentAmount: numb
       setTime({ d, h, m, s })
     }
 
-    updateTimer() // Initial call
+    updateTimer()
     const timer = setInterval(updateTimer, 1000)
     return () => clearInterval(timer)
-  }, [])
+  }, [countdownTargetDate])
 
   return (
     <div className="bg-[var(--theme-accent)] px-3 py-1.5 text-center text-[9px] sm:text-xs font-bold text-white uppercase tracking-tight leading-none">
       <div className="flex items-center justify-center gap-1.5 flex-wrap">
-        <span>💝 Valentine's dalam {time.d}h {time.h}j {time.m}m {time.s}d lagi</span>
+        <span>{countdownLabel} {time.d}h {time.h}j {time.m}m {time.s}d lagi</span>
         <span className="opacity-50 text-[8px]">•</span>
         <span className="flex items-center gap-1">
           <span className="line-through opacity-70">{fmtCurrencyGlobal(originalAmount)}</span>
@@ -637,6 +646,12 @@ export function LandingRoute() {
         { val: deliveryEta.short, label: 'Pengiriman' },
         { val: '2,847', label: 'Lagu Terkirim' },
       ]
+  const promoBanner = site.promoBanner ?? {}
+  const promoBannerEnabled = promoBanner.enabled !== false
+  const promoCountdownLabel = promoBanner.countdownLabel || "💝 Valentine's dalam"
+  const promoCountdownTargetDate = promoBanner.countdownTargetDate || '2027-02-14'
+  const promoPromoBadgeText = promoBanner.promoBadgeText || '💝 Spesial Valentine'
+  const promoQuotaBadgeText = promoBanner.quotaBadgeText || '11 kuota!'
   const reviewsSection = site.reviews ?? {}
   const reviewSectionLabel = reviewsSection.sectionLabel || 'Reaksi Nyata'
   const reviewSectionHeadline = reviewsSection.sectionHeadline || '"Dia <span class="text-[var(--theme-accent)] italic">tidak pernah</span> menangis"'
@@ -804,22 +819,28 @@ export function LandingRoute() {
 
       {/* Sticky Top Banner */}
       <div className="sticky top-0 z-50">
-        <CountdownTimer paymentAmount={paymentAmount} originalAmount={originalAmount} />
+        {promoBannerEnabled && (
+          <CountdownTimer paymentAmount={paymentAmount} originalAmount={originalAmount} countdownLabel={promoCountdownLabel} countdownTargetDate={promoCountdownTargetDate} />
+        )}
         <div className="border-b border-[var(--theme-accent-soft)] bg-white/95 px-2 sm:px-4 py-2 backdrop-blur-sm">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-3">
             <Link to={themeSlug ? `/${themeSlug}` : '/'} className="flex items-center gap-2">
               <img src={logoUrl} alt="Laguin.id - Lagumu, Ceritamu" className="h-8 w-auto object-contain" />
             </Link>
             <div className="text-right flex flex-col items-end gap-0.5 sm:flex-row sm:items-center sm:gap-3">
-              <div className="hidden md:block text-[10px] font-medium text-[var(--theme-accent)] bg-[var(--theme-accent-soft)] px-2 py-0.5 rounded-full">
-                💝 Spesial Valentine
-              </div>
+              {promoPromoBadgeText && (
+                <div className="hidden md:block text-[10px] font-medium text-[var(--theme-accent)] bg-[var(--theme-accent-soft)] px-2 py-0.5 rounded-full">
+                  {promoPromoBadgeText}
+                </div>
+              )}
               <div className="leading-tight flex items-center gap-1.5">
                 <span className="text-[10px] text-gray-400 line-through">{fmtCurrency(originalAmount)}</span>
                 <span className="text-sm sm:text-lg font-bold text-[var(--theme-accent)]">{fmtCurrency(paymentAmount)}</span>
-                <Badge variant="destructive" className="h-4 px-1 py-0 text-[9px]">
-                  11 kuota!
-                </Badge>
+                {promoQuotaBadgeText && (
+                  <Badge variant="destructive" className="h-4 px-1 py-0 text-[9px]">
+                    {promoQuotaBadgeText}
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
