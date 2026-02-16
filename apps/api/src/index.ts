@@ -123,11 +123,13 @@ await app.register(async (adminApp) => {
 }, { prefix: '/api/admin' })
 
 if (hasWebDist) {
+  const indexHtmlPath = path.join(webDistRoot, 'index.html')
+  const indexHtmlContent = fs.readFileSync(indexHtmlPath, 'utf-8')
   app.setNotFoundHandler((req, reply) => {
     if (req.url.startsWith('/api/') || req.url.startsWith('/uploads/')) {
       reply.code(404).send({ error: 'Not found' })
     } else {
-      reply.type('text/html').sendFile('index.html', webDistRoot)
+      reply.header('Content-Type', 'text/html; charset=utf-8').header('Cache-Control', 'no-cache').send(indexHtmlContent)
     }
   })
 }
