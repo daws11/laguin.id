@@ -282,7 +282,7 @@ function AdminRouteLegacy() {
     const [tab, setTab] = useState<'settings' | 'prompts' | 'customers' | 'orders'>('settings')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(true)
-  const [lang, setLang] = useState<AdminLang>('id')
+  const [lang, setLang] = useState<AdminLang>('en')
   
   const t = translations[lang] as any
 
