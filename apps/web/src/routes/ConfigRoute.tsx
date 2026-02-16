@@ -69,6 +69,8 @@ export function ConfigRoute() {
   const [paymentAmount, setPaymentAmount] = useState<number>(497000)
   const [originalAmount, setOriginalAmount] = useState<number>(497000)
   const [wishlistPixelId, setWishlistPixelId] = useState<string | null>(null)
+  const [draftCountdown, setDraftCountdown] = useState(10 * 60)
+  const draftCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const fmtCurrency = (amt: number) => {
     if (amt === 0) return 'GRATIS'
@@ -806,6 +808,29 @@ export function ConfigRoute() {
     if (!error) return
   }, [error])
 
+  useEffect(() => {
+    if (step === 4) {
+      setDraftCountdown(10 * 60)
+      draftCountdownRef.current = setInterval(() => {
+        setDraftCountdown((prev) => {
+          if (prev <= 1) {
+            if (draftCountdownRef.current) clearInterval(draftCountdownRef.current)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+    } else {
+      if (draftCountdownRef.current) {
+        clearInterval(draftCountdownRef.current)
+        draftCountdownRef.current = null
+      }
+    }
+    return () => {
+      if (draftCountdownRef.current) clearInterval(draftCountdownRef.current)
+    }
+  }, [step])
+
   const themeColors = (publicSiteConfig as any)?.colors
   const themeStyle = {
     '--theme-accent': themeColors?.accentColor || '#E11D48',
@@ -1381,7 +1406,7 @@ export function ConfigRoute() {
              <div className="mx-auto max-w-4xl flex flex-col gap-2">
                {step === 4 && (
                  <div className="text-center text-[10px] sm:text-xs text-gray-500 flex justify-center items-center gap-1 mb-1">
-                   <Timer className="h-3 w-3" /> Cerita tersimpan selama 9:56 — selesaikan checkout untuk menyimpannya
+                   <Timer className="h-3 w-3" /> Cerita tersimpan selama {Math.floor(draftCountdown / 60)}:{String(draftCountdown % 60).padStart(2, '0')} — selesaikan checkout untuk menyimpannya
                  </div>
                )}
 
