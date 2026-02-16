@@ -163,8 +163,8 @@ function CountdownTimer() {
         <span>💝 Valentine's dalam {time.d}h {time.h}j {time.m}m {time.s}d lagi</span>
         <span className="opacity-50 text-[8px]">•</span>
         <span className="flex items-center gap-1">
-          <span className="line-through opacity-70">Rp 497rb</span>
-          <span>GRATIS (100 pertama)</span>
+          <span className="line-through opacity-70">{fmtCurrency(originalAmount)}</span>
+          <span>{fmtCurrency(paymentAmount)} {paymentAmount === 0 ? '(100 pertama)' : ''}</span>
         </span>
       </div>
     </div>
@@ -429,6 +429,18 @@ export function LandingRoute() {
     } catch {}
   }, [])
 
+  const [paymentAmount, setPaymentAmount] = useState<number | null>(null)
+  const [originalAmount, setOriginalAmount] = useState<number | null>(null)
+
+  const fmtCurrency = (amt: number | null | undefined) => {
+    if (amt === 0) return 'GRATIS'
+    if (!amt) return 'Rp 497rb'
+    if (amt >= 100000 && amt < 1000000) {
+      return `Rp ${Math.floor(amt / 1000)}rb`
+    }
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amt)
+  }
+
   const deliveryEta = useMemo(() => {
     if (instantEnabled) {
       return { label: '10–30 menit', sentenceLower: 'dalam 10–30 menit', short: '10–30 menit' }
@@ -453,7 +465,7 @@ export function LandingRoute() {
       },
       { q: 'Berapa lama prosesnya?', a: etaAnswer },
       { q: 'Kalau aku gak suka gimana?', a: 'Revisi gratis tanpa batas sampai kamu suka. Masih gak puas? Refund penuh, tanpa tanya-tanya. 💕' },
-      { q: 'Benarkah GRATIS?', a: 'Ya! Spesial untuk 100 orang pertama (normalnya Rp 497.000). Tanpa biaya tersembunyi. Satu kesempatan, hadiah tak terlupakan.' },
+      { q: 'Benarkah GRATIS?', a: `Ya! Spesial untuk 100 orang pertama (normalnya ${fmtCurrency(originalAmount)}). Tanpa biaya tersembunyi. Satu kesempatan, hadiah tak terlupakan.` },
     ]
   }, [deliveryEta.label, instantEnabled])
 
@@ -537,6 +549,8 @@ export function LandingRoute() {
         else setPublicSiteConfig(null)
         setInstantEnabled(typeof res?.instantEnabled === 'boolean' ? res.instantEnabled : null)
         setDeliveryDelayHours(typeof res?.deliveryDelayHours === 'number' ? res.deliveryDelayHours : null)
+        setPaymentAmount(typeof res?.paymentAmount === 'number' ? res.paymentAmount : null)
+        setOriginalAmount(typeof res?.originalAmount === 'number' ? res.originalAmount : null)
       })
       .catch(() => {
         if (!cancelled) setPublicSiteConfig(null)

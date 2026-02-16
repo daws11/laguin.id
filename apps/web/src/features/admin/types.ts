@@ -110,6 +110,7 @@ export type PublicSiteDraft = {
     manualConfirmationEnabled: boolean
     deliveryDelayHours: number
     paymentAmount: number
+    originalAmount: number
   }
 }
 

@@ -33,6 +33,7 @@ export const publicSettingsRoutes: FastifyPluginAsync = async (app) => {
       deliveryDelayHours: cd ? (cd.deliveryDelayHours ?? 24) : (s.deliveryDelayHours ?? 24),
       manualConfirmationEnabled: cd ? (cd.manualConfirmationEnabled ?? false) : ((s as any).manualConfirmationEnabled ?? false),
       paymentAmount: cd ? (cd.paymentAmount ?? 497000) : 497000,
+      originalAmount: cd ? (cd.originalAmount ?? 497000) : 497000,
       xenditEnabled: Boolean(maybeDecrypt((s as any).xenditSecretKeyEnc)),
       defaultThemeSlug: s.defaultThemeSlug ?? null,
       showThemesInFooter: s.showThemesInFooter ?? false,

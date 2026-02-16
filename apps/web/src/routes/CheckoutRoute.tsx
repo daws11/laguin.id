@@ -76,14 +76,17 @@ export function CheckoutRoute() {
 
   const [themeColors, setThemeColors] = useState<{ accentColor?: string; bgColor1?: string; bgColor2?: string } | null | undefined>(undefined)
 
+  const [paymentAmount, setPaymentAmount] = useState<number>(497000)
+
   useEffect(() => {
     if (!order) return
     let cancelled = false
     const themeParam = order.themeSlug ? `?theme=${encodeURIComponent(order.themeSlug)}` : ''
-    apiGet<{ manualConfirmationEnabled?: boolean; colors?: { accentColor?: string; bgColor1?: string; bgColor2?: string } }>(`/api/public/settings${themeParam}`)
+    apiGet<{ manualConfirmationEnabled?: boolean; paymentAmount?: number; colors?: { accentColor?: string; bgColor1?: string; bgColor2?: string } }>(`/api/public/settings${themeParam}`)
       .then((res) => {
         if (cancelled) return
         setManualConfirmationEnabled(Boolean(res?.manualConfirmationEnabled))
+        setPaymentAmount(res?.paymentAmount ?? 497000)
         const c = (res as any)?.publicSiteConfig?.colors ?? (res as any)?.colors
         setThemeColors(c ?? null)
       })
@@ -111,7 +114,7 @@ export function CheckoutRoute() {
     if (hasTrackedInitiateCheckout.current) return
     hasTrackedInitiateCheckout.current = true
     trackFbq('InitiateCheckout', {
-      value: 497000,
+      value: paymentAmount,
       currency: 'IDR',
       num_items: 1,
       content_type: 'product',
@@ -213,7 +216,7 @@ export function CheckoutRoute() {
       if (!hasTrackedPurchase.current) {
         hasTrackedPurchase.current = true
         trackFbq('Purchase', {
-          value: 497000,
+          value: paymentAmount,
           currency: 'IDR',
         })
       }

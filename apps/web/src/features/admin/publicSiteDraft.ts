@@ -74,6 +74,7 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
     manualConfirmationEnabled: false,
     deliveryDelayHours: 24,
     paymentAmount: 497000,
+    originalAmount: 497000,
   },
 }
 
@@ -214,6 +215,7 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
       manualConfirmationEnabled: asBool(cd?.manualConfirmationEnabled, defaultPublicSiteDraft.creationDelivery.manualConfirmationEnabled),
       deliveryDelayHours: asNumber(cd?.deliveryDelayHours, defaultPublicSiteDraft.creationDelivery.deliveryDelayHours),
       paymentAmount: asNumber(cd?.paymentAmount, defaultPublicSiteDraft.creationDelivery.paymentAmount),
+      originalAmount: asNumber(cd?.originalAmount, defaultPublicSiteDraft.creationDelivery.originalAmount),
     },
   }
 }
@@ -286,6 +288,7 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
     manualConfirmationEnabled: draft.creationDelivery.manualConfirmationEnabled,
     deliveryDelayHours: draft.creationDelivery.deliveryDelayHours,
     paymentAmount: draft.creationDelivery.paymentAmount,
+    originalAmount: draft.creationDelivery.originalAmount,
   }
 
   const nextColors = {

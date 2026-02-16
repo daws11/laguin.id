@@ -66,6 +66,17 @@ export function ConfigRoute() {
   // Countdown timer logic to match LandingRoute
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, mins: 0 })
 
+  const [paymentAmount, setPaymentAmount] = useState<number>(497000)
+  const [originalAmount, setOriginalAmount] = useState<number>(497000)
+
+  const fmtCurrency = (amt: number) => {
+    if (amt === 0) return 'GRATIS'
+    if (amt >= 100000 && amt < 1000000) {
+      return `Rp ${Math.floor(amt / 1000)}rb`
+    }
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amt)
+  }
+
   const deliveryEta = useMemo(() => {
     if (instantEnabled) {
       return { label: '10–30 menit', sentenceLower: 'dalam 10–30 menit', short: '10–30 menit' }
@@ -127,6 +138,8 @@ export function ConfigRoute() {
         setInstantEnabled(typeof res?.instantEnabled === 'boolean' ? res.instantEnabled : null)
         setDeliveryDelayHours(typeof res?.deliveryDelayHours === 'number' ? res.deliveryDelayHours : null)
         setManualConfirmationEnabled(Boolean(res?.manualConfirmationEnabled))
+        setPaymentAmount(res?.paymentAmount ?? 497000)
+        setOriginalAmount(res?.originalAmount ?? 497000)
         
         // Resolve hero video URL
         type PublicSiteConfigMaybe = { landing?: { heroMedia?: { videoUrl?: unknown } } }
