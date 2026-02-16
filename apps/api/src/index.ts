@@ -4,6 +4,7 @@ loadEnv()
 
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
+import compress from '@fastify/compress'
 import jwt from '@fastify/jwt'
 import multipart from '@fastify/multipart'
 import fastifyStatic from '@fastify/static'
@@ -32,6 +33,12 @@ await app.register(cors, {
   credentials: true,
 })
 
+await app.register(compress, {
+  global: true,
+  encodings: ['br', 'gzip', 'deflate'],
+  threshold: 1024,
+})
+
 await app.register(multipart, {
   limits: {
     files: 1,
@@ -58,6 +65,15 @@ if (hasWebDist) {
     prefix: '/',
     decorateReply: false,
     wildcard: false,
+    setHeaders(res, filePath) {
+      if (/\/assets\//.test(filePath)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+      } else if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache')
+      } else {
+        res.setHeader('Cache-Control', 'public, max-age=3600')
+      }
+    },
   })
 }
 

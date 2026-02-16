@@ -1038,7 +1038,7 @@ export function LandingRoute() {
                  "Suami saya itu mantan TNI, orangnya keras. 12 tahun nikah, <strong className="bg-white/20 px-1 rounded">GAK PERNAH nangis.</strong> Eh, pas denger lagu ini, dia langsung mewek bahkan sebelum masuk reff."
                </p>
                <div className="flex items-center gap-3">
-                 <img src="https://images.unsplash.com/photo-1562904403-a5106bef8319?w=100&h=100&fit=crop" alt="" className="w-10 h-10 rounded-full border-2 border-white/50 object-cover" />
+                 <img src="https://images.unsplash.com/photo-1562904403-a5106bef8319?w=100&h=100&fit=crop" alt="" className="w-10 h-10 rounded-full border-2 border-white/50 object-cover" loading="lazy" />
                  <div>
                    <div className="font-bold">Rina</div>
                    <div className="text-xs opacity-80">Jakarta • Feb 2025</div>
@@ -1060,7 +1060,7 @@ export function LandingRoute() {
                  </div>
                </div>
                <div className="mt-6 flex items-center gap-3 pt-6 border-t border-white/10">
-                 <img src="https://images.unsplash.com/photo-1630758664435-72a78888fb9d?w=100&h=100&fit=crop" alt="" className="w-10 h-10 rounded-full border-2 border-white/50 object-cover" />
+                 <img src="https://images.unsplash.com/photo-1630758664435-72a78888fb9d?w=100&h=100&fit=crop" alt="" className="w-10 h-10 rounded-full border-2 border-white/50 object-cover" loading="lazy" />
                  <div>
                    <div className="font-bold">Sinta</div>
                    <div className="text-xs opacity-80">WhatsApp • Kemarin</div>
@@ -1076,7 +1076,7 @@ export function LandingRoute() {
                  "Doi terpaksa <strong className="text-[var(--theme-accent)]">minggirin mobil</strong> — katanya burem kena air mata. 15 tahun nikah, akhirnya bisa bikin doi nangis juga 😂"
                </p>
                <div className="flex items-center gap-3">
-                 <img src="https://images.unsplash.com/photo-1613447895590-97f008b7fff3?w=100&h=100&fit=crop" alt="" className="w-10 h-10 rounded-full border-2 border-gray-100 object-cover" />
+                 <img src="https://images.unsplash.com/photo-1613447895590-97f008b7fff3?w=100&h=100&fit=crop" alt="" className="w-10 h-10 rounded-full border-2 border-gray-100 object-cover" loading="lazy" />
                  <div>
                    <div className="font-bold text-gray-900">Ema</div>
                    <div className="text-xs text-gray-500">Surabaya • Jan 2025</div>
@@ -1182,7 +1182,7 @@ export function LandingRoute() {
       <footer className="border-t border-gray-100 bg-white py-12 text-center text-sm text-gray-400">
         <div className="mx-auto max-w-7xl px-4 flex flex-col items-center gap-4">
           <Link to={themeSlug ? `/${themeSlug}` : '/'} className="flex items-center gap-2">
-            <img src={logoUrl} alt="Laguin.id - Lagumu, Ceritamu" className="h-10 w-auto object-contain opacity-70" />
+            <img src={logoUrl} alt="Laguin.id - Lagumu, Ceritamu" className="h-10 w-auto object-contain opacity-70" loading="lazy" />
           </Link>
           <p>Membuat pria menangis sejak 2024 💕</p>
           <div className="flex gap-6 pt-4">
