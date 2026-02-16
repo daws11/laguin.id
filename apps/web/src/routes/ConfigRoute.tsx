@@ -1209,7 +1209,7 @@ export function ConfigRoute() {
                              inputMode="numeric"
                              pattern="[0-9]*"
                              type="tel"
-                             className="h-12 rounded-xl border-gray-300 shadow-sm focus-visible:ring-[var(--theme-accent)] pl-12"
+                             className="h-12 rounded-xl border-gray-300 shadow-sm focus-visible:ring-[var(--theme-accent)] pl-12 bg-white"
                            />
                          </div>
                        )
