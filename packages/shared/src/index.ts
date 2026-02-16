@@ -26,13 +26,13 @@ export type MusicPreferences = z.infer<typeof MusicPreferencesSchema>
 
 export const OrderInputSchema = z.object({
   yourName: z.string().min(1).optional(), // Made optional to match flow
-  recipientName: z.string().min(1),
-  whatsappNumber: z.string().min(6), // Made required for WhatsApp flow
+  recipientName: z.string().min(1, { message: 'Nama tidak boleh kosong' }),
+  whatsappNumber: z.string().min(6, { message: 'Nomor WhatsApp minimal 6 digit' }),
   // Treat empty string as "not provided" (UI may submit '' when field is hidden or cleared).
-  email: z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().email().optional()),
+  email: z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), z.string().email({ message: 'Format email tidak valid' }).optional()),
   emailVerificationId: z.string().optional(),
   occasion: z.string(),
-  story: z.string().min(1),
+  story: z.string().min(1, { message: 'Cerita tidak boleh kosong' }),
   musicPreferences: MusicPreferencesSchema,
   extraNotes: z.string().optional(),
   agreementAccepted: z.boolean().optional(),
