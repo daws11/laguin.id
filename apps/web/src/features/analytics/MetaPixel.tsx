@@ -10,7 +10,7 @@ declare global {
 
 const META_PIXEL_SCRIPT_ID = 'meta-pixel-base'
 
-function ensureMetaPixelLoaded(pixelId: string) {
+export function ensureMetaPixelLoaded(pixelId: string) {
   const id = (pixelId ?? '').trim()
   if (!id) return
   if (typeof window === 'undefined' || typeof document === 'undefined') return

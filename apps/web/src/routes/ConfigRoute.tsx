@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { OrderInputSchema, type OrderInput } from 'shared'
 import { apiGet, apiPost } from '@/lib/http'
 import { useThemeSlug } from '@/features/theme/ThemeContext'
-import { trackWishlist } from '@/features/analytics/MetaPixel'
+import { ensureMetaPixelLoaded, trackWishlist } from '@/features/analytics/MetaPixel'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -68,6 +68,7 @@ export function ConfigRoute() {
 
   const [paymentAmount, setPaymentAmount] = useState<number>(497000)
   const [originalAmount, setOriginalAmount] = useState<number>(497000)
+  const [wishlistPixelId, setWishlistPixelId] = useState<string | null>(null)
 
   const fmtCurrency = (amt: number) => {
     if (amt === 0) return 'GRATIS'
@@ -131,6 +132,7 @@ export function ConfigRoute() {
       manualConfirmationEnabled?: boolean
       paymentAmount?: number
       originalAmount?: number
+      metaPixelWishlistId?: string | null
     }>(`/api/public/settings${themeSlug ? `?theme=${encodeURIComponent(themeSlug)}` : ''}`)
       .then((res) => {
         if (cancelled) return
@@ -142,6 +144,7 @@ export function ConfigRoute() {
         setManualConfirmationEnabled(Boolean(res?.manualConfirmationEnabled))
         setPaymentAmount(res?.paymentAmount ?? 497000)
         setOriginalAmount(res?.originalAmount ?? 497000)
+        setWishlistPixelId(res?.metaPixelWishlistId ?? null)
         
         // Resolve hero video URL
         type PublicSiteConfigMaybe = { landing?: { heroMedia?: { videoUrl?: unknown } } }
@@ -726,6 +729,11 @@ export function ConfigRoute() {
       const res = await apiPost<{ orderId: string; xenditInvoiceUrl?: string }>('/api/orders/draft', { ...payload, themeSlug: themeSlug ?? null })
       clearDraft()
 
+      if (wishlistPixelId) {
+        ensureMetaPixelLoaded(wishlistPixelId)
+        trackWishlist(wishlistPixelId, { content_name: 'Lagu Personal Valentine' })
+      }
+
       if (manualConfirmationEnabled) {
         const adminNumber = '62895370231680'
         const recipient = String(data.recipientName ?? '').trim()
@@ -748,8 +756,6 @@ export function ConfigRoute() {
         ].join('\n')
 
         const url = `https://wa.me/${adminNumber}?text=${encodeURIComponent(message)}`
-        const wishlistPixelId = import.meta.env.VITE_META_PIXEL_WISHLIST_ID ?? '1234505681452683'
-        trackWishlist(wishlistPixelId, { content_name: 'Lagu Personal Valentine' })
         window.location.assign(url)
         return
       }
