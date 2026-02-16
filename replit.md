@@ -44,6 +44,14 @@ A monorepo application for creating personalized songs for special occasions. Bu
 - Shared package must be built before other packages (`npm run build -w shared`)
 
 ## Recent Changes
+- 2026-02-16: Persistent file uploads via Replit Object Storage
+  - Uploaded files (audio, video, images) now stored in Google Cloud Storage via Replit's built-in App Storage
+  - Files persist across deployments — no more 404s after publishing
+  - New `apps/api/src/lib/objectStorage.ts` with uploadBuffer/downloadToStream helpers
+  - Admin upload route rewritten to stream to GCS instead of local filesystem
+  - `/uploads/*` route serves files from object storage with proper Content-Type and caching
+  - Path traversal protection on uploads serving route
+  - Note: Previously uploaded files (stored locally) will need to be re-uploaded
 - 2026-02-16: Per-theme promo banner (countdown, badges)
   - Added promoBanner to theme settings (enabled, countdownLabel, countdownTargetDate, promoBadgeText, quotaBadgeText)
   - New "Promo Banner" tab in theme editor for configuring countdown text, target date, promo badge, and quota badge
