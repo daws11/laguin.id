@@ -24,6 +24,9 @@ const UpdateSchema = z.object({
   openaiApiKey: z.string().min(1).optional(),
   kaiAiApiKey: z.string().min(1).optional(),
 
+  xenditSecretKey: z.string().min(1).optional(),
+  xenditWebhookToken: z.string().optional().nullable(),
+
   // YCloud WhatsApp gateway settings (stored inside Settings.whatsappConfig.ycloud)
   ycloudFrom: z.string().min(1).optional(),
   ycloudTemplateName: z.string().min(1).optional(),
@@ -57,6 +60,8 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       showThemesInFooter: s.showThemesInFooter ?? false,
       metaPixelId: s.metaPixelId ?? null,
       metaPixelWishlistId: s.metaPixelWishlistId ?? null,
+      hasXenditKey: Boolean(maybeDecrypt((s as any).xenditSecretKeyEnc)),
+      xenditWebhookToken: (s as any).xenditWebhookToken ?? null,
     }
   })
 
@@ -100,6 +105,8 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
 
     if (parsed.data.openaiApiKey) data.openaiApiKeyEnc = encryptString(parsed.data.openaiApiKey)
     if (parsed.data.kaiAiApiKey) data.kaiAiApiKeyEnc = encryptString(parsed.data.kaiAiApiKey)
+    if (parsed.data.xenditSecretKey) data.xenditSecretKeyEnc = encryptString(parsed.data.xenditSecretKey)
+    if (parsed.data.xenditWebhookToken !== undefined) data.xenditWebhookToken = parsed.data.xenditWebhookToken
 
     const updated = await prisma.settings.update({
       where: { id: s.id },

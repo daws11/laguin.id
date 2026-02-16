@@ -51,6 +51,8 @@ model Settings {
   showThemesInFooter Boolean @default(false)
   metaPixelId      String?
   metaPixelWishlistId String?
+  xenditSecretKeyEnc String?
+  xenditWebhookToken String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
@@ -133,6 +135,9 @@ model Order {
   deliveredAt        DateTime?
 
   errorMessage       String?
+
+  xenditInvoiceId    String?
+  xenditInvoiceUrl   String?
 
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt

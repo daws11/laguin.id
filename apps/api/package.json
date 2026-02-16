@@ -34,6 +34,7 @@
     "openai": "^5.22.0",
     "resend": "^6.9.1",
     "shared": "file:../../packages/shared",
+    "xendit-node": "^7.0.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {

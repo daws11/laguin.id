@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma'
-import { getOrCreateSettings } from '../lib/settings'
+import { getOrCreateSettings, maybeDecrypt } from '../lib/settings'
 
 const QuerySchema = z.object({
   theme: z.string().optional(),
@@ -32,6 +32,8 @@ export const publicSettingsRoutes: FastifyPluginAsync = async (app) => {
       instantEnabled: cd ? (cd.instantEnabled ?? true) : (s.instantEnabled ?? true),
       deliveryDelayHours: cd ? (cd.deliveryDelayHours ?? 24) : (s.deliveryDelayHours ?? 24),
       manualConfirmationEnabled: cd ? (cd.manualConfirmationEnabled ?? false) : ((s as any).manualConfirmationEnabled ?? false),
+      paymentAmount: cd ? (cd.paymentAmount ?? 497000) : 497000,
+      xenditEnabled: Boolean(maybeDecrypt((s as any).xenditSecretKeyEnc)),
       defaultThemeSlug: s.defaultThemeSlug ?? null,
       showThemesInFooter: s.showThemesInFooter ?? false,
       metaPixelId: s.metaPixelId ?? null,

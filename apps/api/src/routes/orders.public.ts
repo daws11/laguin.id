@@ -4,9 +4,10 @@ import { z } from 'zod'
 
 import { prisma } from '../lib/prisma'
 import { addOrderEvent } from '../lib/events'
-import { getOrCreateSettings } from '../lib/settings'
+import { getOrCreateSettings, maybeDecrypt } from '../lib/settings'
 import { normalizeEmail, normalizeWhatsappNumber } from '../lib/normalize'
 import { sendMetaCapiEvent } from '../lib/metaCapi'
+import { createXenditInvoice } from '../lib/xendit'
 
 const ParamsSchema = z.object({ id: z.string().min(1) })
 
@@ -131,13 +132,18 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       throw e
     }
 
+    const rawPaymentAmount = themeCD ? (themeCD.paymentAmount ?? 497000) : 497000
+    const paymentAmount = typeof rawPaymentAmount === 'number' && Number.isFinite(rawPaymentAmount) && rawPaymentAmount >= 0 ? Math.floor(rawPaymentAmount) : 497000
+    const xenditConfigured = Boolean(maybeDecrypt((settings as any).xenditSecretKeyEnc))
+    const useXenditPayment = !manualConfirmationEnabled && xenditConfigured && paymentAmount > 0
+
     const order = await prisma.order.create({
       data: {
         customerId: customer.id,
         inputPayload: normalizedInput,
         status: 'created',
         deliveryStatus: 'delivery_pending',
-        paymentStatus: 'free',
+        paymentStatus: useXenditPayment ? 'pending' : 'free',
         themeSlug,
       },
     })
@@ -148,8 +154,6 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       message: 'Order draft created from configurator.',
     })
 
-    // Meta Conversions API (server-side): treat a created draft as a Lead.
-    // Do not block response on analytics.
     void sendMetaCapiEvent({
       req,
       eventName: 'Lead',
@@ -163,6 +167,46 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
         currency: 'IDR',
       },
     })
+
+    if (useXenditPayment) {
+      try {
+        const host = req.headers['x-forwarded-host'] || req.headers.host || ''
+        const proto = req.headers['x-forwarded-proto'] || 'https'
+        const baseUrl = `${proto}://${host}`
+
+        const invoice = await createXenditInvoice({
+          externalId: order.id,
+          amount: paymentAmount,
+          payerEmail: (normalizedInput as any).email ?? undefined,
+          description: `Lagu personal untuk ${(normalizedInput as any).recipientName ?? 'pasangan'}`,
+          successRedirectUrl: `${baseUrl}/checkout?orderId=${order.id}`,
+          failureRedirectUrl: `${baseUrl}/checkout?orderId=${order.id}`,
+        })
+
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            xenditInvoiceId: invoice.id,
+            xenditInvoiceUrl: invoice.invoice_url,
+          },
+        })
+
+        await addOrderEvent({
+          orderId: order.id,
+          type: 'xendit_invoice_created',
+          message: `Xendit invoice created: ${invoice.id}`,
+        })
+
+        return { orderId: order.id, xenditInvoiceUrl: invoice.invoice_url }
+      } catch (err: any) {
+        app.log.error({ err, orderId: order.id }, 'Failed to create Xendit invoice')
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { paymentStatus: 'failed', errorMessage: 'Gagal membuat invoice pembayaran.' },
+        })
+        return reply.code(500).send({ error: 'Gagal membuat invoice pembayaran. Silakan coba lagi.' })
+      }
+    }
 
     return { orderId: order.id }
   })
@@ -199,6 +243,7 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       deliveredAt: order.deliveredAt,
       errorMessage: order.errorMessage,
       themeSlug: order.themeSlug ?? null,
+      xenditInvoiceUrl: order.xenditInvoiceUrl ?? null,
     }
   })
 

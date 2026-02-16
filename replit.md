@@ -44,6 +44,18 @@ A monorepo application for creating personalized songs for special occasions. Bu
 - Shared package must be built before other packages (`npm run build -w shared`)
 
 ## Recent Changes
+- 2026-02-16: Xendit payment gateway integration (full stack)
+  - Backend: Xendit service (apps/api/src/lib/xendit.ts) for invoice creation with Basic auth
+  - Webhook endpoint (POST /api/xendit/callback) for payment callbacks with token verification
+  - Order creation auto-creates Xendit invoice when: manual confirmation OFF + Xendit key configured + paymentAmount > 0
+  - Webhook auto-confirms orders on PAID/SETTLED, marks failed on EXPIRED
+  - Admin Settings: new "Xendit Payment" tab for secret key and webhook token management
+  - Per-theme paymentAmount in creationDelivery settings (default 497000 IDR, 0 = free)
+  - Checkout UI: "Bayar Sekarang" card when payment pending, redirect to Xendit invoice page
+  - ConfigRoute redirects directly to Xendit invoice URL after order creation when payment required
+  - xenditInvoiceId and xenditInvoiceUrl columns on Order model
+  - xenditSecretKeyEnc (encrypted) and xenditWebhookToken on Settings model
+  - Public settings API returns paymentAmount and xenditEnabled
 - 2026-02-16: Performance optimizations for landing page speed
   - Added @fastify/compress for brotli/gzip compression on all API responses and static files
   - Route-level code splitting with React.lazy() (Admin, Config, Checkout lazy-loaded; Landing stays eager)

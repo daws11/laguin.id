@@ -708,7 +708,7 @@ export function ConfigRoute() {
       // Agreement UI is temporarily disabled, but backend may still enforce it.
       // If enabled in settings, auto-accept to avoid blocking the public flow.
       if (agreementEnabled) (payload as Record<string, unknown>).agreementAccepted = true
-      const res = await apiPost<{ orderId: string }>('/api/orders/draft', { ...payload, themeSlug: themeSlug ?? null })
+      const res = await apiPost<{ orderId: string; xenditInvoiceUrl?: string }>('/api/orders/draft', { ...payload, themeSlug: themeSlug ?? null })
       clearDraft()
 
       if (manualConfirmationEnabled) {
@@ -736,6 +736,11 @@ export function ConfigRoute() {
         const wishlistPixelId = import.meta.env.VITE_META_PIXEL_WISHLIST_ID ?? '1234505681452683'
         trackWishlist(wishlistPixelId, { content_name: 'Lagu Personal Valentine' })
         window.location.assign(url)
+        return
+      }
+
+      if (res.xenditInvoiceUrl) {
+        window.location.href = res.xenditInvoiceUrl
         return
       }
 

@@ -73,6 +73,7 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
     agreementEnabled: false,
     manualConfirmationEnabled: false,
     deliveryDelayHours: 24,
+    paymentAmount: 497000,
   },
 }
 
@@ -212,6 +213,7 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
       agreementEnabled: asBool(cd?.agreementEnabled, defaultPublicSiteDraft.creationDelivery.agreementEnabled),
       manualConfirmationEnabled: asBool(cd?.manualConfirmationEnabled, defaultPublicSiteDraft.creationDelivery.manualConfirmationEnabled),
       deliveryDelayHours: asNumber(cd?.deliveryDelayHours, defaultPublicSiteDraft.creationDelivery.deliveryDelayHours),
+      paymentAmount: asNumber(cd?.paymentAmount, defaultPublicSiteDraft.creationDelivery.paymentAmount),
     },
   }
 }
@@ -283,6 +285,7 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
     agreementEnabled: draft.creationDelivery.agreementEnabled,
     manualConfirmationEnabled: draft.creationDelivery.manualConfirmationEnabled,
     deliveryDelayHours: draft.creationDelivery.deliveryDelayHours,
+    paymentAmount: draft.creationDelivery.paymentAmount,
   }
 
   const nextColors = {

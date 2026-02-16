@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { Settings } from '@/features/admin/types'
-import { Smartphone, Key, BarChart3 } from 'lucide-react'
+import { Smartphone, Key, BarChart3, CreditCard } from 'lucide-react'
 import { WhatsappGatewayCard } from './WhatsappGatewayCard'
 import { ApiKeysCard } from './ApiKeysCard'
 import { MetaPixelCard } from './MetaPixelCard'
+import { XenditCard } from './XenditCard'
 
 interface SystemSettingsSectionProps {
   settings: Settings
@@ -29,6 +30,7 @@ export function SystemSettingsSection({
     { id: 'whatsapp-gateway', label: t.whatsappGateway ?? 'WhatsApp Gateway', icon: Smartphone, group: 'System' },
     { id: 'api-keys', label: t.apiKeys ?? 'API Keys', icon: Key, group: 'System' },
     { id: 'meta-pixel', label: 'Meta Pixel', icon: BarChart3, group: 'System' },
+    { id: 'xendit', label: 'Xendit Payment', icon: CreditCard, group: 'System' },
   ]
 
   const SidebarItem = ({ item }: { item: typeof menuItems[0] }) => (
@@ -91,6 +93,16 @@ export function SystemSettingsSection({
           {activeTab === 'meta-pixel' && (
             <div className="animate-in fade-in duration-300 h-full">
               <MetaPixelCard
+                settings={settings}
+                saveSettings={saveSettings}
+                loading={loading}
+              />
+            </div>
+          )}
+
+          {activeTab === 'xendit' && (
+            <div className="animate-in fade-in duration-300 h-full">
+              <XenditCard
                 settings={settings}
                 saveSettings={saveSettings}
                 loading={loading}

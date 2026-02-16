@@ -819,6 +819,14 @@ export function LandingContentConfigSection({
                                 onChange={(e) => setDraft(d => ({ ...d, creationDelivery: { ...d.creationDelivery, deliveryDelayHours: Number(e.target.value) } }))}
                             />
                         </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Harga Pembayaran (IDR) — 0 = gratis</label>
+                            <Input
+                                type="number"
+                                value={draft.creationDelivery.paymentAmount}
+                                onChange={(e) => setDraft(d => ({ ...d, creationDelivery: { ...d.creationDelivery, paymentAmount: Number(e.target.value) } }))}
+                            />
+                        </div>
                     </div>
                 </div>
             )}

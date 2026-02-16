@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { Check, Clock, Music, Loader2, ArrowLeft } from 'lucide-react'
+import { Check, Clock, Music, Loader2, ArrowLeft, CreditCard } from 'lucide-react'
 
 import { apiGet, apiPost } from '@/lib/http'
 import { Button } from '@/components/ui/button'
@@ -27,6 +27,7 @@ type OrderSummary = {
   trackUrl?: string | null
   errorMessage?: string | null
   themeSlug?: string | null
+  xenditInvoiceUrl?: string | null
 }
 
 function trackFbq(eventName: string, params: Record<string, unknown>) {
@@ -117,15 +118,17 @@ export function CheckoutRoute() {
     })
   }, [orderId])
 
-  // Auto-confirm logic: trigger immediately when order is loaded and status is created
+  const needsXenditPayment = order?.paymentStatus === 'pending' && order?.xenditInvoiceUrl
+
   useEffect(() => {
     if (manualConfirmationEnabled) return
+    if (needsXenditPayment) return
     if (orderId && order?.status === 'created' && !confirming && !hasAttemptedAutoConfirm.current) {
       hasAttemptedAutoConfirm.current = true
       confirm()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId, order?.status, manualConfirmationEnabled])
+  }, [orderId, order?.status, manualConfirmationEnabled, needsXenditPayment])
 
   // Initial Load
   useEffect(() => {
@@ -226,9 +229,7 @@ export function CheckoutRoute() {
     }
   }
 
-  // UX rule: do not display raw backend errors (credits, JSON, stack-like messages).
-  // Even when backend marks the order as failed, keep the user on a "success / in progress" experience.
-  const showProgressUI = Boolean(order && (order.status === 'processing' || order.status === 'created' || order.status === 'failed' || confirming || hasAttemptedAutoConfirm.current))
+  const showProgressUI = Boolean(order && !needsXenditPayment && order.paymentStatus !== 'failed' && (order.status === 'processing' || order.status === 'created' || order.status === 'failed' || confirming || hasAttemptedAutoConfirm.current))
 
   return (
     <div className="min-h-screen bg-[var(--theme-accent-soft)] font-sans pb-32 pt-10 px-4" style={themeStyle}>
@@ -250,6 +251,63 @@ export function CheckoutRoute() {
           </div>
         ) : order ? (
           <div className="space-y-6">
+
+            {needsXenditPayment && (
+              <Card className="border-[var(--theme-accent-soft)] shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden animate-in fade-in zoom-in duration-300">
+                <div className="h-1.5 bg-[var(--theme-accent)] w-full" />
+                <CardContent className="p-6 space-y-4 text-center">
+                  <CreditCard className="h-10 w-10 mx-auto text-[var(--theme-accent)]" />
+                  <h3 className="font-bold text-gray-900 text-lg">Pembayaran Diperlukan</h3>
+                  <p className="text-sm text-gray-600">
+                    Lanjutkan ke pembayaran untuk memproses pesanan kamu. Lagu akan dibuat otomatis setelah pembayaran diterima.
+                  </p>
+                  <Button
+                    className="w-full h-14 rounded-full bg-[var(--theme-accent)] text-white text-lg font-bold shadow-xl hover:opacity-90 hover:scale-[1.02] transition-all duration-300"
+                    onClick={() => {
+                      if (order?.xenditInvoiceUrl) {
+                        window.location.href = order.xenditInvoiceUrl
+                      }
+                    }}
+                  >
+                    Bayar Sekarang
+                  </Button>
+                  <p className="text-[10px] text-gray-400">Kamu akan diarahkan ke halaman pembayaran Xendit</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {order.paymentStatus === 'paid' && !showProgressUI && (
+              <Card className="border-green-200 shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden animate-in fade-in zoom-in duration-300">
+                <div className="h-1.5 bg-green-500 w-full" />
+                <CardContent className="p-6 space-y-3 text-center">
+                  <Check className="h-10 w-10 mx-auto text-green-500" />
+                  <h3 className="font-bold text-gray-900 text-lg">Pembayaran Berhasil!</h3>
+                  <p className="text-sm text-gray-600">
+                    Pesanan kamu sedang diproses. Lagu akan dikirim via email setelah selesai.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {order.paymentStatus === 'failed' && (
+              <Card className="border-red-200 shadow-xl bg-white/80 backdrop-blur-sm overflow-hidden animate-in fade-in zoom-in duration-300">
+                <div className="h-1.5 bg-red-500 w-full" />
+                <CardContent className="p-6 space-y-4 text-center">
+                  <CreditCard className="h-10 w-10 mx-auto text-red-500" />
+                  <h3 className="font-bold text-gray-900 text-lg">Pembayaran Gagal</h3>
+                  <p className="text-sm text-gray-600">
+                    {order.errorMessage || 'Invoice pembayaran sudah kedaluwarsa atau gagal. Silakan buat pesanan baru.'}
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="w-full h-12 rounded-full text-base font-semibold"
+                    onClick={() => navigate(order.themeSlug ? `/${order.themeSlug}/config` : '/config')}
+                  >
+                    Buat Pesanan Baru
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
             
             {/* Status Card */}
             {showProgressUI && (

@@ -36,6 +36,9 @@ export type Settings = {
   ycloudTemplateName: string | null
   ycloudTemplateLangCode: string | null
   hasYcloudKey: boolean
+
+  hasXenditKey: boolean
+  xenditWebhookToken: string | null
 }
 
 export type LandingPlaylistItem = { title: string; subtitle: string; ctaLabel: string; audioUrl: string }
@@ -106,6 +109,7 @@ export type PublicSiteDraft = {
     agreementEnabled: boolean
     manualConfirmationEnabled: boolean
     deliveryDelayHours: number
+    paymentAmount: number
   }
 }
 
