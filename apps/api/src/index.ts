@@ -49,13 +49,26 @@ await app.register(multipart, {
 })
 
 import fs from 'node:fs'
+import { downloadToStream } from './lib/objectStorage'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const uploadsRoot = path.join(__dirname, '..', 'uploads')
-await app.register(fastifyStatic, {
-  root: uploadsRoot,
-  prefix: '/uploads/',
-  decorateReply: false,
+
+app.get('/uploads/*', async (req, reply) => {
+  const objectKey = (req as any).params['*'] as string
+  if (!objectKey || objectKey.includes('..')) return reply.code(404).send({ error: 'Not found' })
+
+  try {
+    const result = await downloadToStream(objectKey)
+    if (!result) return reply.code(404).send({ error: 'Not found' })
+
+    reply.header('Content-Type', result.contentType)
+    if (result.size) reply.header('Content-Length', result.size)
+    reply.header('Cache-Control', 'public, max-age=86400')
+    return reply.send(result.stream)
+  } catch (err) {
+    req.log.error(err, 'Error serving upload')
+    return reply.code(500).send({ error: 'Failed to serve file' })
+  }
 })
 
 const webDistRoot = path.join(__dirname, '..', '..', 'web', 'dist')

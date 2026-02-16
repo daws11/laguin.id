@@ -1,8 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
-import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { uploadBuffer } from '../lib/objectStorage'
 
 const QuerySchema = z.object({
   kind: z.enum(['image', 'video', 'audio']),
@@ -48,9 +47,6 @@ export const adminUploadsRoutes: FastifyPluginAsync = async (app) => {
     const ext = extFromMime(mime) ?? (extFromName || null)
     if (!ext) return reply.code(400).send({ error: 'unsupported_type', mime })
 
-    // Basic kind/mime validation (lenient).
-    // Some browsers can send empty/unknown mimetype or even "application/octet-stream" for local files.
-    // In that case, we fall back to checking the file extension.
     const mimeLower = (mime ?? '').toLowerCase()
     const allowedExts =
       kind === 'image'
@@ -69,21 +65,17 @@ export const adminUploadsRoutes: FastifyPluginAsync = async (app) => {
 
     if (!mimeOk) return reply.code(400).send({ error: 'invalid_kind_mime', kind, mime, ext })
 
-    const __dirname = path.dirname(fileURLToPath(import.meta.url))
-    const uploadsRoot = path.join(__dirname, '..', '..', 'uploads')
-    const dir = path.join(uploadsRoot, `${kind}s`)
-    await mkdir(dir, { recursive: true })
-
     const base = safeNamePart(path.basename(file.filename ?? 'upload', path.extname(file.filename ?? '')))
     const stamp = Date.now()
     const rand = Math.random().toString(16).slice(2, 10)
     const filename = `${stamp}-${rand}${base ? `-${base}` : ''}${ext}`
-    const absPath = path.join(dir, filename)
+    const objectKey = `${kind}s/${filename}`
 
     const buf = await file.toBuffer()
-    await writeFile(absPath, buf)
+    const contentType = mime || 'application/octet-stream'
 
-    const publicPath = `/uploads/${kind}s/${filename}`
+    const publicPath = await uploadBuffer(objectKey, buf, contentType)
+
     return {
       ok: true,
       kind,
@@ -93,4 +85,3 @@ export const adminUploadsRoutes: FastifyPluginAsync = async (app) => {
     }
   })
 }
-
