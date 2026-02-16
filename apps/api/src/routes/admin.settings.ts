@@ -65,6 +65,24 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
     }
   })
 
+  app.get('/xendit/webhook-logs', async () => {
+    const logs = await prisma.xenditWebhookLog.findMany({
+      orderBy: { receivedAt: 'desc' },
+      take: 20,
+      include: {
+        order: {
+          select: {
+            inputPayload: true,
+            customer: {
+              select: { name: true }
+            }
+          }
+        }
+      }
+    })
+    return { logs }
+  })
+
   app.put('/settings', async (req, reply) => {
     const parsed = UpdateSchema.safeParse(req.body)
     if (!parsed.success) return reply.code(400).send({ error: 'invalid_body', details: parsed.error.flatten() })

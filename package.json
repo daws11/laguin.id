@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@fastify/compress": "^8.3.1",
+    "date-fns": "^4.1.0",
     "nodemailer": "^8.0.1"
   }
 }

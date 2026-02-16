@@ -29,6 +29,21 @@ export const xenditWebhookRoutes: FastifyPluginAsync = async (app) => {
 
     app.log.info({ externalId, status, xenditInvoiceId }, 'Xendit webhook received')
 
+    // Log the webhook
+    try {
+      await prisma.xenditWebhookLog.create({
+        data: {
+          orderId: externalId || null,
+          xenditId: xenditInvoiceId || null,
+          status: status || null,
+          amount: paidAmount ? parseFloat(paidAmount.toString()) : null,
+          payload: body,
+        }
+      })
+    } catch (e) {
+      app.log.error(e, 'Failed to log Xendit webhook')
+    }
+
     if (!externalId) {
       return reply.code(400).send({ error: 'Missing external_id' })
     }
