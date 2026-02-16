@@ -63,6 +63,8 @@ type PublicSettingsResponse = {
   publicSiteConfig: PublicSiteConfig | null
   instantEnabled?: boolean
   deliveryDelayHours?: number
+  paymentAmount?: number
+  originalAmount?: number
 }
 
 const defaultPublicSiteConfig: PublicSiteConfig = {
@@ -121,7 +123,16 @@ const defaultPublicSiteConfig: PublicSiteConfig = {
   },
 }
 
-function CountdownTimer() {
+function fmtCurrencyGlobal(amt: number | null | undefined) {
+  if (amt === 0) return 'GRATIS'
+  if (!amt) return 'Rp 497rb'
+  if (amt >= 100000 && amt < 1000000) {
+    return `Rp ${Math.floor(amt / 1000)}rb`
+  }
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amt)
+}
+
+function CountdownTimer({ paymentAmount, originalAmount }: { paymentAmount: number | null; originalAmount: number | null }) {
   const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0 })
 
   useEffect(() => {
@@ -163,8 +174,8 @@ function CountdownTimer() {
         <span>💝 Valentine's dalam {time.d}h {time.h}j {time.m}m {time.s}d lagi</span>
         <span className="opacity-50 text-[8px]">•</span>
         <span className="flex items-center gap-1">
-          <span className="line-through opacity-70">{fmtCurrency(originalAmount)}</span>
-          <span>{fmtCurrency(paymentAmount)} {paymentAmount === 0 ? '(100 pertama)' : ''}</span>
+          <span className="line-through opacity-70">{fmtCurrencyGlobal(originalAmount)}</span>
+          <span>{fmtCurrencyGlobal(paymentAmount)} {paymentAmount === 0 ? '(100 pertama)' : ''}</span>
         </span>
       </div>
     </div>
@@ -432,14 +443,7 @@ export function LandingRoute() {
   const [paymentAmount, setPaymentAmount] = useState<number | null>(null)
   const [originalAmount, setOriginalAmount] = useState<number | null>(null)
 
-  const fmtCurrency = (amt: number | null | undefined) => {
-    if (amt === 0) return 'GRATIS'
-    if (!amt) return 'Rp 497rb'
-    if (amt >= 100000 && amt < 1000000) {
-      return `Rp ${Math.floor(amt / 1000)}rb`
-    }
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amt)
-  }
+  const fmtCurrency = fmtCurrencyGlobal
 
   const deliveryEta = useMemo(() => {
     if (instantEnabled) {
@@ -728,7 +732,7 @@ export function LandingRoute() {
 
       {/* Sticky Top Banner */}
       <div className="sticky top-0 z-50">
-        <CountdownTimer />
+        <CountdownTimer paymentAmount={paymentAmount} originalAmount={originalAmount} />
         <div className="border-b border-[var(--theme-accent-soft)] bg-white/95 px-2 sm:px-4 py-2 backdrop-blur-sm">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-3">
             <Link to={themeSlug ? `/${themeSlug}` : '/'} className="flex items-center gap-2">

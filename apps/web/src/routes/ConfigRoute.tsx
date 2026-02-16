@@ -129,6 +129,8 @@ export function ConfigRoute() {
       instantEnabled?: boolean
       deliveryDelayHours?: number
       manualConfirmationEnabled?: boolean
+      paymentAmount?: number
+      originalAmount?: number
     }>(`/api/public/settings${themeSlug ? `?theme=${encodeURIComponent(themeSlug)}` : ''}`)
       .then((res) => {
         if (cancelled) return
@@ -831,7 +833,7 @@ export function ConfigRoute() {
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-2">
           <img src={logoUrl} alt="Laguin - Musikmu Ceritamu" className="h-8 sm:h-10 w-auto object-contain" />
           <div className="text-right flex items-center gap-1.5">
-             <span className="text-[10px] sm:text-xs text-gray-400 line-through">Rp 497k</span>
+             <span className="text-[10px] sm:text-xs text-gray-400 line-through">{fmtCurrency(originalAmount)}</span>
              <span className="text-sm sm:text-lg font-bold text-[var(--theme-accent)]">{fmtCurrency(paymentAmount)}</span>
              <Badge variant="destructive" className="ml-1 text-[9px] sm:text-[10px] px-1.5 py-0 h-4 sm:h-5 min-w-[36px] justify-center">11 sisa</Badge>
           </div>
