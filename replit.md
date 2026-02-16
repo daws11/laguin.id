@@ -44,6 +44,11 @@ A monorepo application for creating personalized songs for special occasions. Bu
 - Shared package must be built before other packages (`npm run build -w shared`)
 
 ## Recent Changes
+- 2026-02-16: Meta Pixel IDs editable in global settings
+  - Added metaPixelId and metaPixelWishlistId columns to Settings model
+  - New "Meta Pixel" tab in global Settings sidebar with save-on-demand UI
+  - Public settings API returns pixel IDs; PublicRoot fetches them dynamically
+  - Removed hardcoded pixel IDs from frontend code
 - 2026-02-16: Editable hero text and footer CTA per theme
   - Added heroHeadline (line1, line2), heroSubtext, and footerCta (headline, subtitle) to theme settings
   - Theme editor "Hero Text" section with inputs, live preview, and HTML support (<strong>, <em>)
