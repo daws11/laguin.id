@@ -10,6 +10,9 @@ const ConfigRoute = lazy(() => import('@/routes/ConfigRoute').then(m => ({ defau
 const CheckoutRoute = lazy(() => import('@/routes/CheckoutRoute').then(m => ({ default: m.CheckoutRoute })))
 const AdminRoute = lazy(() => import('@/routes/AdminRoute').then(m => ({ default: m.AdminRoute })))
 const ThemedConfigRoute = lazy(() => import('@/routes/ThemedConfigRoute').then(m => ({ default: m.ThemedConfigRoute })))
+const PrivacyPage = lazy(() => import('@/routes/PrivacyPage').then(m => ({ default: m.PrivacyPage })))
+const TermsPage = lazy(() => import('@/routes/TermsPage').then(m => ({ default: m.TermsPage })))
+const ContactPage = lazy(() => import('@/routes/ContactPage').then(m => ({ default: m.ContactPage })))
 
 function LazyFallback() {
   return (
@@ -28,6 +31,9 @@ export const router = createBrowserRouter([
       { path: '/', element: <DefaultThemeRedirect /> },
       { path: '/config', element: <Suspense fallback={<LazyFallback />}><ThemeProvider themeSlug={null}><ConfigRoute /></ThemeProvider></Suspense> },
       { path: '/checkout', element: <Suspense fallback={<LazyFallback />}><CheckoutRoute /></Suspense> },
+      { path: '/privasi', element: <Suspense fallback={<LazyFallback />}><PrivacyPage /></Suspense> },
+      { path: '/ketentuan', element: <Suspense fallback={<LazyFallback />}><TermsPage /></Suspense> },
+      { path: '/kontak', element: <Suspense fallback={<LazyFallback />}><ContactPage /></Suspense> },
       { path: '/:themeSlug', element: <ThemedLandingRoute /> },
       { path: '/:themeSlug/config', element: <Suspense fallback={<LazyFallback />}><ThemedConfigRoute /></Suspense> },
     ],

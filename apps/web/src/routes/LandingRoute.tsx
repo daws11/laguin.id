@@ -1235,9 +1235,9 @@ export function LandingRoute() {
             <div className="flex flex-col items-center sm:items-start gap-3">
               <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Informasi</h4>
               <div className="flex flex-col gap-1.5">
-                <a href="#" className="text-xs hover:text-gray-600 transition-colors">Privasi</a>
-                <a href="#" className="text-xs hover:text-gray-600 transition-colors">Ketentuan</a>
-                <a href="mailto:support@laguin.id" className="text-xs hover:text-gray-600 transition-colors">Kontak</a>
+                <Link to="/privasi" className="text-xs hover:text-gray-600 transition-colors">Privasi</Link>
+                <Link to="/ketentuan" className="text-xs hover:text-gray-600 transition-colors">Ketentuan</Link>
+                <Link to="/kontak" className="text-xs hover:text-gray-600 transition-colors">Kontak</Link>
               </div>
             </div>
           </div>
