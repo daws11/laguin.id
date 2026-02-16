@@ -452,7 +452,12 @@ export function LandingRoute() {
     }
     const hRaw = deliveryDelayHours
     const h = typeof hRaw === 'number' && Number.isFinite(hRaw) && hRaw > 0 ? hRaw : 24
-    const hText = Number.isInteger(h) ? String(h) : String(h)
+    if (h >= 24 && h % 24 === 0) {
+      const d = h / 24
+      const dText = String(d)
+      return { label: `Dalam ${dText} hari`, sentenceLower: `dalam ${dText} hari`, short: `${dText} hari` }
+    }
+    const hText = String(h)
     return { label: `Dalam ${hText} jam`, sentenceLower: `dalam ${hText} jam`, short: `${hText} jam` }
   }, [deliveryDelayHours, instantEnabled])
 

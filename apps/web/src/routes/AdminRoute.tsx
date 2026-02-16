@@ -471,6 +471,21 @@ function AdminRouteLegacy() {
     }
   }
 
+  async function bulkDeleteOrders(ids: string[]) {
+    if (!token) return
+    setError(null)
+    setLoading(true)
+    try {
+      await adminApi.adminBulkDeleteOrders(token, ids)
+      setSelectedOrder(null)
+      await refreshOrders()
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to delete orders')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (!token) {
     return (
       <div className="mx-auto max-w-md px-4 py-10">
@@ -613,6 +628,7 @@ function AdminRouteLegacy() {
               onRetryOrder={(id) => void retryOrder(id)}
               onResendEmail={(id) => void resendEmail(id)}
               onResendWhatsApp={(id) => void resendWhatsApp(id)}
+              onBulkDelete={bulkDeleteOrders}
               loading={loading}
             />
           </div>

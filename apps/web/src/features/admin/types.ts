@@ -109,6 +109,7 @@ export type PublicSiteDraft = {
     agreementEnabled: boolean
     manualConfirmationEnabled: boolean
     deliveryDelayHours: number
+    deliveryDelayUnit: 'hours' | 'days'
     paymentAmount: number
     originalAmount: number
   }

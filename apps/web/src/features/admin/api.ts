@@ -75,6 +75,10 @@ export async function adminResendWhatsApp(token: string, id: string) {
   return apiPost(`/api/admin/orders/${encodeURIComponent(id)}/resend-whatsapp`, {}, { token })
 }
 
+export async function adminBulkDeleteOrders(token: string, ids: string[]) {
+  return apiPost<{ ok: true; deleted: number }>('/api/admin/orders/bulk-delete', { ids }, { token })
+}
+
 export async function adminUpload(token: string, kind: 'image' | 'video' | 'audio', formData: FormData) {
   return apiUpload<{ ok: true; path: string }>(`/api/admin/uploads?kind=${kind}`, formData, { token })
 }

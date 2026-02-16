@@ -21,6 +21,7 @@ import {
   Activity,
   FileText,
   Terminal,
+  Trash2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -73,6 +74,7 @@ export function AdminOrdersTab({
   onRetryOrder,
   onResendEmail,
   onResendWhatsApp,
+  onBulkDelete,
   loading,
 }: {
   t: any
@@ -84,6 +86,7 @@ export function AdminOrdersTab({
   onRetryOrder: (id: string) => void
   onResendEmail: (id: string) => void
   onResendWhatsApp: (id: string) => void
+  onBulkDelete: (ids: string[]) => Promise<void>
   loading: boolean
 }) {
   const [query, setQuery] = useState('')
@@ -92,6 +95,9 @@ export function AdminOrdersTab({
   const [sortField, setSortField] = useState<SortField>('createdAt')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [themes, setThemes] = useState<ThemeItem[]>([])
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     adminGetThemes(token).then(setThemes).catch(() => {})
@@ -525,11 +531,88 @@ export function AdminOrdersTab({
         </select>
       </div>
 
+      {selected.size > 0 && (
+        <div className="flex items-center gap-3 mb-3 px-4 py-2.5 rounded-lg border border-red-200 bg-red-50">
+          <span className="text-sm font-medium text-red-800">
+            {selected.size} order{selected.size > 1 ? 's' : ''} selected
+          </span>
+          <div className="flex-1" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => setSelected(new Set())}
+          >
+            Deselect All
+          </Button>
+          {!showDeleteConfirm ? (
+            <Button
+              variant="destructive"
+              size="sm"
+              className="h-7 text-xs gap-1.5"
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete Selected
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-red-700 font-medium">Are you sure?</span>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-7 text-xs"
+                disabled={deleting}
+                onClick={async () => {
+                  setDeleting(true)
+                  try {
+                    await onBulkDelete(Array.from(selected))
+                    setSelected(new Set())
+                    setShowDeleteConfirm(false)
+                  } finally {
+                    setDeleting(false)
+                  }
+                }}
+              >
+                {deleting ? 'Deleting...' : 'Confirm Delete'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="flex-1 min-h-0 border rounded-lg overflow-hidden bg-card">
         <div className="overflow-auto h-full">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 sticky top-0 z-10">
               <tr className="border-b">
+                <th className="px-3 py-3 w-10">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                    checked={filtered.length > 0 && filtered.every((o) => selected.has(o.id))}
+                    ref={(el) => {
+                      if (el) el.indeterminate = filtered.some((o) => selected.has(o.id)) && !filtered.every((o) => selected.has(o.id))
+                    }}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelected(new Set([...selected, ...filtered.map((o) => o.id)]))
+                      } else {
+                        const next = new Set(selected)
+                        filtered.forEach((o) => next.delete(o.id))
+                        setSelected(next)
+                      }
+                    }}
+                  />
+                </th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
                   ID
                 </th>
@@ -578,8 +661,24 @@ export function AdminOrdersTab({
               {filtered.map((o) => (
                 <tr
                   key={o.id}
-                  className="hover:bg-muted/30 transition-colors group"
+                  className={cn(
+                    'hover:bg-muted/30 transition-colors group',
+                    selected.has(o.id) && 'bg-primary/5'
+                  )}
                 >
+                  <td className="px-3 py-3">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                      checked={selected.has(o.id)}
+                      onChange={(e) => {
+                        const next = new Set(selected)
+                        if (e.target.checked) next.add(o.id)
+                        else next.delete(o.id)
+                        setSelected(next)
+                      }}
+                    />
+                  </td>
                   <td className="px-4 py-3">
                     <span className="font-mono text-xs text-muted-foreground">
                       {o.id.slice(0, 8)}...
@@ -685,7 +784,7 @@ export function AdminOrdersTab({
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
+                  <td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">
                     {t.noOrdersFound ?? 'No orders found.'}
                   </td>
                 </tr>

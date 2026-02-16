@@ -178,6 +178,17 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     return { ok: true, orderId: order.id, result }
   })
 
+  app.post('/orders/bulk-delete', async (req, reply) => {
+    const schema = z.object({ ids: z.array(z.string().min(1)).min(1).max(100) })
+    const parsed = schema.safeParse(req.body)
+    if (!parsed.success) return reply.code(400).send({ error: 'invalid_body', message: 'Provide an array of order IDs (max 100).' })
+
+    await prisma.orderEvent.deleteMany({ where: { orderId: { in: parsed.data.ids } } })
+    const result = await prisma.order.deleteMany({ where: { id: { in: parsed.data.ids } } })
+
+    return { ok: true, deleted: result.count }
+  })
+
   app.post('/orders/:id/resend-whatsapp', async (req, reply) => {
     const params = ParamsIdSchema.safeParse(req.params)
     if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
