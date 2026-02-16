@@ -1247,6 +1247,9 @@ export function LandingRoute() {
               </div>
             </div>
           </div>
+          <div className="mt-6">
+            <img src="/laguin-studio.jpg" alt="Laguin Studio" className="w-full rounded-2xl shadow-md" loading="lazy" />
+          </div>
         </section>
 
         {/* FAQ */}
