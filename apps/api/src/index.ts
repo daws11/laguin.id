@@ -40,6 +40,8 @@ await app.register(multipart, {
   },
 })
 
+import fs from 'node:fs'
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const uploadsRoot = path.join(__dirname, '..', 'uploads')
 await app.register(fastifyStatic, {
@@ -47,6 +49,17 @@ await app.register(fastifyStatic, {
   prefix: '/uploads/',
   decorateReply: false,
 })
+
+const webDistRoot = path.join(__dirname, '..', '..', 'web', 'dist')
+const hasWebDist = fs.existsSync(webDistRoot)
+if (hasWebDist) {
+  await app.register(fastifyStatic, {
+    root: webDistRoot,
+    prefix: '/',
+    decorateReply: false,
+    wildcard: false,
+  })
+}
 
 const adminJwtSecret = process.env.ADMIN_JWT_SECRET
 if (!adminJwtSecret) {
@@ -92,6 +105,16 @@ await app.register(async (adminApp) => {
   await adminApp.register(adminFunnelRoutes)
   await adminApp.register(adminThemeRoutes)
 }, { prefix: '/api/admin' })
+
+if (hasWebDist) {
+  app.setNotFoundHandler((req, reply) => {
+    if (req.url.startsWith('/api/') || req.url.startsWith('/uploads/')) {
+      reply.code(404).send({ error: 'Not found' })
+    } else {
+      reply.type('text/html').sendFile('index.html', webDistRoot)
+    }
+  })
+}
 
 const port = Number(process.env.PORT ?? 3001)
 const host = process.env.HOST ?? '0.0.0.0'

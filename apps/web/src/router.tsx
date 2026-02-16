@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter } from 'react-router-dom'
 
 import { DefaultThemeRedirect } from '@/routes/DefaultThemeRedirect'
 import { ThemedLandingRoute } from '@/routes/ThemedLandingRoute'

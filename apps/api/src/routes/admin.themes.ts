@@ -51,7 +51,7 @@ export const adminThemeRoutes: FastifyPluginAsync = async (app) => {
         slug: parsed.data.slug,
         name: parsed.data.name,
         isActive: parsed.data.isActive ?? true,
-        settings: parsed.data.settings ?? null,
+        settings: (parsed.data.settings ?? undefined) as any,
       },
     })
 
@@ -75,7 +75,7 @@ export const adminThemeRoutes: FastifyPluginAsync = async (app) => {
       data: {
         name: parsed.data.name,
         isActive: parsed.data.isActive,
-        settings: parsed.data.settings,
+        settings: parsed.data.settings as any,
       },
     })
 

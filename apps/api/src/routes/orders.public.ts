@@ -113,7 +113,7 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       customer = await prisma.customer.create({
         data: {
           name: customerName,
-          whatsappNumber: whatsappEnabled ? whatsappNumber : null,
+          whatsappNumber: (whatsappEnabled ? whatsappNumber : null) as any,
           ...(emailRequired
             ? {
                 email: (normalizedInput as any).email,
