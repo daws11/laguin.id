@@ -1,9 +1,18 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import * as adminApi from '@/features/admin/api'
 import type { ThemeItem } from '@/features/admin/api'
+import type { PublicSiteDraft } from '@/features/admin/types'
+import { buildDraftFromSettings, buildPublicSiteConfigPayload } from '@/features/admin/publicSiteDraft'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { LandingContentConfigSection } from '@/features/admin/tabs/settings/LandingContentConfigSection'
+import { ArrowLeft } from 'lucide-react'
+
+function buildDraftFromThemeSettings(settings: any): PublicSiteDraft {
+  const fakeSettings = { publicSiteConfig: settings } as any
+  return buildDraftFromSettings(fakeSettings)
+}
 
 export function AdminThemesTab({ t, token, defaultThemeSlug, onDefaultThemeChange }: { 
   t: any
@@ -20,7 +29,17 @@ export function AdminThemesTab({ t, token, defaultThemeSlug, onDefaultThemeChang
   const [formName, setFormName] = useState('')
   const [formSlug, setFormSlug] = useState('')
   const [formActive, setFormActive] = useState(true)
-  const [formSettings, setFormSettings] = useState('')
+
+  const [themeDraft, setThemeDraft] = useState<PublicSiteDraft>(() => buildDraftFromThemeSettings({}))
+  const [themeDraftBaseline, setThemeDraftBaseline] = useState<string>('')
+  const [themeSavedAt, setThemeSavedAt] = useState<string | null>(null)
+  const [themeError, setThemeError] = useState<string | null>(null)
+
+  const themeDraftCurrent = useMemo(
+    () => JSON.stringify(buildPublicSiteConfigPayload(themeDraft)),
+    [themeDraft],
+  )
+  const themeDraftIsDirty = themeDraftCurrent !== themeDraftBaseline
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -42,7 +61,7 @@ export function AdminThemesTab({ t, token, defaultThemeSlug, onDefaultThemeChang
     setFormName('')
     setFormSlug('')
     setFormActive(true)
-    setFormSettings('{}')
+    setError(null)
   }
 
   function startEdit(theme: ThemeItem) {
@@ -51,31 +70,53 @@ export function AdminThemesTab({ t, token, defaultThemeSlug, onDefaultThemeChang
     setFormName(theme.name)
     setFormSlug(theme.slug)
     setFormActive(theme.isActive)
-    setFormSettings(JSON.stringify(theme.settings ?? {}, null, 2))
+    const draft = buildDraftFromThemeSettings(theme.settings ?? {})
+    setThemeDraft(draft)
+    setThemeDraftBaseline(JSON.stringify(buildPublicSiteConfigPayload(draft)))
+    setThemeSavedAt(null)
+    setThemeError(null)
+    setError(null)
   }
 
   function cancelForm() {
     setEditing(null)
     setCreating(false)
     setError(null)
+    setThemeError(null)
   }
 
-  async function handleSave() {
+  async function handleCreateSubmit() {
     setError(null)
     setLoading(true)
     try {
-      let settings: any = {}
-      try { settings = JSON.parse(formSettings) } catch { setError('Invalid JSON in settings'); setLoading(false); return }
-      
-      if (creating) {
-        await adminApi.adminCreateTheme(token, { slug: formSlug, name: formName, isActive: formActive, settings })
-      } else if (editing) {
-        await adminApi.adminUpdateTheme(token, editing.slug, { name: formName, isActive: formActive, settings })
+      const created = await adminApi.adminCreateTheme(token, { slug: formSlug, name: formName, isActive: formActive, settings: {} })
+      await refresh()
+      const freshThemes = await adminApi.adminGetThemes(token)
+      const freshTheme = freshThemes.find((th: ThemeItem) => th.slug === created.slug)
+      if (freshTheme) {
+        startEdit(freshTheme)
+      } else {
+        cancelForm()
       }
-      cancelForm()
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to create theme')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSaveTheme() {
+    if (!editing) return
+    setThemeError(null)
+    setLoading(true)
+    try {
+      const payload = buildPublicSiteConfigPayload(themeDraft)
+      await adminApi.adminUpdateTheme(token, editing.slug, { name: formName, isActive: formActive, settings: payload })
+      setThemeSavedAt(new Date().toLocaleTimeString())
+      setThemeDraftBaseline(JSON.stringify(payload))
       await refresh()
     } catch (e: any) {
-      setError(e?.message ?? 'Failed to save theme')
+      setThemeError(e?.message ?? 'Failed to save theme')
     } finally {
       setLoading(false)
     }
@@ -107,28 +148,81 @@ export function AdminThemesTab({ t, token, defaultThemeSlug, onDefaultThemeChang
     }
   }
 
-  const isFormOpen = creating || editing !== null
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">{t.themes ?? 'Themes'}</h3>
-          <p className="text-sm text-muted-foreground">{t.themesDesc ?? 'Manage themed landing pages and config flows.'}</p>
+  if (editing) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={cancelForm} className="gap-1">
+            <ArrowLeft className="h-4 w-4" />
+            {t.allThemes ?? 'All Themes'}
+          </Button>
         </div>
-        {!isFormOpen && (
-          <Button onClick={startCreate} size="sm">{t.createTheme ?? 'Create Theme'}</Button>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">{formName || editing.name}</h3>
+            <p className="text-sm text-muted-foreground">/{editing.slug}</p>
+          </div>
+        </div>
+
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">{t.themeName ?? 'Name'}</label>
+                <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="e.g. Mother's Day" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">{t.themeSlug ?? 'Slug (URL path)'}</label>
+                <Input value={formSlug} disabled className="bg-muted/30" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <input type="checkbox" checked={formActive} onChange={(e) => setFormActive(e.target.checked)} id="theme-active-edit" />
+              <label htmlFor="theme-active-edit" className="text-sm">{t.themeActive ?? 'Active'}</label>
+            </div>
+          </CardContent>
+        </Card>
+
+        {error && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">{error}</div>
         )}
+
+        <div className="h-[calc(100vh-380px)]">
+          <LandingContentConfigSection
+            draft={themeDraft}
+            setDraft={setThemeDraft}
+            onSave={handleSaveTheme}
+            isDirty={themeDraftIsDirty || formName !== editing.name || formActive !== editing.isActive}
+            savedAt={themeSavedAt}
+            error={themeError}
+            setError={setThemeError}
+            loading={loading}
+            token={token}
+            t={t}
+          />
+        </div>
       </div>
+    )
+  }
 
-      {error && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">{error}</div>
-      )}
+  if (creating) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={cancelForm} className="gap-1">
+            <ArrowLeft className="h-4 w-4" />
+            {t.allThemes ?? 'All Themes'}
+          </Button>
+        </div>
 
-      {isFormOpen && (
+        {error && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">{error}</div>
+        )}
+
         <Card>
           <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-base">{creating ? (t.createTheme ?? 'Create Theme') : (t.editTheme ?? 'Edit Theme')}</CardTitle>
+            <CardTitle className="text-base">{t.createTheme ?? 'Create Theme'}</CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-0 space-y-3">
             <div className="space-y-1">
@@ -141,78 +235,83 @@ export function AdminThemesTab({ t, token, defaultThemeSlug, onDefaultThemeChang
                 value={formSlug} 
                 onChange={(e) => setFormSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} 
                 placeholder="e.g. motherday" 
-                disabled={!!editing}
               />
               {formSlug && <p className="text-xs text-muted-foreground">URL: /{formSlug}</p>}
             </div>
             <div className="flex items-center gap-2">
-              <input type="checkbox" checked={formActive} onChange={(e) => setFormActive(e.target.checked)} id="theme-active" />
-              <label htmlFor="theme-active" className="text-sm">{t.themeActive ?? 'Active'}</label>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">{t.themeSettings ?? 'Settings (JSON)'}</label>
-              <textarea
-                value={formSettings}
-                onChange={(e) => setFormSettings(e.target.value)}
-                className="w-full h-48 rounded-md border bg-background px-3 py-2 text-sm font-mono shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500/40"
-              />
+              <input type="checkbox" checked={formActive} onChange={(e) => setFormActive(e.target.checked)} id="theme-active-create" />
+              <label htmlFor="theme-active-create" className="text-sm">{t.themeActive ?? 'Active'}</label>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleSave} disabled={loading || !formName || !formSlug} size="sm">
-                {loading ? (t.saving ?? 'Saving...') : (t.save ?? 'Save')}
+              <Button onClick={handleCreateSubmit} disabled={loading || !formName || !formSlug} size="sm">
+                {loading ? (t.saving ?? 'Saving...') : (t.createTheme ?? 'Create Theme')}
               </Button>
               <Button variant="outline" onClick={cancelForm} size="sm">{t.cancel ?? 'Cancel'}</Button>
             </div>
           </CardContent>
         </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">{t.themes ?? 'Themes'}</h3>
+          <p className="text-sm text-muted-foreground">{t.themesDesc ?? 'Manage themed landing pages and config flows.'}</p>
+        </div>
+        <Button onClick={startCreate} size="sm">{t.createTheme ?? 'Create Theme'}</Button>
+      </div>
+
+      {error && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">{error}</div>
       )}
 
-      {!isFormOpen && (
-        <div className="space-y-2">
-          {themes.length === 0 && !loading && (
-            <div className="rounded-lg border bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
-              {t.noThemes ?? 'No themes created yet.'}
-            </div>
-          )}
-          {themes.map((theme) => (
-            <div key={theme.id} className="flex items-center justify-between rounded-lg border bg-background p-3 hover:shadow-sm transition-shadow">
-              <div className="flex items-center gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{theme.name}</span>
-                    <span className="text-xs text-muted-foreground">/{theme.slug}</span>
-                    {theme.slug === defaultThemeSlug && (
-                      <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700">
-                        {t.defaultTheme ?? 'Default'}
-                      </span>
-                    )}
-                    {!theme.isActive && (
-                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
-                        {t.inactive ?? 'Inactive'}
-                      </span>
-                    )}
-                  </div>
+      <div className="space-y-2">
+        {themes.length === 0 && !loading && (
+          <div className="rounded-lg border bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
+            {t.noThemes ?? 'No themes created yet.'}
+          </div>
+        )}
+        {themes.map((theme) => (
+          <div key={theme.id} className="flex items-center justify-between rounded-lg border bg-background p-3 hover:shadow-sm transition-shadow">
+            <div className="flex items-center gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{theme.name}</span>
+                  <span className="text-xs text-muted-foreground">/{theme.slug}</span>
+                  {theme.slug === defaultThemeSlug && (
+                    <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700">
+                      {t.defaultTheme ?? 'Default'}
+                    </span>
+                  )}
+                  {!theme.isActive && (
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
+                      {t.inactive ?? 'Inactive'}
+                    </span>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-1">
-                {theme.slug !== defaultThemeSlug && (
-                  <Button variant="ghost" size="sm" onClick={() => handleSetDefault(theme.slug)} className="text-xs">
-                    {t.setAsDefault ?? 'Set Default'}
-                  </Button>
-                )}
-                <Button variant="ghost" size="sm" onClick={() => startEdit(theme)} className="text-xs">
-                  {t.edit ?? 'Edit'}
-                </Button>
-                {theme.slug !== defaultThemeSlug && (
-                  <Button variant="ghost" size="sm" onClick={() => handleDelete(theme.slug)} className="text-xs text-destructive hover:text-destructive">
-                    {t.delete ?? 'Delete'}
-                  </Button>
-                )}
-              </div>
             </div>
-          ))}
-        </div>
-      )}
+            <div className="flex items-center gap-1">
+              {theme.slug !== defaultThemeSlug && (
+                <Button variant="ghost" size="sm" onClick={() => handleSetDefault(theme.slug)} className="text-xs">
+                  {t.setAsDefault ?? 'Set Default'}
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={() => startEdit(theme)} className="text-xs">
+                {t.edit ?? 'Edit'}
+              </Button>
+              {theme.slug !== defaultThemeSlug && (
+                <Button variant="ghost" size="sm" onClick={() => handleDelete(theme.slug)} className="text-xs text-destructive hover:text-destructive">
+                  {t.delete ?? 'Delete'}
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

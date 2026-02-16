@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Settings as SettingsIcon, MessageSquare, Users, ShoppingBag, BarChart3, Palette } from 'lucide-react'
 
 import { AdminApp } from '@/features/admin/AdminApp'
@@ -9,10 +9,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 
-import type { CustomerDetail, CustomerListItem, DraftDetail, OrderDetail, OrderListItem, PromptTemplate, PublicSiteDraft, Settings } from '@/features/admin/types'
-import { buildDraftFromSettings, buildPublicSiteConfigPayload } from '@/features/admin/publicSiteDraft'
+import type { CustomerDetail, CustomerListItem, DraftDetail, OrderDetail, OrderListItem, PromptTemplate, Settings } from '@/features/admin/types'
 import { AdminLayout } from '@/features/admin/components/AdminLayout'
-import { PublicSiteConfigSection } from '@/features/admin/tabs/settings/PublicSiteConfigSection'
+import { SystemSettingsSection } from '@/features/admin/tabs/settings/SystemSettingsSection'
 import { AdminPromptsTab } from '@/features/admin/tabs/prompts/AdminPromptsTab'
 import { AdminCustomersTab } from '@/features/admin/tabs/customers/AdminCustomersTab'
 import { AdminOrdersTab } from '@/features/admin/tabs/orders/AdminOrdersTab'
@@ -289,13 +288,6 @@ function AdminRouteLegacy() {
   const t = translations[lang] as any
 
   const [settings, setSettings] = useState<Settings | null>(null)
-  const [publicSiteDraft, setPublicSiteDraft] = useState<PublicSiteDraft>(() => buildDraftFromSettings(null))
-  const [publicCfgError, setPublicCfgError] = useState<string | null>(null)
-  const [publicCfgSavedAt, setPublicCfgSavedAt] = useState<string | null>(null)
-  const [publicCfgBaseline, setPublicCfgBaseline] = useState<string>(() =>
-    JSON.stringify(buildPublicSiteConfigPayload(buildDraftFromSettings(null))),
-  )
-  const lastLoadedSettingsIdRef = useRef<string | null>(null)
   const [templates, setTemplates] = useState<PromptTemplate[]>([])
   const [customers, setCustomers] = useState<CustomerListItem[]>([])
   const [orders, setOrders] = useState<OrderListItem[]>([])
@@ -304,12 +296,6 @@ function AdminRouteLegacy() {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const publicCfgCurrent = useMemo(
-    () => JSON.stringify(buildPublicSiteConfigPayload(publicSiteDraft)),
-    [publicSiteDraft],
-  )
-  const publicCfgIsDirty = publicCfgCurrent !== publicCfgBaseline
 
   async function login() {
     setLoadingAuth(true)
@@ -371,17 +357,6 @@ function AdminRouteLegacy() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
-  useEffect(() => {
-    if (!settings) return
-    if (lastLoadedSettingsIdRef.current === settings.id) return
-    lastLoadedSettingsIdRef.current = settings.id
-    const draft = buildDraftFromSettings(settings)
-    setPublicSiteDraft(draft)
-    setPublicCfgError(null)
-    setPublicCfgSavedAt(null)
-    setPublicCfgBaseline(JSON.stringify(buildPublicSiteConfigPayload(draft)))
-  }, [settings])
-
   async function saveSettings(
     partial: Partial<Settings> & { openaiApiKey?: string; kaiAiApiKey?: string; ycloudApiKey?: string },
   ) {
@@ -397,17 +372,6 @@ function AdminRouteLegacy() {
       return null
     } finally {
       setLoading(false)
-    }
-  }
-
-  async function savePublicSiteConfig() {
-    if (!token) return
-    setPublicCfgError(null)
-    const publicSiteConfig = buildPublicSiteConfigPayload(publicSiteDraft)
-    const updated = await saveSettings({ publicSiteConfig: publicSiteConfig as any })
-    if (updated) {
-      setPublicCfgSavedAt(new Date().toLocaleTimeString())
-      setPublicCfgBaseline(JSON.stringify(publicSiteConfig))
     }
   }
 
@@ -590,30 +554,20 @@ function AdminRouteLegacy() {
     >
       {tab === 'settings' && (
         <AdminSettingsTab>
-          <div className="grid gap-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 items-start h-[calc(100vh-140px)]">
-              {/* Card: Public Site Config (Landing + Toast) */}
-              {settings ? (
-                <PublicSiteConfigSection
-                  draft={publicSiteDraft}
-                  setDraft={setPublicSiteDraft}
-                  onSave={savePublicSiteConfig}
-                  isDirty={publicCfgIsDirty}
-                  savedAt={publicCfgSavedAt}
-                  error={publicCfgError}
-                  setError={setPublicCfgError}
-                  loading={loading}
-                  token={token}
-                  t={t}
-                  // Extra Props for integrated sections
-                  settings={settings}
-                  setSettings={setSettings}
-                  saveSettings={saveSettings}
-                />
-              ) : (
-                <Card className="h-full shadow-sm md:col-span-2 lg:col-span-3 flex items-center justify-center p-6">
-                   <p className="text-muted-foreground">{loading ? t.loadingShort : t.noSettings}</p>
-                </Card>
-              )}
+          <div className="h-[calc(100vh-140px)]">
+            {settings ? (
+              <SystemSettingsSection
+                settings={settings}
+                setSettings={setSettings}
+                saveSettings={saveSettings}
+                loading={loading}
+                t={t}
+              />
+            ) : (
+              <Card className="h-full shadow-sm flex items-center justify-center p-6">
+                <p className="text-muted-foreground">{loading ? t.loadingShort : t.noSettings}</p>
+              </Card>
+            )}
           </div>
         </AdminSettingsTab>
       )}

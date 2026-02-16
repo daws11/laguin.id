@@ -1,0 +1,106 @@
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import type { Settings } from '@/features/admin/types'
+import { Zap, Smartphone, Key } from 'lucide-react'
+import { CreationDeliveryCard } from './CreationDeliveryCard'
+import { WhatsappGatewayCard } from './WhatsappGatewayCard'
+import { ApiKeysCard } from './ApiKeysCard'
+
+interface SystemSettingsSectionProps {
+  settings: Settings
+  setSettings: React.Dispatch<React.SetStateAction<Settings | null>>
+  saveSettings: (partial: Partial<Settings> & { openaiApiKey?: string; kaiAiApiKey?: string; ycloudApiKey?: string }) => Promise<Settings | null>
+  loading: boolean
+  t: any
+}
+
+export function SystemSettingsSection({
+  settings,
+  setSettings,
+  saveSettings,
+  loading,
+  t,
+}: SystemSettingsSectionProps) {
+  const [activeTab, setActiveTab] = useState('creation-delivery')
+
+  const menuItems = [
+    { id: 'creation-delivery', label: t.creationDelivery ?? 'Creation & Delivery', icon: Zap, group: 'System' },
+    { id: 'whatsapp-gateway', label: t.whatsappGateway ?? 'WhatsApp Gateway', icon: Smartphone, group: 'System' },
+    { id: 'api-keys', label: t.apiKeys ?? 'API Keys', icon: Key, group: 'System' },
+  ]
+
+  const SidebarItem = ({ item }: { item: typeof menuItems[0] }) => (
+    <Button
+      variant={activeTab === item.id ? 'secondary' : 'ghost'}
+      className={cn(
+        "w-full justify-start gap-2 h-9 px-2 text-sm",
+        activeTab === item.id ? "font-medium" : "text-muted-foreground"
+      )}
+      onClick={() => setActiveTab(item.id)}
+    >
+      <item.icon className="h-4 w-4 shrink-0" />
+      {item.label}
+    </Button>
+  )
+
+  const groups = Array.from(new Set(menuItems.map(item => item.group)))
+
+  return (
+    <Card className="h-full shadow-sm flex flex-col overflow-hidden">
+      <CardHeader className="p-4 pb-2 bg-muted/5 shrink-0 border-b">
+        <CardTitle className="text-sm font-semibold">{t.settings}</CardTitle>
+      </CardHeader>
+
+      <CardContent className="p-0 flex-1 min-h-0 flex flex-col md:flex-row">
+        <aside className="w-full md:w-[220px] bg-muted/10 border-b md:border-b-0 md:border-r flex flex-col gap-1 p-2 overflow-y-auto">
+          {groups.map(group => (
+            <div key={group} className="mb-2">
+              <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
+                {group}
+              </div>
+              {menuItems.filter(m => m.group === group).map(item => <SidebarItem key={item.id} item={item} />)}
+            </div>
+          ))}
+        </aside>
+
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
+          {activeTab === 'creation-delivery' && (
+            <div className="animate-in fade-in duration-300 h-full">
+              <CreationDeliveryCard
+                settings={settings}
+                setSettings={setSettings}
+                saveSettings={saveSettings}
+                loading={loading}
+                t={t}
+              />
+            </div>
+          )}
+
+          {activeTab === 'whatsapp-gateway' && (
+            <div className="animate-in fade-in duration-300 h-full">
+              <WhatsappGatewayCard
+                settings={settings}
+                setSettings={setSettings}
+                saveSettings={saveSettings}
+                loading={loading}
+                t={t}
+              />
+            </div>
+          )}
+
+          {activeTab === 'api-keys' && (
+            <div className="animate-in fade-in duration-300 h-full">
+              <ApiKeysCard
+                settings={settings}
+                saveSettings={saveSettings}
+                t={t}
+              />
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
