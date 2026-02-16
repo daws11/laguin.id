@@ -70,7 +70,7 @@ type PublicSettingsResponse = {
 const defaultPublicSiteConfig: PublicSiteConfig = {
   landing: {
     heroHeadline: { line1: 'Valentine kali ini,', line2: 'buat dia menangis.' },
-    heroSubtext: 'Lagu personal dengan <strong>namanya</strong> di lirik. Dikirim dalam 24 jam.',
+    heroSubtext: '',
     footerCta: {
       headline: 'Jangan biarkan Valentine berlalu',
       subtitle: 'Beri dia hadiah yang tak akan pernah dia lupakan. Gabung <strong>2,847 wanita</strong> yang membuat pasangannya menangis terharu.',
@@ -619,7 +619,7 @@ export function LandingRoute() {
   const heroSubtext =
     typeof landing.heroSubtext === 'string' && landing.heroSubtext.trim()
       ? landing.heroSubtext
-      : defaultPublicSiteConfig.landing!.heroSubtext!
+      : `Lagu personal dengan <strong>namanya</strong> di lirik. Dikirim ${deliveryEta.sentenceLower}.`
   const footerCtaHeadline =
     typeof landing.footerCta?.headline === 'string' && landing.footerCta.headline.trim()
       ? landing.footerCta.headline
@@ -893,7 +893,7 @@ export function LandingRoute() {
               
               {/* Footer Trust Info - Compact */}
               <div className="flex items-center justify-center md:justify-start gap-2 text-[9px] font-bold text-gray-400 uppercase tracking-tighter sm:tracking-wider sm:text-xs">
-                <span className="flex items-center gap-0.5"><Zap className="h-2.5 w-2.5 text-amber-500" /> 24h Delivery</span>
+                <span className="flex items-center gap-0.5"><Zap className="h-2.5 w-2.5 text-amber-500" /> {deliveryEta.short} Delivery</span>
                 <span>•</span>
                 <span className="flex items-center gap-0.5"><ShieldCheck className="h-2.5 w-2.5 text-green-500" /> Secure</span>
                 <span>•</span>
@@ -982,7 +982,7 @@ export function LandingRoute() {
           <div className="flex flex-wrap justify-center gap-8 md:gap-24 text-center">
              {[
                { val: '99%', label: 'Menangis' },
-               { val: '24h', label: 'Pengiriman' },
+               { val: deliveryEta.short, label: 'Pengiriman' },
                { val: '2,847', label: 'Lagu Terkirim' },
              ].map((stat) => (
                <div key={stat.label}>
