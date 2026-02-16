@@ -143,7 +143,7 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
         inputPayload: normalizedInput,
         status: 'created',
         deliveryStatus: 'delivery_pending',
-        paymentStatus: useXenditPayment ? 'pending' : 'free',
+        paymentStatus: paymentAmount === 0 ? 'free' : 'pending',
         themeSlug,
       },
     })
