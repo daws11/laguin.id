@@ -832,7 +832,7 @@ export function ConfigRoute() {
           <img src={logoUrl} alt="Laguin - Musikmu Ceritamu" className="h-8 sm:h-10 w-auto object-contain" />
           <div className="text-right flex items-center gap-1.5">
              <span className="text-[10px] sm:text-xs text-gray-400 line-through">Rp 497k</span>
-             <span className="text-sm sm:text-lg font-bold text-[var(--theme-accent)]">GRATIS</span>
+             <span className="text-sm sm:text-lg font-bold text-[var(--theme-accent)]">{fmtCurrency(paymentAmount)}</span>
              <Badge variant="destructive" className="ml-1 text-[9px] sm:text-[10px] px-1.5 py-0 h-4 sm:h-5 min-w-[36px] justify-center">11 sisa</Badge>
           </div>
         </div>
@@ -1136,7 +1136,7 @@ export function ConfigRoute() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-[var(--theme-accent)]">GRATIS</span>
+                        <span className="text-xs font-bold text-[var(--theme-accent)]">{fmtCurrency(paymentAmount)}</span>
                         <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOrderSummaryOpen ? 'rotate-180' : ''}`} />
                       </div>
                     </button>
@@ -1403,7 +1403,7 @@ export function ConfigRoute() {
                     step === 1 ? 'Pilih vibenya ->' : 
                     step === 2 ? 'Tambahkan ceritamu ->' : 
                     step === 3 ? 'Hampir selesai! ->' : 
-                    loading ? 'Memproses...' : (manualConfirmationEnabled ? 'Konfirmasi via WhatsApp' : emailOtpEnabled ? (emailVerified ? 'Ke checkout — GRATIS' : 'Verifikasi email dulu') : 'Ke checkout — GRATIS')}
+                    loading ? 'Memproses...' : (manualConfirmationEnabled ? 'Konfirmasi via WhatsApp' : emailOtpEnabled ? (emailVerified ? `Ke checkout — ${fmtCurrency(paymentAmount)}` : 'Verifikasi email dulu') : `Ke checkout — ${fmtCurrency(paymentAmount)}`)}
                  </Button>
                </div>
              </div>

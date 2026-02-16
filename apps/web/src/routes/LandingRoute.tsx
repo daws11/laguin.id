@@ -739,8 +739,8 @@ export function LandingRoute() {
                 💝 Spesial Valentine
               </div>
               <div className="leading-tight flex items-center gap-1.5">
-                <span className="text-[10px] text-gray-400 line-through">Rp 497rb</span>
-                <span className="text-sm sm:text-lg font-bold text-[var(--theme-accent)]">GRATIS</span>
+                <span className="text-[10px] text-gray-400 line-through">{fmtCurrency(originalAmount)}</span>
+                <span className="text-sm sm:text-lg font-bold text-[var(--theme-accent)]">{fmtCurrency(paymentAmount)}</span>
                 <Badge variant="destructive" className="h-4 px-1 py-0 text-[9px]">
                   11 kuota!
                 </Badge>
@@ -869,8 +869,8 @@ export function LandingRoute() {
             <div className="space-y-2">
               <Button asChild size="lg" className="w-full sm:w-auto h-12 sm:h-14 px-8 rounded-full bg-[var(--theme-accent)] text-base sm:text-lg font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90 hover:scale-105 transition-all duration-300">
                 <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center justify-center gap-2">
-                  Buat Lagu — GRATIS
-                  <span className="text-[var(--theme-accent-soft)] line-through font-normal text-sm sm:text-base ml-1">Rp 497rb</span>
+                  Buat Lagu — {fmtCurrency(paymentAmount)}
+                  <span className="text-[var(--theme-accent-soft)] line-through font-normal text-sm sm:text-base ml-1">{fmtCurrency(originalAmount)}</span>
                 </Link>
               </Button>
               
@@ -954,7 +954,7 @@ export function LandingRoute() {
                 Bayangkan mendengar <span className="text-[var(--theme-accent)] font-medium italic">namanya</span> di lagu seperti ini...
               </p>
               <Button asChild size="lg" className="h-12 px-8 rounded-xl bg-[var(--theme-accent)] font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90">
-                <Link to={themeSlug ? `/${themeSlug}/config` : '/config'}>Buat Lagunya — GRATIS</Link>
+                <Link to={themeSlug ? `/${themeSlug}/config` : '/config'}>Buat Lagunya — {fmtCurrency(paymentAmount)}</Link>
               </Button>
             </div>
           </div>
@@ -1021,7 +1021,7 @@ export function LandingRoute() {
                  </div>
                  <div className="space-y-1">
                    <h3 className="text-2xl font-bold text-gray-900">Lagu Personal Untuknya</h3>
-                   <div className="text-[var(--theme-accent)] font-bold text-3xl">GRATIS <span className="text-gray-300 line-through text-lg font-normal">Rp 497.000</span></div>
+                   <div className="text-[var(--theme-accent)] font-bold text-3xl">{fmtCurrency(paymentAmount)} <span className="text-gray-300 line-through text-lg font-normal">{fmtCurrency(originalAmount)}</span></div>
                  </div>
                  <ul className="text-left space-y-3 text-gray-600 bg-[var(--theme-accent-soft)] p-6 rounded-2xl w-full">
                    <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[var(--theme-accent)]" /> <strong>Namanya</strong> dalam lirik</li>
@@ -1127,7 +1127,7 @@ export function LandingRoute() {
 
           <div className="text-center pt-4">
             <Button asChild size="lg" className="h-14 px-10 rounded-full bg-[var(--theme-accent)] text-lg font-bold shadow-xl shadow-[var(--theme-accent-soft)] hover:opacity-90">
-               <Link to={themeSlug ? `/${themeSlug}/config` : '/config'}>Buat Lagunya — GRATIS</Link>
+               <Link to={themeSlug ? `/${themeSlug}/config` : '/config'}>Buat Lagunya — {fmtCurrency(paymentAmount)}</Link>
             </Button>
           </div>
         </section>
@@ -1179,7 +1179,7 @@ export function LandingRoute() {
            <div className="pt-4">
              <Button asChild size="lg" className="h-auto min-h-[4rem] px-6 py-4 sm:px-12 rounded-full bg-[var(--theme-accent)] text-lg sm:text-xl font-bold shadow-2xl shadow-[var(--theme-accent-soft)] hover:opacity-90 hover:scale-105 transition-all">
                <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 leading-none">
-                 <span>Buat Lagunya — GRATIS</span>
+                 <span>Buat Lagunya — {fmtCurrency(paymentAmount)}</span>
                  <span className="text-xs sm:text-sm font-normal line-through opacity-80 text-[var(--theme-accent-soft)]">Rp 497.000</span>
                </Link>
              </Button>
@@ -1224,7 +1224,7 @@ export function LandingRoute() {
            </div>
            <Button asChild size="lg" className="w-full h-auto min-h-[3.5rem] py-2 rounded-xl bg-[var(--theme-accent)] text-lg font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90 active:scale-95 transition-all">
             <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center justify-center gap-2 flex-wrap text-center leading-tight">
-              <span>Buat Lagunya — GRATIS</span>
+              <span>Buat Lagunya — {fmtCurrency(paymentAmount)}</span>
               <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/30 text-xs whitespace-nowrap">
                 (11 sisa)
               </Badge>
