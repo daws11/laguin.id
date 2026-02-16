@@ -73,7 +73,7 @@ export function CheckoutRoute() {
   const hasTrackedInitiateCheckout = useRef(false)
   const hasTrackedPurchase = useRef(false)
 
-  const [themeColors, setThemeColors] = useState<{ accentColor?: string; bgColor1?: string; bgColor2?: string } | null>(null)
+  const [themeColors, setThemeColors] = useState<{ accentColor?: string; bgColor1?: string; bgColor2?: string } | null | undefined>(undefined)
 
   useEffect(() => {
     if (!order) return
@@ -83,10 +83,14 @@ export function CheckoutRoute() {
       .then((res) => {
         if (cancelled) return
         setManualConfirmationEnabled(Boolean(res?.manualConfirmationEnabled))
-        if ((res as any)?.colors) setThemeColors((res as any).colors)
+        const c = (res as any)?.publicSiteConfig?.colors ?? (res as any)?.colors
+        setThemeColors(c ?? null)
       })
       .catch(() => {
-        if (!cancelled) setManualConfirmationEnabled(false)
+        if (!cancelled) {
+          setManualConfirmationEnabled(false)
+          setThemeColors(null)
+        }
       })
     return () => {
       cancelled = true

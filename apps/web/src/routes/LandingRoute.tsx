@@ -409,7 +409,7 @@ type FaqItem = { q: string; a: string }
 
 export function LandingRoute() {
   const themeSlug = useThemeSlug()
-  const [publicSiteConfig, setPublicSiteConfig] = useState<PublicSiteConfig | null>(null)
+  const [publicSiteConfig, setPublicSiteConfig] = useState<PublicSiteConfig | null | undefined>(undefined)
   const [heroOpen, setHeroOpen] = useState(false)
   const [selectedTrackIndex, setSelectedTrackIndex] = useState<number>(0)
   const [autoPlayOnSelect, setAutoPlayOnSelect] = useState(false)
@@ -552,6 +552,10 @@ export function LandingRoute() {
     if (!s) return ''
     if (/^https?:\/\//i.test(s)) return s
     return apiBase + s
+  }
+
+  if (publicSiteConfig === undefined) {
+    return <div className="min-h-screen" />
   }
 
   const site = (publicSiteConfig ?? defaultPublicSiteConfig) as PublicSiteConfig

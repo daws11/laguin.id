@@ -147,6 +147,7 @@ export function ConfigRoute() {
       })
       .catch(() => {
         if (!cancelled) {
+          setPublicSiteConfig(null)
           setEmailOtpEnabled(true)
           setSettingsLoaded(true)
         }
@@ -159,7 +160,7 @@ export function ConfigRoute() {
   const [agreementEnabled, setAgreementEnabled] = useState(false)
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [heroVideoUrl, setHeroVideoUrl] = useState<string | null>(null)
-  const [publicSiteConfig, setPublicSiteConfig] = useState<unknown>(null)
+  const [publicSiteConfig, setPublicSiteConfig] = useState<unknown>(undefined)
   const [emailVerificationId, setEmailVerificationId] = useState<string | null>(null)
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', ''])
   const otpRefs = useRef<Array<HTMLInputElement | null>>([])
@@ -775,10 +776,10 @@ export function ConfigRoute() {
     '--theme-bg': themeColors?.bgColor2 || '#FFFFFF',
   } as React.CSSProperties
 
-  if (!isHydrated) {
+  if (!isHydrated || publicSiteConfig === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--theme-accent-soft)]">
-        <Loader2 className="h-8 w-8 animate-spin text-[var(--theme-accent)]" />
+      <div className="min-h-screen flex items-center justify-center" style={publicSiteConfig !== undefined ? themeStyle : undefined}>
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
       </div>
     )
   }
