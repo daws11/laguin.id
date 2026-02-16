@@ -79,3 +79,10 @@ export async function adminUpload(token: string, kind: 'image' | 'video' | 'audi
   return apiUpload<{ ok: true; path: string }>(`/api/admin/uploads?kind=${kind}`, formData, { token })
 }
 
+export type FunnelStep = { key: string; label: string; count: number }
+export type FunnelData = { dateRange: { from: string; to: string }; steps: FunnelStep[] }
+
+export async function adminGetFunnel(token: string, from: string, to: string) {
+  return apiGet<FunnelData>(`/api/admin/funnel?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, { token })
+}
+

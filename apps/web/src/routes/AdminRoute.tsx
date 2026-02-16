@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Settings as SettingsIcon, MessageSquare, Users, ShoppingBag } from 'lucide-react'
+import { Settings as SettingsIcon, MessageSquare, Users, ShoppingBag, BarChart3 } from 'lucide-react'
 
 import { AdminApp } from '@/features/admin/AdminApp'
 import * as adminApi from '@/features/admin/api'
@@ -17,6 +17,7 @@ import { AdminPromptsTab } from '@/features/admin/tabs/prompts/AdminPromptsTab'
 import { AdminCustomersTab } from '@/features/admin/tabs/customers/AdminCustomersTab'
 import { AdminOrdersTab } from '@/features/admin/tabs/orders/AdminOrdersTab'
 import { AdminSettingsTab } from '@/features/admin/tabs/settings/AdminSettingsTab'
+import { AdminFunnelTab } from '@/features/admin/tabs/funnel/AdminFunnelTab'
 
 const translations = importedTranslations
 /*
@@ -279,7 +280,7 @@ function AdminRouteLegacy() {
   const [authError, setAuthError] = useState<string | null>(null)
   const [loadingAuth, setLoadingAuth] = useState(false)
 
-    const [tab, setTab] = useState<'settings' | 'prompts' | 'customers' | 'orders'>('orders')
+    const [tab, setTab] = useState<'settings' | 'prompts' | 'customers' | 'orders' | 'funnel'>('orders')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [lang, setLang] = useState<AdminLang>('en')
@@ -564,6 +565,7 @@ function AdminRouteLegacy() {
       error={error}
       navItems={[
         { value: 'orders', icon: ShoppingBag, label: t.orders },
+        { value: 'funnel', icon: BarChart3, label: t.funnel },
         { value: 'customers', icon: Users, label: t.customers },
         { value: 'settings', icon: SettingsIcon, label: t.settings },
         { value: 'prompts', icon: MessageSquare, label: t.prompts },
@@ -658,6 +660,10 @@ function AdminRouteLegacy() {
             />
           </div>
         </AdminSettingsTab>
+      )}
+
+      {tab === 'funnel' && token && (
+        <AdminFunnelTab t={t} token={token} />
       )}
     </AdminLayout>
   )

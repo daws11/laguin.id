@@ -163,3 +163,13 @@ model OrderDraft {
   @@index([whatsappNumber])
 }
 
+model PageView {
+  id        String   @id @default(cuid())
+  path      String
+  sessionId String
+  createdAt DateTime @default(now())
+
+  @@index([path, createdAt])
+  @@index([createdAt])
+}
+

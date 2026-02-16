@@ -13,7 +13,7 @@ import {
   Heart,
 } from 'lucide-react'
 
-import { apiGet } from '@/lib/http'
+import { apiGet, apiPost } from '@/lib/http'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -401,6 +401,17 @@ export function LandingRoute() {
   const heroRef = useRef<HTMLElement>(null)
   const [instantEnabled, setInstantEnabled] = useState<boolean | null>(null)
   const [deliveryDelayHours, setDeliveryDelayHours] = useState<number | null>(null)
+
+  useEffect(() => {
+    try {
+      let sid = sessionStorage.getItem('_sid')
+      if (!sid) {
+        sid = crypto.randomUUID()
+        sessionStorage.setItem('_sid', sid)
+      }
+      apiPost('/api/public/track', { path: '/', sessionId: sid }).catch(() => {})
+    } catch {}
+  }, [])
 
   const deliveryEta = useMemo(() => {
     if (instantEnabled) {
