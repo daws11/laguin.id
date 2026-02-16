@@ -7,6 +7,7 @@ export const defaultThemeColors = {
 }
 
 export const defaultPublicSiteDraft: PublicSiteDraft = {
+  logoUrl: '/logo.png',
   colors: { ...defaultThemeColors },
   landing: {
     heroHeadline: {
@@ -148,6 +149,7 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
     heroMedia?.videoUrl && typeof heroMedia.videoUrl === 'string' && heroMedia.videoUrl.trim() ? 'video' : 'image'
 
   return {
+    logoUrl: asString(cfg?.logoUrl, defaultPublicSiteDraft.logoUrl),
     colors: {
       accentColor: asString(colors?.accentColor, defaultThemeColors.accentColor),
       bgColor1: asString(colors?.bgColor1, defaultThemeColors.bgColor1),
@@ -286,6 +288,8 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
     bgColor2: draft.colors.bgColor2.trim() || defaultThemeColors.bgColor2,
   }
 
-  return { colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery }
+  const logoUrl = draft.logoUrl.trim() || defaultPublicSiteDraft.logoUrl
+
+  return { logoUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery }
 }
 

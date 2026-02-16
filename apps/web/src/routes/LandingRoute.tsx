@@ -567,6 +567,10 @@ export function LandingRoute() {
     '--theme-bg': themeColors?.bgColor2 || '#FFFFFF',
   } as React.CSSProperties
 
+  const logoUrl = typeof (publicSiteConfig as any)?.logoUrl === 'string' && (publicSiteConfig as any).logoUrl.trim()
+    ? resolveAsset((publicSiteConfig as any).logoUrl)
+    : '/logo.png'
+
   const landing = site.landing ?? defaultPublicSiteConfig.landing!
   const heroMedia = landing.heroMedia ?? defaultPublicSiteConfig.landing!.heroMedia!
   const heroOverlay = landing.heroOverlay ?? defaultPublicSiteConfig.landing!.heroOverlay!
@@ -714,7 +718,7 @@ export function LandingRoute() {
         <div className="border-b border-[var(--theme-accent-soft)] bg-white/95 px-2 sm:px-4 py-2 backdrop-blur-sm">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-3">
             <Link to={themeSlug ? `/${themeSlug}` : '/'} className="flex items-center gap-2">
-              <img src="/logo.png" alt="Laguin.id - Lagumu, Ceritamu" className="h-8 w-auto object-contain" />
+              <img src={logoUrl} alt="Laguin.id - Lagumu, Ceritamu" className="h-8 w-auto object-contain" />
             </Link>
             <div className="text-right flex flex-col items-end gap-0.5 sm:flex-row sm:items-center sm:gap-3">
               <div className="hidden md:block text-[10px] font-medium text-[var(--theme-accent)] bg-[var(--theme-accent-soft)] px-2 py-0.5 rounded-full">
@@ -1178,7 +1182,7 @@ export function LandingRoute() {
       <footer className="border-t border-gray-100 bg-white py-12 text-center text-sm text-gray-400">
         <div className="mx-auto max-w-7xl px-4 flex flex-col items-center gap-4">
           <Link to={themeSlug ? `/${themeSlug}` : '/'} className="flex items-center gap-2">
-            <img src="/logo.png" alt="Laguin.id - Lagumu, Ceritamu" className="h-10 w-auto object-contain opacity-70" />
+            <img src={logoUrl} alt="Laguin.id - Lagumu, Ceritamu" className="h-10 w-auto object-contain opacity-70" />
           </Link>
           <p>Membuat pria menangis sejak 2024 💕</p>
           <div className="flex gap-6 pt-4">

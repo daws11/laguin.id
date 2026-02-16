@@ -44,6 +44,10 @@ A monorepo application for creating personalized songs for special occasions. Bu
 - Shared package must be built before other packages (`npm run build -w shared`)
 
 ## Recent Changes
+- 2026-02-16: Per-theme logo customization
+  - Added logoUrl to theme settings JSON (PublicSiteDraft type)
+  - New "Logo" tab in theme editor (Appearance group) with URL input, file upload, and preview
+  - LandingRoute and ConfigRoute use theme-specific logo with /logo.png fallback
 - 2026-02-16: Meta Pixel IDs editable in global settings
   - Added metaPixelId and metaPixelWishlistId columns to Settings model
   - New "Meta Pixel" tab in global Settings sidebar with save-on-demand UI

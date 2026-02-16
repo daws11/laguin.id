@@ -776,6 +776,17 @@ export function ConfigRoute() {
     '--theme-bg': themeColors?.bgColor2 || '#FFFFFF',
   } as React.CSSProperties
 
+  const apiBase = import.meta.env.VITE_API_BASE_URL ?? ''
+  const resolveAsset = (v: string) => {
+    const s = (v ?? '').trim()
+    if (!s) return ''
+    if (/^https?:\/\//i.test(s)) return s
+    return apiBase + s
+  }
+  const logoUrl = typeof (publicSiteConfig as any)?.logoUrl === 'string' && (publicSiteConfig as any).logoUrl.trim()
+    ? resolveAsset((publicSiteConfig as any).logoUrl)
+    : '/logo.png'
+
   if (!isHydrated || publicSiteConfig === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={publicSiteConfig !== undefined ? themeStyle : undefined}>
@@ -794,7 +805,7 @@ export function ConfigRoute() {
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-[var(--theme-accent-soft)] bg-white/95 backdrop-blur-sm shadow-sm">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-2">
-          <img src="/logo.png" alt="Laguin - Musikmu Ceritamu" className="h-8 sm:h-10 w-auto object-contain" />
+          <img src={logoUrl} alt="Laguin - Musikmu Ceritamu" className="h-8 sm:h-10 w-auto object-contain" />
           <div className="text-right flex items-center gap-1.5">
              <span className="text-[10px] sm:text-xs text-gray-400 line-through">Rp 497k</span>
              <span className="text-sm sm:text-lg font-bold text-[var(--theme-accent)]">GRATIS</span>

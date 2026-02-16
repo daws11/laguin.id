@@ -8,7 +8,7 @@ import { resolveApiUrl } from '@/lib/http'
 import * as adminApi from '@/features/admin/api'
 import { moveItem, parseToastItemsJson } from '@/features/admin/publicSiteDraft'
 import type { PublicSiteDraft } from '@/features/admin/types'
-import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap, Palette } from 'lucide-react'
+import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap, Palette, ImagePlus } from 'lucide-react'
 
 interface LandingContentConfigProps {
   draft: PublicSiteDraft
@@ -50,6 +50,7 @@ export function LandingContentConfigSection({
 
   const menuItems = [
     { id: 'colors', label: 'Colors', icon: Palette, group: 'Appearance' },
+    { id: 'logo', label: 'Logo', icon: ImagePlus, group: 'Appearance' },
     { id: 'hero-text', label: 'Hero Text', icon: Type, group: 'Landing Page' },
     { id: 'landing-media', label: 'Hero Media', icon: ImageIcon, group: 'Landing Page' },
     { id: 'landing-overlay', label: 'Hero Overlay', icon: Type, group: 'Landing Page' },
@@ -641,6 +642,48 @@ export function LandingContentConfigSection({
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'logo' && (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="pb-2 border-b">
+                        <h3 className="text-base font-semibold">Logo</h3>
+                        <p className="text-xs text-muted-foreground mt-1">Upload or set a custom logo for this theme. Appears in the header and footer.</p>
+                    </div>
+                    <div className="space-y-3">
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Logo URL</label>
+                            <Input
+                                className="text-sm"
+                                value={draft.logoUrl}
+                                onChange={(e) => setDraft(d => ({ ...d, logoUrl: e.target.value }))}
+                                placeholder="/logo.png"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Upload Logo</label>
+                            <Input
+                                type="file"
+                                accept="image/*"
+                                className="text-sm"
+                                onChange={(e) => handleUpload(e, 'image', (path) => setDraft(d => ({ ...d, logoUrl: path })))}
+                            />
+                        </div>
+                        {draft.logoUrl && (
+                            <div className="rounded-lg border p-4 bg-muted/20">
+                                <p className="text-xs font-medium mb-2">Preview</p>
+                                <div className="bg-white rounded p-3 inline-block">
+                                    <img
+                                        src={resolveApiUrl(draft.logoUrl)}
+                                        alt="Logo preview"
+                                        className="h-10 w-auto object-contain"
+                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

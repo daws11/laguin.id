@@ -48,6 +48,7 @@ export type ThemeColors = {
 }
 
 export type PublicSiteDraft = {
+  logoUrl: string
   colors: ThemeColors
   landing: {
     heroHeadline: {
