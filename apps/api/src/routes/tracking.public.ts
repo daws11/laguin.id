@@ -6,6 +6,7 @@ import { prisma } from '../lib/prisma'
 const TrackSchema = z.object({
   path: z.string().min(1).max(2048),
   sessionId: z.string().min(1).max(128),
+  themeSlug: z.string().max(50).optional().nullable(),
 })
 
 export const trackingRoutes: FastifyPluginAsync = async (app) => {
@@ -15,13 +16,14 @@ export const trackingRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(400).send({ error: 'invalid_body' })
     }
 
-    const { path, sessionId } = parsed.data
+    const { path, sessionId, themeSlug } = parsed.data
 
     const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000)
     const existing = await prisma.pageView.findFirst({
       where: {
         sessionId,
         path,
+        themeSlug: themeSlug ?? null,
         createdAt: { gte: thirtyMinAgo },
       },
       select: { id: true },
@@ -32,7 +34,7 @@ export const trackingRoutes: FastifyPluginAsync = async (app) => {
     }
 
     await prisma.pageView.create({
-      data: { path, sessionId },
+      data: { path, sessionId, themeSlug: themeSlug ?? null },
     })
 
     return { ok: true }

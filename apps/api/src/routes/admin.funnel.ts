@@ -6,6 +6,7 @@ import { prisma } from '../lib/prisma'
 const QuerySchema = z.object({
   from: z.string().optional(),
   to: z.string().optional(),
+  themeSlug: z.string().optional(),
 })
 
 export const adminFunnelRoutes: FastifyPluginAsync = async (app) => {
@@ -24,54 +25,40 @@ export const adminFunnelRoutes: FastifyPluginAsync = async (app) => {
     const fromStr = fromDate.toISOString().slice(0, 10)
     const toStr = toDate.toISOString().slice(0, 10)
 
+    const pageViewWhere: any = {
+      createdAt: { gte: fromDate, lte: toDate },
+    }
+    if (query.themeSlug) {
+      pageViewWhere.themeSlug = query.themeSlug
+    }
+
+    const draftWhere = (minStep: number): any => ({
+      step: { gte: minStep },
+      createdAt: { gte: fromDate, lte: toDate },
+      ...(query.themeSlug ? { themeSlug: query.themeSlug } : {}),
+    })
+
+    const orderWhere = (extra: any): any => ({
+      ...extra,
+      ...(query.themeSlug ? { themeSlug: query.themeSlug } : {}),
+    })
+
     const [homepageResult, step0Count, step1Count, step2Count, step3Count, step4Count, orderCreatedCount, orderConfirmedCount] = await Promise.all([
       prisma.pageView.findMany({
-        where: {
-          path: '/',
-          createdAt: { gte: fromDate, lte: toDate },
-        },
+        where: pageViewWhere,
         select: { sessionId: true },
         distinct: ['sessionId'],
       }),
-      prisma.orderDraft.count({
-        where: {
-          step: { gte: 0 },
-          createdAt: { gte: fromDate, lte: toDate },
-        },
-      }),
-      prisma.orderDraft.count({
-        where: {
-          step: { gte: 1 },
-          createdAt: { gte: fromDate, lte: toDate },
-        },
-      }),
-      prisma.orderDraft.count({
-        where: {
-          step: { gte: 2 },
-          createdAt: { gte: fromDate, lte: toDate },
-        },
-      }),
-      prisma.orderDraft.count({
-        where: {
-          step: { gte: 3 },
-          createdAt: { gte: fromDate, lte: toDate },
-        },
-      }),
-      prisma.orderDraft.count({
-        where: {
-          step: { gte: 4 },
-          createdAt: { gte: fromDate, lte: toDate },
-        },
+      prisma.orderDraft.count({ where: draftWhere(0) }),
+      prisma.orderDraft.count({ where: draftWhere(1) }),
+      prisma.orderDraft.count({ where: draftWhere(2) }),
+      prisma.orderDraft.count({ where: draftWhere(3) }),
+      prisma.orderDraft.count({ where: draftWhere(4) }),
+      prisma.order.count({
+        where: orderWhere({ createdAt: { gte: fromDate, lte: toDate } }),
       }),
       prisma.order.count({
-        where: {
-          createdAt: { gte: fromDate, lte: toDate },
-        },
-      }),
-      prisma.order.count({
-        where: {
-          confirmedAt: { gte: fromDate, lte: toDate },
-        },
+        where: orderWhere({ confirmedAt: { gte: fromDate, lte: toDate } }),
       }),
     ])
 

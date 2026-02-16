@@ -9,6 +9,7 @@ import { deliverCompletedOrder, sendSongEmailForOrder, sendWhatsAppReminderForOr
 const ListQuerySchema = z.object({
   status: z.enum(['created', 'processing', 'completed', 'failed']).optional(),
   deliveryStatus: z.enum(['delivery_pending', 'delivery_scheduled', 'delivered', 'delivery_failed']).optional(),
+  themeSlug: z.string().optional(),
 })
 
 const ParamsIdSchema = z.object({ id: z.string().min(1) })
@@ -22,6 +23,7 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
       where: {
         status: q.data.status,
         deliveryStatus: q.data.deliveryStatus,
+        themeSlug: q.data.themeSlug,
       },
       orderBy: { createdAt: 'desc' },
       include: { customer: true },
@@ -45,6 +47,7 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
       deliveredAt: o.deliveredAt,
       trackUrl: o.trackUrl,
       errorMessage: o.errorMessage,
+      themeSlug: o.themeSlug ?? null,
     }))
   })
 

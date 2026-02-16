@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Settings as SettingsIcon, MessageSquare, Users, ShoppingBag, BarChart3 } from 'lucide-react'
+import { Settings as SettingsIcon, MessageSquare, Users, ShoppingBag, BarChart3, Palette } from 'lucide-react'
 
 import { AdminApp } from '@/features/admin/AdminApp'
 import * as adminApi from '@/features/admin/api'
@@ -18,6 +18,7 @@ import { AdminCustomersTab } from '@/features/admin/tabs/customers/AdminCustomer
 import { AdminOrdersTab } from '@/features/admin/tabs/orders/AdminOrdersTab'
 import { AdminSettingsTab } from '@/features/admin/tabs/settings/AdminSettingsTab'
 import { AdminFunnelTab } from '@/features/admin/tabs/funnel/AdminFunnelTab'
+import { AdminThemesTab } from '@/features/admin/tabs/themes/AdminThemesTab'
 
 const translations = importedTranslations
 /*
@@ -280,7 +281,7 @@ function AdminRouteLegacy() {
   const [authError, setAuthError] = useState<string | null>(null)
   const [loadingAuth, setLoadingAuth] = useState(false)
 
-    const [tab, setTab] = useState<'settings' | 'prompts' | 'customers' | 'orders' | 'funnel'>('orders')
+    const [tab, setTab] = useState<'settings' | 'prompts' | 'customers' | 'orders' | 'funnel' | 'themes'>('orders')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [lang, setLang] = useState<AdminLang>('en')
@@ -569,6 +570,7 @@ function AdminRouteLegacy() {
         { value: 'customers', icon: Users, label: t.customers },
         { value: 'settings', icon: SettingsIcon, label: t.settings },
         { value: 'prompts', icon: MessageSquare, label: t.prompts },
+        { value: 'themes', icon: Palette, label: t.themes },
       ]}
       activeNav={tab}
       onSelectNav={(v) => {
@@ -649,6 +651,7 @@ function AdminRouteLegacy() {
           <div className="h-[calc(100vh-140px)]">
             <AdminOrdersTab
               t={t}
+              token={token ?? ''}
               orders={orders}
               selectedOrder={selectedOrder}
               onSelectOrder={setSelectedOrder}
@@ -664,6 +667,17 @@ function AdminRouteLegacy() {
 
       {tab === 'funnel' && token && (
         <AdminFunnelTab t={t} token={token} />
+      )}
+
+      {tab === 'themes' && token && (
+        <AdminThemesTab
+          t={t}
+          token={token}
+          defaultThemeSlug={settings?.defaultThemeSlug ?? null}
+          onDefaultThemeChange={async (slug) => {
+            await saveSettings({ defaultThemeSlug: slug } as any)
+          }}
+        />
       )}
     </AdminLayout>
   )

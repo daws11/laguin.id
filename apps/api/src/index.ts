@@ -23,6 +23,7 @@ import { adminOrderDraftRoutes } from './routes/admin.orderDrafts'
 import { adminOrderRoutes } from './routes/admin.orders'
 import { adminUploadsRoutes } from './routes/admin.uploads'
 import { adminFunnelRoutes } from './routes/admin.funnel'
+import { adminThemeRoutes } from './routes/admin.themes'
 
 const app = Fastify({ logger: true })
 
@@ -89,6 +90,7 @@ await app.register(async (adminApp) => {
   await adminApp.register(adminOrderRoutes)
   await adminApp.register(adminUploadsRoutes)
   await adminApp.register(adminFunnelRoutes)
+  await adminApp.register(adminThemeRoutes)
 }, { prefix: '/api/admin' })
 
 const port = Number(process.env.PORT ?? 3001)

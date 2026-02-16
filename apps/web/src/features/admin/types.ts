@@ -24,6 +24,8 @@ export type Settings = {
   whatsappProvider: string
   whatsappConfig: unknown | null
   publicSiteConfig: unknown | null
+  defaultThemeSlug: string | null
+  showThemesInFooter: boolean
   hasOpenaiKey: boolean
   hasKaiAiKey: boolean
 
@@ -103,6 +105,7 @@ export type OrderListItem = {
   trackUrl: string | null
   errorMessage: string | null
   customer: { id: string; name: string; whatsappNumber: string }
+  themeSlug: string | null
 }
 
 export type CustomerDetail = any

@@ -1,28 +1,27 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 
-import { LandingRoute } from '@/routes/LandingRoute'
+import { DefaultThemeRedirect } from '@/routes/DefaultThemeRedirect'
+import { ThemedLandingRoute } from '@/routes/ThemedLandingRoute'
+import { ThemedConfigRoute } from '@/routes/ThemedConfigRoute'
 import { ConfigRoute } from '@/routes/ConfigRoute'
 import { CheckoutRoute } from '@/routes/CheckoutRoute'
 import { AdminRoute } from '@/routes/AdminRoute'
 import { PublicRoot } from '@/features/analytics/PublicRoot'
+import { ThemeProvider } from '@/features/theme/ThemeContext'
 
-// NOTE: Obscure, static admin path (still protected by API auth).
-// Change this value to rotate the admin URL.
 const ADMIN_PATH = '/xk7pqm2n9v4d'
 
 export const router = createBrowserRouter([
-  // Public app routes (Meta Pixel enabled)
   {
     element: <PublicRoot />,
     children: [
-      { path: '/', element: <LandingRoute /> },
-      { path: '/config', element: <ConfigRoute /> },
+      { path: '/', element: <DefaultThemeRedirect /> },
+      { path: '/config', element: <ThemeProvider themeSlug={null}><ConfigRoute /></ThemeProvider> },
       { path: '/checkout', element: <CheckoutRoute /> },
-      { path: '*', element: <Navigate to="/" replace /> },
+      { path: '/:themeSlug', element: <ThemedLandingRoute /> },
+      { path: '/:themeSlug/config', element: <ThemedConfigRoute /> },
     ],
   },
-
-  // Admin route (Meta Pixel excluded)
   { path: ADMIN_PATH, element: <AdminRoute /> },
 ])
 

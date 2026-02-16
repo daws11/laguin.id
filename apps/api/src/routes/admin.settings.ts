@@ -15,6 +15,8 @@ const UpdateSchema = z.object({
   whatsappProvider: z.string().min(1).optional(),
   whatsappConfig: z.unknown().optional(),
   publicSiteConfig: z.unknown().optional(),
+  defaultThemeSlug: z.string().optional().nullable(),
+  showThemesInFooter: z.boolean().optional(),
 
   openaiApiKey: z.string().min(1).optional(),
   kaiAiApiKey: z.string().min(1).optional(),
@@ -48,6 +50,8 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       ycloudTemplateName: typeof ycloud.templateName === 'string' ? ycloud.templateName : null,
       ycloudTemplateLangCode: typeof ycloud.templateLangCode === 'string' ? ycloud.templateLangCode : null,
       hasYcloudKey: Boolean(maybeDecrypt(ycloud.apiKeyEnc ?? ycloud.apiKey)),
+      defaultThemeSlug: s.defaultThemeSlug ?? null,
+      showThemesInFooter: s.showThemesInFooter ?? false,
     }
   })
 
@@ -83,6 +87,8 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       whatsappProvider: parsed.data.whatsappProvider,
       whatsappConfig: mergedWhatsappConfig,
       publicSiteConfig: parsed.data.publicSiteConfig,
+      defaultThemeSlug: parsed.data.defaultThemeSlug,
+      showThemesInFooter: parsed.data.showThemesInFooter,
     }
 
     if (parsed.data.openaiApiKey) data.openaiApiKeyEnc = encryptString(parsed.data.openaiApiKey)
@@ -112,6 +118,8 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       ycloudTemplateName: typeof ycloud.templateName === 'string' ? ycloud.templateName : null,
       ycloudTemplateLangCode: typeof ycloud.templateLangCode === 'string' ? ycloud.templateLangCode : null,
       hasYcloudKey: Boolean(maybeDecrypt(ycloud.apiKeyEnc ?? ycloud.apiKey)),
+      defaultThemeSlug: updated.defaultThemeSlug ?? null,
+      showThemesInFooter: updated.showThemesInFooter ?? false,
     }
   })
 }

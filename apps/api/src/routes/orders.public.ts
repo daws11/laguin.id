@@ -21,6 +21,7 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const input = parsed.data
+    const themeSlug = typeof (req.body as any)?.themeSlug === 'string' ? (req.body as any).themeSlug : null
     const customerName = input.yourName ?? input.recipientName
     const settings = await getOrCreateSettings()
     const manualConfirmationEnabled = (settings as any).manualConfirmationEnabled ?? false
@@ -129,6 +130,7 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
         status: 'created',
         deliveryStatus: 'delivery_pending',
         paymentStatus: 'free',
+        themeSlug,
       },
     })
 

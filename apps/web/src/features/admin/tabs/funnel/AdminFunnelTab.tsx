@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { adminGetFunnel, type FunnelData } from '@/features/admin/api'
+import { adminGetFunnel, adminGetThemes, type FunnelData, type ThemeItem } from '@/features/admin/api'
 
 function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10)
@@ -23,19 +23,25 @@ export function AdminFunnelTab({ t, token }: { t: any; token: string }) {
   const [data, setData] = useState<FunnelData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [themes, setThemes] = useState<ThemeItem[]>([])
+  const [themeFilter, setThemeFilter] = useState<string>('')
+
+  useEffect(() => {
+    adminGetThemes(token).then(setThemes).catch(() => {})
+  }, [token])
 
   const fetchData = useCallback(async (f: string, toDate: string) => {
     setLoading(true)
     setError(null)
     try {
-      const result = await adminGetFunnel(token, f, toDate)
+      const result = await adminGetFunnel(token, f, toDate, themeFilter || undefined)
       setData(result)
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load funnel data')
     } finally {
       setLoading(false)
     }
-  }, [token])
+  }, [token, themeFilter])
 
   useEffect(() => {
     fetchData(from, to)
@@ -82,6 +88,19 @@ export function AdminFunnelTab({ t, token }: { t: any; token: string }) {
         >
           {t.funnelApply}
         </button>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">{t.themeFilter ?? 'Theme'}</label>
+          <select
+            value={themeFilter}
+            onChange={(e) => { setThemeFilter(e.target.value) }}
+            className="block rounded-md border bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500/40"
+          >
+            <option value="">{t.allThemes ?? 'All Themes'}</option>
+            {themes.map((th) => (
+              <option key={th.slug} value={th.slug}>{th.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {loading && (

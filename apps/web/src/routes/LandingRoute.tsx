@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 
 import { apiGet, apiPost } from '@/lib/http'
+import { useThemeSlug } from '@/features/theme/ThemeContext'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -393,6 +394,7 @@ function FeaturedAudioPlayer({
 type FaqItem = { q: string; a: string }
 
 export function LandingRoute() {
+  const themeSlug = useThemeSlug()
   const [publicSiteConfig, setPublicSiteConfig] = useState<PublicSiteConfig | null>(null)
   const [heroOpen, setHeroOpen] = useState(false)
   const [selectedTrackIndex, setSelectedTrackIndex] = useState<number>(0)
@@ -409,7 +411,7 @@ export function LandingRoute() {
         sid = crypto.randomUUID()
         sessionStorage.setItem('_sid', sid)
       }
-      apiPost('/api/public/track', { path: '/', sessionId: sid }).catch(() => {})
+      apiPost('/api/public/track', { path: themeSlug ? `/${themeSlug}` : '/', sessionId: sid, themeSlug: themeSlug ?? null }).catch(() => {})
     } catch {}
   }, [])
 
@@ -512,7 +514,8 @@ export function LandingRoute() {
 
   useEffect(() => {
     let cancelled = false
-    apiGet<PublicSettingsResponse>('/api/public/settings')
+    const themeParam = themeSlug ? `?theme=${encodeURIComponent(themeSlug)}` : ''
+    apiGet<PublicSettingsResponse>(`/api/public/settings${themeParam}`)
       .then((res) => {
         if (cancelled) return
         const cfg = res?.publicSiteConfig
@@ -663,7 +666,7 @@ export function LandingRoute() {
         <CountdownTimer />
         <div className="border-b border-rose-100 bg-white/95 px-2 sm:px-4 py-2 backdrop-blur-sm">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-3">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to={themeSlug ? `/${themeSlug}` : '/'} className="flex items-center gap-2">
               <img src="/logo.png" alt="Laguin.id - Lagumu, Ceritamu" className="h-8 w-auto object-contain" />
             </Link>
             <div className="text-right flex flex-col items-end gap-0.5 sm:flex-row sm:items-center sm:gap-3">
@@ -802,7 +805,7 @@ export function LandingRoute() {
             {/* CTA Button - Pulled up */}
             <div className="space-y-2">
               <Button asChild size="lg" className="w-full sm:w-auto h-12 sm:h-14 px-8 rounded-full bg-[#E11D48] text-base sm:text-lg font-bold shadow-lg shadow-rose-200/50 hover:bg-rose-600 hover:scale-105 transition-all duration-300">
-                <Link to="/config" className="flex items-center justify-center gap-2">
+                <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center justify-center gap-2">
                   Buat Lagu — GRATIS
                   <span className="text-rose-200 line-through font-normal text-sm sm:text-base ml-1">Rp 497rb</span>
                 </Link>
@@ -888,7 +891,7 @@ export function LandingRoute() {
                 Bayangkan mendengar <span className="text-[#E11D48] font-medium italic">namanya</span> di lagu seperti ini...
               </p>
               <Button asChild size="lg" className="h-12 px-8 rounded-xl bg-[#E11D48] font-bold shadow-lg shadow-rose-200/50 hover:bg-rose-600">
-                <Link to="/config">Buat Lagunya — GRATIS</Link>
+                <Link to={themeSlug ? `/${themeSlug}/config` : '/config'}>Buat Lagunya — GRATIS</Link>
               </Button>
             </div>
           </div>
@@ -1061,7 +1064,7 @@ export function LandingRoute() {
 
           <div className="text-center pt-4">
             <Button asChild size="lg" className="h-14 px-10 rounded-full bg-[#E11D48] text-lg font-bold shadow-xl shadow-rose-200 hover:bg-rose-700">
-               <Link to="/config">Buat Lagunya — GRATIS</Link>
+               <Link to={themeSlug ? `/${themeSlug}/config` : '/config'}>Buat Lagunya — GRATIS</Link>
             </Button>
           </div>
         </section>
@@ -1112,7 +1115,7 @@ export function LandingRoute() {
            
            <div className="pt-4">
              <Button asChild size="lg" className="h-auto min-h-[4rem] px-6 py-4 sm:px-12 rounded-full bg-[#E11D48] text-lg sm:text-xl font-bold shadow-2xl shadow-rose-300 hover:bg-rose-700 hover:scale-105 transition-all">
-               <Link to="/config" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 leading-none">
+               <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 leading-none">
                  <span>Buat Lagunya — GRATIS</span>
                  <span className="text-xs sm:text-sm font-normal line-through opacity-80 text-rose-100">Rp 497.000</span>
                </Link>
@@ -1129,7 +1132,7 @@ export function LandingRoute() {
       {/* FOOTER LINKS */}
       <footer className="border-t border-gray-100 bg-white py-12 text-center text-sm text-gray-400">
         <div className="mx-auto max-w-7xl px-4 flex flex-col items-center gap-4">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to={themeSlug ? `/${themeSlug}` : '/'} className="flex items-center gap-2">
             <img src="/logo.png" alt="Laguin.id - Lagumu, Ceritamu" className="h-10 w-auto object-contain opacity-70" />
           </Link>
           <p>Membuat pria menangis sejak 2024 💕</p>
@@ -1157,7 +1160,7 @@ export function LandingRoute() {
              <span className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-green-500" /> Garansi</span>
            </div>
            <Button asChild size="lg" className="w-full h-auto min-h-[3.5rem] py-2 rounded-xl bg-[#E11D48] text-lg font-bold shadow-lg shadow-rose-200 hover:bg-rose-700 active:scale-95 transition-all">
-            <Link to="/config" className="flex items-center justify-center gap-2 flex-wrap text-center leading-tight">
+            <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center justify-center gap-2 flex-wrap text-center leading-tight">
               <span>Buat Lagunya — GRATIS</span>
               <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/30 text-xs whitespace-nowrap">
                 (11 sisa)

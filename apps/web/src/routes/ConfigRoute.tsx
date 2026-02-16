@@ -4,6 +4,7 @@ import { Controller, useForm, type FieldErrors, type Path } from 'react-hook-for
 import { zodResolver } from '@hookform/resolvers/zod'
 import { OrderInputSchema, type OrderInput } from 'shared'
 import { apiGet, apiPost } from '@/lib/http'
+import { useThemeSlug } from '@/features/theme/ThemeContext'
 import { trackWishlist } from '@/features/analytics/MetaPixel'
 
 import { Button } from '@/components/ui/button'
@@ -47,6 +48,7 @@ type PersistedConfigDraft = {
 const CONFIG_DRAFT_STORAGE_KEY = 'laguin:config_draft:v1'
 
 export function ConfigRoute() {
+  const themeSlug = useThemeSlug()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [isHydrated, setIsHydrated] = useState(false)
@@ -272,6 +274,7 @@ export function ConfigRoute() {
       relationship,
       emailVerificationId,
       formValues,
+      themeSlug: themeSlug ?? null,
     }
     const json = JSON.stringify(payload)
     if (json === lastServerDraftSyncJsonRef.current) return
@@ -698,7 +701,7 @@ export function ConfigRoute() {
       // Agreement UI is temporarily disabled, but backend may still enforce it.
       // If enabled in settings, auto-accept to avoid blocking the public flow.
       if (agreementEnabled) (payload as Record<string, unknown>).agreementAccepted = true
-      const res = await apiPost<{ orderId: string }>('/api/orders/draft', payload)
+      const res = await apiPost<{ orderId: string }>('/api/orders/draft', { ...payload, themeSlug: themeSlug ?? null })
       clearDraft()
 
       if (manualConfirmationEnabled) {

@@ -82,7 +82,43 @@ export async function adminUpload(token: string, kind: 'image' | 'video' | 'audi
 export type FunnelStep = { key: string; label: string; count: number }
 export type FunnelData = { dateRange: { from: string; to: string }; steps: FunnelStep[] }
 
-export async function adminGetFunnel(token: string, from: string, to: string) {
-  return apiGet<FunnelData>(`/api/admin/funnel?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, { token })
+export async function adminGetFunnel(token: string, from: string, to: string, themeSlug?: string) {
+  let url = `/api/admin/funnel?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+  if (themeSlug) url += `&themeSlug=${encodeURIComponent(themeSlug)}`
+  return apiGet<FunnelData>(url, { token })
+}
+
+export type ThemeItem = {
+  id: string
+  slug: string
+  name: string
+  isActive: boolean
+  settings: any
+  createdAt: string
+  updatedAt: string
+}
+
+export async function adminGetThemes(token: string) {
+  return apiGet<ThemeItem[]>('/api/admin/themes', { token })
+}
+
+export async function adminCreateTheme(token: string, body: { slug: string; name: string; isActive?: boolean; settings?: any }) {
+  return apiPost<ThemeItem>('/api/admin/themes', body, { token })
+}
+
+export async function adminUpdateTheme(token: string, slug: string, body: { name?: string; isActive?: boolean; settings?: any }) {
+  return apiPut<ThemeItem>(`/api/admin/themes/${encodeURIComponent(slug)}`, body, { token })
+}
+
+export async function adminDeleteTheme(token: string, slug: string) {
+  const res = await fetch(`/api/admin/themes/${encodeURIComponent(slug)}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error((body as any).error ?? 'Failed to delete theme')
+  }
+  return res.json()
 }
 

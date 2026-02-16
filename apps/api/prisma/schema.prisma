@@ -47,8 +47,22 @@ model Settings {
   emailOtpEnabled Boolean  @default(true)
   agreementEnabled Boolean @default(false)
   manualConfirmationEnabled Boolean @default(false)
+  defaultThemeSlug String?
+  showThemesInFooter Boolean @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+}
+
+model Theme {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  isActive       Boolean  @default(true)
+  settings       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([isActive])
 }
 
 model PromptTemplate {
@@ -99,6 +113,7 @@ model Order {
   customer           Customer       @relation(fields: [customerId], references: [id])
 
   inputPayload       Json
+  themeSlug          String?
 
   status             OrderStatus    @default(created)
   deliveryStatus     DeliveryStatus @default(delivery_pending)
@@ -125,6 +140,7 @@ model Order {
   @@index([status])
   @@index([deliveryStatus])
   @@index([customerId, createdAt])
+  @@index([themeSlug])
 }
 
 model OrderEvent {
@@ -142,14 +158,13 @@ model OrderEvent {
 
 model OrderDraft {
   id                  String   @id @default(cuid())
-  // Secret handle stored client-side; treat as bearer token.
   draftKey            String   @unique
 
   step                Int      @default(0)
   relationship        String?
   formValues          Json
+  themeSlug           String?
 
-  // Optional denormalized fields for analytics/debugging.
   emailLower          String?
   whatsappNumber      String?
   emailVerificationId String?
@@ -161,15 +176,18 @@ model OrderDraft {
   @@index([updatedAt])
   @@index([emailLower])
   @@index([whatsappNumber])
+  @@index([themeSlug])
 }
 
 model PageView {
   id        String   @id @default(cuid())
   path      String
   sessionId String
+  themeSlug String?
   createdAt DateTime @default(now())
 
   @@index([path, createdAt])
   @@index([createdAt])
+  @@index([themeSlug])
 }
 

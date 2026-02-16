@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { OrderDetail, OrderListItem } from '@/features/admin/types'
+import { adminGetThemes, type ThemeItem } from '@/features/admin/api'
 import {
   Search,
   RotateCcw,
@@ -64,6 +65,7 @@ type SortDir = 'asc' | 'desc'
 
 export function AdminOrdersTab({
   t,
+  token,
   orders,
   selectedOrder,
   onSelectOrder,
@@ -74,6 +76,7 @@ export function AdminOrdersTab({
   loading,
 }: {
   t: any
+  token: string
   orders: OrderListItem[]
   selectedOrder: OrderDetail | null
   onSelectOrder: (o: OrderDetail | null) => void
@@ -85,8 +88,14 @@ export function AdminOrdersTab({
 }) {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [themeFilter, setThemeFilter] = useState<string>('all')
   const [sortField, setSortField] = useState<SortField>('createdAt')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [themes, setThemes] = useState<ThemeItem[]>([])
+
+  useEffect(() => {
+    adminGetThemes(token).then(setThemes).catch(() => {})
+  }, [token])
 
   const filtered = useMemo(() => {
     let result = orders
@@ -100,6 +109,9 @@ export function AdminOrdersTab({
     if (statusFilter !== 'all') {
       result = result.filter((o) => o.status === statusFilter)
     }
+    if (themeFilter !== 'all') {
+      result = result.filter((o) => (o.themeSlug ?? '') === themeFilter)
+    }
     const sorted = [...result].sort((a, b) => {
       let cmp = 0
       if (sortField === 'createdAt') {
@@ -112,7 +124,7 @@ export function AdminOrdersTab({
       return sortDir === 'asc' ? cmp : -cmp
     })
     return sorted
-  }, [orders, query, statusFilter, sortField, sortDir])
+  }, [orders, query, statusFilter, themeFilter, sortField, sortDir])
 
   function toggleSort(field: SortField) {
     if (sortField === field) {
@@ -500,6 +512,17 @@ export function AdminOrdersTab({
             </button>
           ))}
         </div>
+
+        <select
+          value={themeFilter}
+          onChange={(e) => setThemeFilter(e.target.value)}
+          className="rounded-md border bg-background px-3 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500/40"
+        >
+          <option value="all">{t.allThemes ?? 'All Themes'}</option>
+          {themes.map((th) => (
+            <option key={th.slug} value={th.slug}>{th.name}</option>
+          ))}
+        </select>
       </div>
 
       <div className="flex-1 min-h-0 border rounded-lg overflow-hidden bg-card">
@@ -533,6 +556,9 @@ export function AdminOrdersTab({
                   <span className="inline-flex items-center gap-1">
                     Status <SortIcon field="status" />
                   </span>
+                </th>
+                <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                  Theme
                 </th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
                   Delivery
@@ -580,6 +606,15 @@ export function AdminOrdersTab({
                           <AlertTriangle className="h-3 w-3" /> Error
                         </span>
                       </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {o.themeSlug ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border bg-purple-50 text-purple-700 border-purple-200">
+                        {o.themeSlug}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">--</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -650,7 +685,7 @@ export function AdminOrdersTab({
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
+                  <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
                     {t.noOrdersFound ?? 'No orders found.'}
                   </td>
                 </tr>

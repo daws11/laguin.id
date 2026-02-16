@@ -1,7 +1,7 @@
 # Valentine Projects (Laguin.id)
 
 ## Overview
-A monorepo application for creating personalized Valentine's songs. Built with a React + Vite frontend and Fastify API backend, using PostgreSQL with Prisma ORM.
+A monorepo application for creating personalized songs for special occasions. Built with a React + Vite frontend and Fastify API backend, using PostgreSQL with Prisma ORM. Supports multiple themed landing pages (Valentine, Mother's Day, etc.).
 
 ## Project Architecture
 - **Monorepo** using npm workspaces
@@ -16,6 +16,15 @@ A monorepo application for creating personalized Valentine's songs. Built with a
 - **Database**: PostgreSQL (Replit built-in)
 - **Language**: TypeScript (ESM throughout)
 
+## Multi-Theme System
+- Each theme has its own slug, name, active status, and settings (landing page config JSON)
+- Routes: `/:themeSlug` (landing page), `/:themeSlug/config` (configurator)
+- Root `/` renders the default theme (set in admin Settings)
+- Theme context provided via `ThemeProvider` -> `useThemeSlug()` hook
+- Orders, drafts, page views all tagged with `themeSlug`
+- Admin: Themes tab for CRUD, theme filter on Orders and Funnel tabs
+- API: `/api/public/settings?theme=slug`, `/api/public/themes`, `/api/admin/themes`
+
 ## Development
 - Frontend runs on `0.0.0.0:5000` with Vite dev server
 - API runs on `localhost:3001`
@@ -29,6 +38,17 @@ A monorepo application for creating personalized Valentine's songs. Built with a
 - Shared package must be built before other packages (`npm run build -w shared`)
 
 ## Recent Changes
+- 2026-02-16: Multi-theme system
+  - New Theme model (slug, name, isActive, settings JSON)
+  - themeSlug added to Order, OrderDraft, PageView
+  - defaultThemeSlug + showThemesInFooter in Settings
+  - Admin CRUD for themes (/api/admin/themes)
+  - Public settings returns theme-specific config via ?theme=slug
+  - Frontend routing: /:themeSlug, /:themeSlug/config, / (default theme)
+  - ThemeContext provider for passing theme slug to components
+  - Admin Themes tab with create/edit/delete/set-default
+  - Theme filter on Funnel and Orders admin tabs
+  - Valentine seeded as first theme and set as default
 - 2026-02-16: Added Funnel analytics feature
   - New PageView model for tracking homepage visits
   - Public /api/public/track endpoint for page view tracking

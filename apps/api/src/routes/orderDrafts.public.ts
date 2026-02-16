@@ -32,6 +32,7 @@ const UpsertSchema = z.object({
       emailVerificationId: z.string().optional(),
     })
     .strict(),
+  themeSlug: z.string().max(50).optional().nullable(),
 })
 
 const ParamsSchema = z.object({
@@ -65,6 +66,7 @@ export const orderDraftsRoutes: FastifyPluginAsync = async (app) => {
         emailLower,
         whatsappNumber: whatsappNumber || null,
         emailVerificationId: input.emailVerificationId ?? null,
+        themeSlug: input.themeSlug ?? null,
       },
       update: {
         step: input.step,
@@ -73,6 +75,7 @@ export const orderDraftsRoutes: FastifyPluginAsync = async (app) => {
         emailLower,
         whatsappNumber: whatsappNumber || null,
         emailVerificationId: input.emailVerificationId ?? null,
+        themeSlug: input.themeSlug ?? null,
       },
       select: { id: true },
     })
