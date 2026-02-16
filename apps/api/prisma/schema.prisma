@@ -49,6 +49,8 @@ model Settings {
   manualConfirmationEnabled Boolean @default(false)
   defaultThemeSlug String?
   showThemesInFooter Boolean @default(false)
+  metaPixelId      String?
+  metaPixelWishlistId String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }

@@ -1,17 +1,26 @@
+import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { MetaPixel } from './MetaPixel'
-
-// Pixel ID is not secret; keep it configurable via env if needed.
-const META_PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID ?? '928174156542569'
-const META_PIXEL_WISHLIST_ID = import.meta.env.VITE_META_PIXEL_WISHLIST_ID ?? '1234505681452683'
+import { apiGet } from '@/lib/http'
 
 export function PublicRoot() {
+  const [pixelId, setPixelId] = useState<string | null>(null)
+  const [wishlistId, setWishlistId] = useState<string | null>(null)
+
+  useEffect(() => {
+    apiGet<{ metaPixelId: string | null; metaPixelWishlistId: string | null }>('/api/public/settings')
+      .then((data) => {
+        setPixelId(data.metaPixelId ?? null)
+        setWishlistId(data.metaPixelWishlistId ?? null)
+      })
+      .catch(() => {})
+  }, [])
+
   return (
     <>
-      <MetaPixel pixelId={META_PIXEL_ID} />
-      <MetaPixel pixelId={META_PIXEL_WISHLIST_ID} />
+      {pixelId && <MetaPixel pixelId={pixelId} />}
+      {wishlistId && <MetaPixel pixelId={wishlistId} />}
       <Outlet />
     </>
   )
 }
-

@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { Settings } from '@/features/admin/types'
-import { Smartphone, Key } from 'lucide-react'
+import { Smartphone, Key, BarChart3 } from 'lucide-react'
 import { WhatsappGatewayCard } from './WhatsappGatewayCard'
 import { ApiKeysCard } from './ApiKeysCard'
+import { MetaPixelCard } from './MetaPixelCard'
 
 interface SystemSettingsSectionProps {
   settings: Settings
@@ -27,6 +28,7 @@ export function SystemSettingsSection({
   const menuItems = [
     { id: 'whatsapp-gateway', label: t.whatsappGateway ?? 'WhatsApp Gateway', icon: Smartphone, group: 'System' },
     { id: 'api-keys', label: t.apiKeys ?? 'API Keys', icon: Key, group: 'System' },
+    { id: 'meta-pixel', label: 'Meta Pixel', icon: BarChart3, group: 'System' },
   ]
 
   const SidebarItem = ({ item }: { item: typeof menuItems[0] }) => (
@@ -82,6 +84,16 @@ export function SystemSettingsSection({
                 settings={settings}
                 saveSettings={saveSettings}
                 t={t}
+              />
+            </div>
+          )}
+
+          {activeTab === 'meta-pixel' && (
+            <div className="animate-in fade-in duration-300 h-full">
+              <MetaPixelCard
+                settings={settings}
+                saveSettings={saveSettings}
+                loading={loading}
               />
             </div>
           )}

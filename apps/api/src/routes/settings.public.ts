@@ -33,6 +33,8 @@ export const publicSettingsRoutes: FastifyPluginAsync = async (app) => {
       manualConfirmationEnabled: cd ? (cd.manualConfirmationEnabled ?? false) : ((s as any).manualConfirmationEnabled ?? false),
       defaultThemeSlug: s.defaultThemeSlug ?? null,
       showThemesInFooter: s.showThemesInFooter ?? false,
+      metaPixelId: s.metaPixelId ?? null,
+      metaPixelWishlistId: s.metaPixelWishlistId ?? null,
     }
   })
   

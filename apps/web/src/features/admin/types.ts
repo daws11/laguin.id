@@ -28,6 +28,8 @@ export type Settings = {
   showThemesInFooter: boolean
   hasOpenaiKey: boolean
   hasKaiAiKey: boolean
+  metaPixelId: string | null
+  metaPixelWishlistId: string | null
 
   // YCloud WhatsApp gateway settings (safe fields only)
   ycloudFrom: string | null

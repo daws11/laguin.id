@@ -18,6 +18,9 @@ const UpdateSchema = z.object({
   defaultThemeSlug: z.string().optional().nullable(),
   showThemesInFooter: z.boolean().optional(),
 
+  metaPixelId: z.string().optional().nullable(),
+  metaPixelWishlistId: z.string().optional().nullable(),
+
   openaiApiKey: z.string().min(1).optional(),
   kaiAiApiKey: z.string().min(1).optional(),
 
@@ -52,6 +55,8 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       hasYcloudKey: Boolean(maybeDecrypt(ycloud.apiKeyEnc ?? ycloud.apiKey)),
       defaultThemeSlug: s.defaultThemeSlug ?? null,
       showThemesInFooter: s.showThemesInFooter ?? false,
+      metaPixelId: s.metaPixelId ?? null,
+      metaPixelWishlistId: s.metaPixelWishlistId ?? null,
     }
   })
 
@@ -89,6 +94,8 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       publicSiteConfig: parsed.data.publicSiteConfig,
       defaultThemeSlug: parsed.data.defaultThemeSlug,
       showThemesInFooter: parsed.data.showThemesInFooter,
+      metaPixelId: parsed.data.metaPixelId,
+      metaPixelWishlistId: parsed.data.metaPixelWishlistId,
     }
 
     if (parsed.data.openaiApiKey) data.openaiApiKeyEnc = encryptString(parsed.data.openaiApiKey)
@@ -120,6 +127,8 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       hasYcloudKey: Boolean(maybeDecrypt(ycloud.apiKeyEnc ?? ycloud.apiKey)),
       defaultThemeSlug: updated.defaultThemeSlug ?? null,
       showThemesInFooter: updated.showThemesInFooter ?? false,
+      metaPixelId: updated.metaPixelId ?? null,
+      metaPixelWishlistId: updated.metaPixelWishlistId ?? null,
     }
   })
 }
