@@ -55,6 +55,7 @@ type PublicSiteConfig = {
       playlist?: Array<{ title?: string; subtitle?: string; ctaLabel?: string; audioUrl?: string | null }>
     }
   }
+  heroCheckmarks?: string[]
   trustBadges?: { badge1?: string; badge2?: string; badge3?: string }
   statsBar?: { items?: Array<{ val?: string; label?: string }> }
   activityToast?: ActivityToastConfig
@@ -610,6 +611,9 @@ export function LandingRoute() {
   const audioSamples = landing.audioSamples ?? defaultPublicSiteConfig.landing!.audioSamples!
   const heroPlayer = landing.heroPlayer ?? defaultPublicSiteConfig.landing!.heroPlayer!
 
+  const heroCheckmarks = (site.heroCheckmarks && site.heroCheckmarks.length > 0)
+    ? site.heroCheckmarks.filter(x => x && x.trim())
+    : ['Kualitas Studio', '98% Menangis', 'Revisi Gratis']
   const trustBadge1 = site.trustBadges?.badge1 || deliveryEta.short + ' Delivery'
   const trustBadge2 = site.trustBadges?.badge2 || 'Secure'
   const trustBadge3 = site.trustBadges?.badge3 || '11 kuota sisa'
@@ -881,18 +885,12 @@ export function LandingRoute() {
           <div className="text-center md:text-left space-y-4 md:space-y-6 md:col-start-1 md:row-start-2">
             {/* Trust Badges - Hidden or very small on ultra-mobile if needed, but let's just make it tighter */}
             <div className="flex flex-wrap justify-center md:justify-start gap-x-3 gap-y-1 text-[10px] sm:text-sm font-medium text-gray-500">
-              <span className="flex items-center gap-1">
-                <Check className="h-3 w-3 text-green-600" />
-                Kualitas Studio
-              </span>
-              <span className="flex items-center gap-1">
-                <Check className="h-3 w-3 text-green-600" />
-                98% Menangis
-              </span>
-              <span className="flex items-center gap-1">
-                <Check className="h-3 w-3 text-green-600" />
-                Revisi Gratis
-              </span>
+              {heroCheckmarks.map((text, idx) => (
+                <span key={idx} className="flex items-center gap-1">
+                  <Check className="h-3 w-3 text-green-600" />
+                  {text}
+                </span>
+              ))}
             </div>
 
             {/* CTA Button - Pulled up */}

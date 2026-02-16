@@ -56,6 +56,7 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
       ],
     },
   },
+  heroCheckmarks: ['Kualitas Studio', '98% Menangis', 'Revisi Gratis'],
   trustBadges: {
     badge1: '24h Delivery',
     badge2: 'Secure',
@@ -153,6 +154,7 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
   const colors = cfg?.colors && typeof cfg.colors === 'object' ? cfg.colors : {}
   const cd = cfg?.creationDelivery && typeof cfg.creationDelivery === 'object' ? cfg.creationDelivery : {}
   const toast = cfg?.activityToast && typeof cfg.activityToast === 'object' ? cfg.activityToast : {}
+  const heroCheckmarksRaw = safeArr(cfg?.heroCheckmarks, (x) => typeof x === 'string' ? x : '').filter((x: string) => x.trim())
   const tb = cfg?.trustBadges && typeof cfg.trustBadges === 'object' ? cfg.trustBadges : {}
   const sb = cfg?.statsBar && typeof cfg.statsBar === 'object' ? cfg.statsBar : {}
   const toastItems = safeArr(toast?.items, (x) => ({
@@ -216,6 +218,7 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
         playlist: playlist.length ? playlist : defaultPublicSiteDraft.landing.audioSamples.playlist,
       },
     },
+    heroCheckmarks: heroCheckmarksRaw.length ? heroCheckmarksRaw : defaultPublicSiteDraft.heroCheckmarks,
     trustBadges: {
       badge1: asString(tb?.badge1, defaultPublicSiteDraft.trustBadges.badge1),
       badge2: asString(tb?.badge2, defaultPublicSiteDraft.trustBadges.badge2),
@@ -342,6 +345,8 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
     })).filter((x) => x.val || x.label),
   }
 
-  return { logoUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, trustBadges: nextTrustBadges, statsBar: nextStatsBar }
+  const nextHeroCheckmarks = draft.heroCheckmarks.map((x) => x.trim()).filter((x) => x)
+
+  return { logoUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, heroCheckmarks: nextHeroCheckmarks, trustBadges: nextTrustBadges, statsBar: nextStatsBar }
 }
 

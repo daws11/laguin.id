@@ -762,6 +762,49 @@ export function LandingContentConfigSection({
             {activeTab === 'trust-stats' && (
               <div className="space-y-4 animate-in fade-in duration-300">
                 <div className="pb-2 border-b">
+                  <h3 className="text-base font-semibold">Hero Checkmarks</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Teks centang di atas tombol CTA (mis. "Kualitas Studio").</p>
+                </div>
+                <div className="space-y-2">
+                  {draft.heroCheckmarks.map((item, idx) => (
+                    <div key={idx} className="flex gap-2 items-center">
+                      <Input
+                        className="h-8 text-sm flex-1"
+                        placeholder="Kualitas Studio"
+                        value={item}
+                        onChange={(e) => setDraft(d => {
+                          const items = [...d.heroCheckmarks]
+                          items[idx] = e.target.value
+                          return { ...d, heroCheckmarks: items }
+                        })}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0 text-destructive hover:text-destructive"
+                        onClick={() => setDraft(d => ({
+                          ...d,
+                          heroCheckmarks: d.heroCheckmarks.filter((_, i) => i !== idx)
+                        }))}
+                      >
+                        &times;
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setDraft(d => ({
+                      ...d,
+                      heroCheckmarks: [...d.heroCheckmarks, '']
+                    }))}
+                  >
+                    + Tambah Checkmark
+                  </Button>
+                </div>
+
+                <div className="pb-2 border-b pt-4">
                   <h3 className="text-base font-semibold">Trust Badges</h3>
                   <p className="text-xs text-muted-foreground mt-1">Teks badge kepercayaan di bawah tombol CTA.</p>
                 </div>

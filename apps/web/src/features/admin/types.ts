@@ -96,6 +96,7 @@ export type PublicSiteDraft = {
       playlist: LandingPlaylistItem[]
     }
   }
+  heroCheckmarks: string[]
   trustBadges: {
     badge1: string
     badge2: string
