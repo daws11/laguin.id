@@ -24,12 +24,23 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
     const themeSlug = typeof (req.body as any)?.themeSlug === 'string' ? (req.body as any).themeSlug : null
     const customerName = input.yourName ?? input.recipientName
     const settings = await getOrCreateSettings()
-    const manualConfirmationEnabled = (settings as any).manualConfirmationEnabled ?? false
     const emailLower = normalizeEmail(input.email)
     const whatsappNumber = normalizeWhatsappNumber(input.whatsappNumber)
 
-    const emailOtpEnabled = settings.emailOtpEnabled ?? true
-    const agreementEnabled = settings.agreementEnabled ?? false
+    let themeCD: any = null
+    if (themeSlug) {
+      const theme = await prisma.theme.findUnique({ where: { slug: themeSlug } })
+      if (theme?.settings && typeof theme.settings === 'object') {
+        const ts = theme.settings as any
+        if (ts.creationDelivery && typeof ts.creationDelivery === 'object') {
+          themeCD = ts.creationDelivery
+        }
+      }
+    }
+
+    const manualConfirmationEnabled = themeCD ? (themeCD.manualConfirmationEnabled ?? false) : ((settings as any).manualConfirmationEnabled ?? false)
+    const emailOtpEnabled = themeCD ? (themeCD.emailOtpEnabled ?? true) : (settings.emailOtpEnabled ?? true)
+    const agreementEnabled = themeCD ? (themeCD.agreementEnabled ?? false) : (settings.agreementEnabled ?? false)
 
     if (agreementEnabled && !(input as { agreementAccepted?: boolean }).agreementAccepted) {
       return reply.code(400).send({ error: 'Centang persetujuan untuk melanjutkan.' })
@@ -190,6 +201,7 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       deliveryScheduledAt: order.deliveryScheduledAt,
       deliveredAt: order.deliveredAt,
       errorMessage: order.errorMessage,
+      themeSlug: order.themeSlug ?? null,
     }
   })
 

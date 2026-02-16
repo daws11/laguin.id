@@ -22,13 +22,15 @@ export const publicSettingsRoutes: FastifyPluginAsync = async (app) => {
       }
     }
     
+    const cd = themeSettings?.creationDelivery && typeof themeSettings.creationDelivery === 'object' ? themeSettings.creationDelivery as any : null
+
     return {
       publicSiteConfig: themeSettings ?? s.publicSiteConfig ?? null,
-      emailOtpEnabled: s.emailOtpEnabled ?? true,
-      agreementEnabled: s.agreementEnabled ?? false,
-      instantEnabled: s.instantEnabled ?? true,
-      deliveryDelayHours: s.deliveryDelayHours ?? 24,
-      manualConfirmationEnabled: (s as any).manualConfirmationEnabled ?? false,
+      emailOtpEnabled: cd ? (cd.emailOtpEnabled ?? true) : (s.emailOtpEnabled ?? true),
+      agreementEnabled: cd ? (cd.agreementEnabled ?? false) : (s.agreementEnabled ?? false),
+      instantEnabled: cd ? (cd.instantEnabled ?? true) : (s.instantEnabled ?? true),
+      deliveryDelayHours: cd ? (cd.deliveryDelayHours ?? 24) : (s.deliveryDelayHours ?? 24),
+      manualConfirmationEnabled: cd ? (cd.manualConfirmationEnabled ?? false) : ((s as any).manualConfirmationEnabled ?? false),
       defaultThemeSlug: s.defaultThemeSlug ?? null,
       showThemesInFooter: s.showThemesInFooter ?? false,
     }

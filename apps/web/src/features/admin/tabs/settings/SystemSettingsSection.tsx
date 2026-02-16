@@ -3,8 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { Settings } from '@/features/admin/types'
-import { Zap, Smartphone, Key } from 'lucide-react'
-import { CreationDeliveryCard } from './CreationDeliveryCard'
+import { Smartphone, Key } from 'lucide-react'
 import { WhatsappGatewayCard } from './WhatsappGatewayCard'
 import { ApiKeysCard } from './ApiKeysCard'
 
@@ -23,10 +22,9 @@ export function SystemSettingsSection({
   loading,
   t,
 }: SystemSettingsSectionProps) {
-  const [activeTab, setActiveTab] = useState('creation-delivery')
+  const [activeTab, setActiveTab] = useState('whatsapp-gateway')
 
   const menuItems = [
-    { id: 'creation-delivery', label: t.creationDelivery ?? 'Creation & Delivery', icon: Zap, group: 'System' },
     { id: 'whatsapp-gateway', label: t.whatsappGateway ?? 'WhatsApp Gateway', icon: Smartphone, group: 'System' },
     { id: 'api-keys', label: t.apiKeys ?? 'API Keys', icon: Key, group: 'System' },
   ]
@@ -66,18 +64,6 @@ export function SystemSettingsSection({
         </aside>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
-          {activeTab === 'creation-delivery' && (
-            <div className="animate-in fade-in duration-300 h-full">
-              <CreationDeliveryCard
-                settings={settings}
-                setSettings={setSettings}
-                saveSettings={saveSettings}
-                loading={loading}
-                t={t}
-              />
-            </div>
-          )}
-
           {activeTab === 'whatsapp-gateway' && (
             <div className="animate-in fade-in duration-300 h-full">
               <WhatsappGatewayCard

@@ -335,18 +335,30 @@ export async function processOrderGeneration(orderId: string) {
   }
 
   if (!finalOrder.generationCompletedAt) {
+    let effectiveInstantEnabled = settings.instantEnabled
+    let effectiveDeliveryDelayHours = settings.deliveryDelayHours ?? 24
+    if (finalOrder.themeSlug) {
+      const theme = await prisma.theme.findUnique({ where: { slug: finalOrder.themeSlug } })
+      if (theme?.settings && typeof theme.settings === 'object') {
+        const cd = (theme.settings as any)?.creationDelivery
+        if (cd && typeof cd === 'object') {
+          effectiveInstantEnabled = cd.instantEnabled ?? effectiveInstantEnabled
+          effectiveDeliveryDelayHours = cd.deliveryDelayHours ?? effectiveDeliveryDelayHours
+        }
+      }
+    }
+
     const generationCompletedAt = new Date()
-    const deliveryScheduledAt = settings.instantEnabled
+    const deliveryScheduledAt = effectiveInstantEnabled
       ? generationCompletedAt
-      : new Date(generationCompletedAt.getTime() + (settings.deliveryDelayHours ?? 24) * 60 * 60 * 1000)
+      : new Date(generationCompletedAt.getTime() + effectiveDeliveryDelayHours * 60 * 60 * 1000)
 
     await prisma.order.update({
       where: { id: order.id },
       data: {
-        // Auto-complete once track is ready; delivery worker will send based on deliveryScheduledAt.
         status: 'completed',
         generationCompletedAt,
-        deliveryStatus: settings.instantEnabled ? 'delivery_pending' : 'delivery_scheduled',
+        deliveryStatus: effectiveInstantEnabled ? 'delivery_pending' : 'delivery_scheduled',
         deliveryScheduledAt,
       },
     })
@@ -354,7 +366,7 @@ export async function processOrderGeneration(orderId: string) {
     await addOrderEvent({
       orderId: order.id,
       type: 'generation_completed',
-      data: { deliveryScheduledAt: deliveryScheduledAt.toISOString(), instantEnabled: settings.instantEnabled },
+      data: { deliveryScheduledAt: deliveryScheduledAt.toISOString(), instantEnabled: effectiveInstantEnabled },
     })
   }
 

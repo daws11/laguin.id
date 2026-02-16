@@ -26,6 +26,7 @@ type OrderSummary = {
   inputPayload: OrderInputPayload
   trackUrl?: string | null
   errorMessage?: string | null
+  themeSlug?: string | null
 }
 
 function trackFbq(eventName: string, params: Record<string, unknown>) {
@@ -73,10 +74,11 @@ export function CheckoutRoute() {
   const hasTrackedInitiateCheckout = useRef(false)
   const hasTrackedPurchase = useRef(false)
 
-  // Manual confirmation setting (safety guard): if enabled, do NOT auto-confirm from this route.
   useEffect(() => {
+    if (!order) return
     let cancelled = false
-    apiGet<{ manualConfirmationEnabled?: boolean }>('/api/public/settings')
+    const themeParam = order.themeSlug ? `?theme=${encodeURIComponent(order.themeSlug)}` : ''
+    apiGet<{ manualConfirmationEnabled?: boolean }>(`/api/public/settings${themeParam}`)
       .then((res) => {
         if (cancelled) return
         setManualConfirmationEnabled(Boolean(res?.manualConfirmationEnabled))
@@ -87,7 +89,7 @@ export function CheckoutRoute() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [order?.themeSlug])
 
   // Meta Pixel: track InitiateCheckout when the checkout page is loaded.
   // Guard avoids double fire in dev StrictMode / re-mounts.

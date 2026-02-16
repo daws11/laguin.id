@@ -8,7 +8,7 @@ import { resolveApiUrl } from '@/lib/http'
 import * as adminApi from '@/features/admin/api'
 import { moveItem, parseToastItemsJson } from '@/features/admin/publicSiteDraft'
 import type { PublicSiteDraft } from '@/features/admin/types'
-import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle } from 'lucide-react'
+import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap } from 'lucide-react'
 
 interface LandingContentConfigProps {
   draft: PublicSiteDraft
@@ -54,6 +54,7 @@ export function LandingContentConfigSection({
     { id: 'landing-player', label: 'Hero Player', icon: PlayCircle, group: 'Landing Page' },
     { id: 'music', label: 'Music Playlist', icon: Music, group: 'Content' },
     { id: 'toast', label: 'Activity Toast', icon: MessageSquare, group: 'Content' },
+    { id: 'creation-delivery', label: t.creationDelivery ?? 'Creation & Delivery', icon: Zap, group: 'System' },
   ]
 
   const SidebarItem = ({ item }: { item: typeof menuItems[0] }) => (
@@ -561,6 +562,62 @@ export function LandingContentConfigSection({
                                      </div>
                                  )
                              })}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'creation-delivery' && (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="pb-2 border-b">
+                         <h3 className="text-base font-semibold">{t.creationDelivery ?? 'Creation & Delivery'}</h3>
+                         <p className="text-xs text-muted-foreground mt-1">{t.creationDeliveryDesc ?? 'Controls instant vs delayed WhatsApp delivery.'}</p>
+                    </div>
+
+                    <div className="space-y-3">
+                        <label className="flex items-center justify-between gap-2 rounded border p-3 bg-background cursor-pointer hover:bg-muted/40 transition-colors">
+                            <span className="text-sm font-medium">{t.instantEnabled ?? 'Instant delivery enabled'}</span>
+                            <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                checked={draft.creationDelivery.instantEnabled}
+                                onChange={(e) => setDraft(d => ({ ...d, creationDelivery: { ...d.creationDelivery, instantEnabled: e.target.checked } }))}
+                            />
+                        </label>
+                        <label className="flex items-center justify-between gap-2 rounded border p-3 bg-background cursor-pointer hover:bg-muted/40 transition-colors">
+                            <span className="text-sm font-medium">{t.emailOtpEnabled ?? 'Email OTP verification'}</span>
+                            <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                checked={draft.creationDelivery.emailOtpEnabled}
+                                onChange={(e) => setDraft(d => ({ ...d, creationDelivery: { ...d.creationDelivery, emailOtpEnabled: e.target.checked } }))}
+                            />
+                        </label>
+                        <label className="flex items-center justify-between gap-2 rounded border p-3 bg-background cursor-pointer hover:bg-muted/40 transition-colors">
+                            <span className="text-sm font-medium">{t.agreementEnabled ?? 'Checkout agreement'}</span>
+                            <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                checked={draft.creationDelivery.agreementEnabled}
+                                onChange={(e) => setDraft(d => ({ ...d, creationDelivery: { ...d.creationDelivery, agreementEnabled: e.target.checked } }))}
+                            />
+                        </label>
+                        <label className="flex items-center justify-between gap-2 rounded border p-3 bg-background cursor-pointer hover:bg-muted/40 transition-colors">
+                            <span className="text-sm font-medium">{t.manualConfirmationEnabled ?? 'Manual confirmation'}</span>
+                            <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                checked={draft.creationDelivery.manualConfirmationEnabled}
+                                onChange={(e) => setDraft(d => ({ ...d, creationDelivery: { ...d.creationDelivery, manualConfirmationEnabled: e.target.checked } }))}
+                            />
+                        </label>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">{t.deliveryDelay ?? 'Delivery delay (hours) (when instant is OFF)'}</label>
+                            <Input
+                                type="number"
+                                value={draft.creationDelivery.deliveryDelayHours}
+                                onChange={(e) => setDraft(d => ({ ...d, creationDelivery: { ...d.creationDelivery, deliveryDelayHours: Number(e.target.value) } }))}
+                            />
                         </div>
                     </div>
                 </div>

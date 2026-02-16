@@ -80,6 +80,13 @@ export type PublicSiteDraft = {
     durationMs: number
     items: ToastItem[]
   }
+  creationDelivery: {
+    instantEnabled: boolean
+    emailOtpEnabled: boolean
+    agreementEnabled: boolean
+    manualConfirmationEnabled: boolean
+    deliveryDelayHours: number
+  }
 }
 
 export type CustomerListItem = {

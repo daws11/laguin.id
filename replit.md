@@ -22,8 +22,10 @@ A monorepo application for creating personalized songs for special occasions. Bu
 - Root `/` renders the default theme (set in admin Settings)
 - Theme context provided via `ThemeProvider` -> `useThemeSlug()` hook
 - Orders, drafts, page views all tagged with `themeSlug`
-- Admin: Themes tab for CRUD with visual form editor (Hero Media, Overlay, Player, Music, Toast)
-- Admin Settings tab shows only global/system settings (Creation & Delivery, WhatsApp, API Keys)
+- Admin: Themes tab for CRUD with visual form editor (Hero Media, Overlay, Player, Music, Toast, Creation & Delivery)
+- Admin Settings tab shows only global/system settings (WhatsApp, API Keys)
+- Creation & Delivery settings (instant delivery, email OTP, agreement, manual confirmation, delay) are per-theme
+- Backend and order pipeline use theme-specific Creation & Delivery settings with global fallback
 - Theme filter on Orders and Funnel admin tabs
 - API: `/api/public/settings?theme=slug`, `/api/public/themes`, `/api/admin/themes`
 
@@ -40,10 +42,17 @@ A monorepo application for creating personalized songs for special occasions. Bu
 - Shared package must be built before other packages (`npm run build -w shared`)
 
 ## Recent Changes
+- 2026-02-16: Creation & Delivery moved to per-theme
+  - Added creationDelivery to theme settings JSON (instantEnabled, emailOtpEnabled, agreementEnabled, manualConfirmationEnabled, deliveryDelayHours)
+  - Theme editor shows Creation & Delivery section in sidebar
+  - Public settings API returns theme-specific values with global fallback
+  - Order creation and delivery pipeline use theme-specific settings
+  - ConfigRoute and CheckoutRoute pass theme slug when fetching settings
+  - Removed Creation & Delivery from global Settings tab
 - 2026-02-16: Theme settings visual editor
   - Split PublicSiteConfigSection into LandingContentConfigSection (per-theme) and SystemSettingsSection (global)
-  - Theme edit uses visual form UI (Hero Media, Overlay, Player, Music, Toast) instead of raw JSON
-  - Settings tab shows only system settings (Creation & Delivery, WhatsApp Gateway, API Keys)
+  - Theme edit uses visual form UI (Hero Media, Overlay, Player, Music, Toast, Creation & Delivery) instead of raw JSON
+  - Settings tab shows only system settings (WhatsApp Gateway, API Keys)
   - Draft state management with dirty tracking and save-on-demand for theme settings
 - 2026-02-16: Multi-theme system
   - New Theme model (slug, name, isActive, settings JSON)

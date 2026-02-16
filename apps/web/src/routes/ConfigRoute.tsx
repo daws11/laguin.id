@@ -117,7 +117,7 @@ export function ConfigRoute() {
       instantEnabled?: boolean
       deliveryDelayHours?: number
       manualConfirmationEnabled?: boolean
-    }>('/api/public/settings')
+    }>(`/api/public/settings${themeSlug ? `?theme=${encodeURIComponent(themeSlug)}` : ''}`)
       .then((res) => {
         if (cancelled) return
         setEmailOtpEnabled(res?.emailOtpEnabled ?? true)

@@ -49,6 +49,13 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
       { fullName: 'Andreas Wijaya', city: 'Surabaya', recipientName: 'Dima' },
     ],
   },
+  creationDelivery: {
+    instantEnabled: true,
+    emailOtpEnabled: true,
+    agreementEnabled: false,
+    manualConfirmationEnabled: false,
+    deliveryDelayHours: 24,
+  },
 }
 
 function asString(v: unknown, fallback: string) {
@@ -108,6 +115,7 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
     audioUrl: asString(x?.audioUrl, ''),
   })).filter((x) => x.title || x.subtitle || x.audioUrl)
 
+  const cd = cfg?.creationDelivery && typeof cfg.creationDelivery === 'object' ? cfg.creationDelivery : {}
   const toast = cfg?.activityToast && typeof cfg.activityToast === 'object' ? cfg.activityToast : {}
   const toastItems = safeArr(toast?.items, (x) => ({
     fullName: asString(x?.fullName, ''),
@@ -160,6 +168,13 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
       intervalMs: clampInt(asNumber(toast?.intervalMs, defaultPublicSiteDraft.activityToast.intervalMs), 2000, 120000),
       durationMs: clampInt(asNumber(toast?.durationMs, defaultPublicSiteDraft.activityToast.durationMs), 1000, 60000),
       items: toastItems.length ? toastItems : defaultPublicSiteDraft.activityToast.items,
+    },
+    creationDelivery: {
+      instantEnabled: asBool(cd?.instantEnabled, defaultPublicSiteDraft.creationDelivery.instantEnabled),
+      emailOtpEnabled: asBool(cd?.emailOtpEnabled, defaultPublicSiteDraft.creationDelivery.emailOtpEnabled),
+      agreementEnabled: asBool(cd?.agreementEnabled, defaultPublicSiteDraft.creationDelivery.agreementEnabled),
+      manualConfirmationEnabled: asBool(cd?.manualConfirmationEnabled, defaultPublicSiteDraft.creationDelivery.manualConfirmationEnabled),
+      deliveryDelayHours: asNumber(cd?.deliveryDelayHours, defaultPublicSiteDraft.creationDelivery.deliveryDelayHours),
     },
   }
 }
@@ -215,6 +230,14 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
     })),
   }
 
-  return { landing: nextLanding, activityToast: nextToast }
+  const nextCreationDelivery = {
+    instantEnabled: draft.creationDelivery.instantEnabled,
+    emailOtpEnabled: draft.creationDelivery.emailOtpEnabled,
+    agreementEnabled: draft.creationDelivery.agreementEnabled,
+    manualConfirmationEnabled: draft.creationDelivery.manualConfirmationEnabled,
+    deliveryDelayHours: draft.creationDelivery.deliveryDelayHours,
+  }
+
+  return { landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery }
 }
 
