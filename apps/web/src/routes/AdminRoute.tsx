@@ -279,7 +279,7 @@ function AdminRouteLegacy() {
   const [authError, setAuthError] = useState<string | null>(null)
   const [loadingAuth, setLoadingAuth] = useState(false)
 
-    const [tab, setTab] = useState<'settings' | 'prompts' | 'customers' | 'orders'>('settings')
+    const [tab, setTab] = useState<'settings' | 'prompts' | 'customers' | 'orders'>('orders')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [lang, setLang] = useState<AdminLang>('en')
@@ -563,10 +563,10 @@ function AdminRouteLegacy() {
       loadingLabel={t.loading}
       error={error}
       navItems={[
+        { value: 'orders', icon: ShoppingBag, label: t.orders },
+        { value: 'customers', icon: Users, label: t.customers },
         { value: 'settings', icon: SettingsIcon, label: t.settings },
         { value: 'prompts', icon: MessageSquare, label: t.prompts },
-        { value: 'customers', icon: Users, label: t.customers },
-        { value: 'orders', icon: ShoppingBag, label: t.orders },
       ]}
       activeNav={tab}
       onSelectNav={(v) => {
