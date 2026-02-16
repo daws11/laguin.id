@@ -50,7 +50,7 @@ export function XenditCard({ settings, saveSettings, loading }: Props) {
               </div>
               <Input
                 className="h-7 text-xs"
-                placeholder="xnd_production_..."
+                placeholder={settings.hasXenditKey ? '••••••••••••••••' : 'xnd_production_...'}
                 type="password"
                 value={secretKey}
                 onChange={(e) => setSecretKey(e.target.value)}
