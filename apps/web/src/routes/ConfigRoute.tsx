@@ -780,12 +780,12 @@ export function ConfigRoute() {
 
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-rose-100 bg-white/95 backdrop-blur-sm shadow-sm">
-        <div className="mx-auto flex max-w-md items-center justify-between px-4 py-2">
-          <img src="/logo.png" alt="Laguin - Musikmu Ceritamu" className="h-8 w-auto object-contain" />
-          <div className="text-right flex items-center gap-1">
-             <span className="text-[10px] text-gray-400 line-through">Rp 497k</span>
-             <span className="text-sm font-bold text-[#E11D48]">GRATIS</span>
-             <Badge variant="destructive" className="ml-1 text-[9px] px-1 py-0 h-4 min-w-[36px] justify-center">11 sisa</Badge>
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-2">
+          <img src="/logo.png" alt="Laguin - Musikmu Ceritamu" className="h-8 sm:h-10 w-auto object-contain" />
+          <div className="text-right flex items-center gap-1.5">
+             <span className="text-[10px] sm:text-xs text-gray-400 line-through">Rp 497k</span>
+             <span className="text-sm sm:text-lg font-bold text-[#E11D48]">GRATIS</span>
+             <Badge variant="destructive" className="ml-1 text-[9px] sm:text-[10px] px-1.5 py-0 h-4 sm:h-5 min-w-[36px] justify-center">11 sisa</Badge>
           </div>
         </div>
         {/* Progress Bar inside Header - Ultra Compact */}
@@ -804,27 +804,27 @@ export function ConfigRoute() {
         )}
       </header>
 
-      <main className="mx-auto max-w-md px-4 py-4 sm:py-8">
+      <main className="mx-auto max-w-4xl w-full px-4 py-4 sm:py-8 lg:py-12">
         <form onSubmit={form.handleSubmit(onSubmit, onInvalid)}>
           
           {/* STEP 0: ANNOUNCEMENT - halaman pengumuman */}
           {step === 0 && (
-            <div className="flex flex-col items-center justify-start animate-in fade-in slide-in-from-bottom-4 duration-500 pb-4">
+            <div className="flex flex-col items-center justify-start animate-in fade-in slide-in-from-bottom-4 duration-500 pb-4 max-w-2xl mx-auto">
               <Card className="w-full overflow-hidden border-rose-200 bg-white shadow-xl">
                 {/* Header */}
-                <div className="bg-[#E11D48] px-3 py-2 flex items-center justify-center gap-2 text-white shadow-sm">
-                  <Megaphone className="h-3.5 w-3.5 shrink-0" />
-                  <span className="text-[10px] font-bold uppercase tracking-wide">Kado Valentine Paling Romantis</span>
+                <div className="bg-[#E11D48] px-4 py-3 flex items-center justify-center gap-2 text-white shadow-sm">
+                  <Megaphone className="h-4 w-4 shrink-0" />
+                  <span className="text-xs sm:text-sm font-bold uppercase tracking-wider">Kado Valentine Paling Romantis</span>
                 </div>
 
                 <CardContent className="p-0">
-                  <div className="p-3 text-center space-y-2">
-                    <h2 className="text-sm font-bold text-gray-900 leading-snug mx-auto max-w-[260px]">
+                  <div className="p-4 sm:p-8 text-center space-y-4 sm:space-y-6">
+                    <h2 className="text-sm sm:text-xl md:text-2xl font-bold text-gray-900 leading-snug mx-auto max-w-lg">
                       Rekam emosi mereka saat mendengar lagu untuk menang <span className="text-[#E11D48]">Rp 1.000.000!</span>
                     </h2>
 
                     {/* Video Centered */}
-                    <div className="relative mx-auto rounded-lg overflow-hidden bg-gray-100 shadow-md ring-1 ring-gray-200 w-[110px] aspect-[9/16]">
+                    <div className="relative mx-auto rounded-xl overflow-hidden bg-gray-100 shadow-md ring-1 ring-gray-200 w-[110px] sm:w-[180px] md:w-[220px] aspect-[9/16]">
                        {heroVideoUrl ? (
                          <video 
                            src={heroVideoUrl} 
@@ -835,50 +835,50 @@ export function ConfigRoute() {
                            className="w-full h-full object-cover"
                          />
                        ) : (
-                         <div className="flex items-center justify-center h-full text-gray-400 text-[9px]">Video preview</div>
+                         <div className="flex items-center justify-center h-full text-gray-400 text-xs italic">Video preview</div>
                        )}
                     </div>
 
                     {/* Warranty Box Below Video */}
-                    <div className="mx-auto max-w-[280px]">
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-[10px] text-green-800 shadow-sm text-center">
-                        <p className="font-bold mb-0.5 flex items-center justify-center gap-1"><span className="text-base">🤑</span> GARANSI UANG TUNAI</p>
-                        <p className="leading-tight opacity-90">Setiap video reaksi yang jelas <span className="font-bold underline decoration-green-500/50">pasti dapat Rp 75.000</span>.</p>
+                    <div className="mx-auto max-w-md w-full">
+                      <div className="bg-green-50 border border-green-200 rounded-xl p-3 sm:p-4 text-xs sm:text-sm text-green-800 shadow-sm text-center">
+                        <p className="font-bold mb-1 flex items-center justify-center gap-2 text-base sm:text-lg"><span className="text-xl">🤑</span> GARANSI UANG TUNAI</p>
+                        <p className="leading-relaxed opacity-90">Setiap video reaksi yang jelas <span className="font-bold underline decoration-green-500/50">pasti dapat Rp 75.000</span>.</p>
                       </div>
-                      <p className="text-[9px] text-gray-400 italic mt-1 text-center">*Syarat dan ketentuan berlaku</p>
+                      <p className="text-[10px] sm:text-xs text-gray-400 italic mt-2 text-center">*Syarat dan ketentuan berlaku</p>
                     </div>
                   </div>
 
                   {/* How it works - Ultra Compact Timeline */}
-                  <div className="bg-gradient-to-b from-rose-50/80 to-white px-4 py-3 border-t border-rose-100">
-                    <h3 className="text-[10px] font-bold text-rose-500 mb-2 text-center uppercase tracking-wider">Cara Ikutan</h3>
+                  <div className="bg-gradient-to-b from-rose-50/80 to-white px-4 py-6 sm:py-10 border-t border-rose-100">
+                    <h3 className="text-[10px] sm:text-xs font-bold text-rose-500 mb-4 sm:mb-8 text-center uppercase tracking-widest">Cara Ikutan</h3>
                     
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-4 sm:gap-8 max-w-lg mx-auto">
                       {/* Step 1 */}
                       <div className="flex flex-col items-center text-center">
-                        <div className="w-5 h-5 rounded-full bg-[#E11D48] text-white flex items-center justify-center text-[10px] font-bold mb-1 shadow-sm">1</div>
-                        <p className="font-bold text-[10px] text-gray-800 leading-tight">Buat Lagu Gratis</p>
-                        <p className="text-[9px] text-gray-500 leading-none mt-0.5">Hemat 100%</p>
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#E11D48] text-white flex items-center justify-center text-xs sm:text-sm font-bold mb-2 shadow-sm">1</div>
+                        <p className="font-bold text-[10px] sm:text-sm text-gray-800 leading-tight">Buat Lagu Gratis</p>
+                        <p className="text-[9px] sm:text-xs text-gray-500 leading-none mt-1">Hemat 100%</p>
                       </div>
 
                       {/* Step 2 */}
                       <div className="flex flex-col items-center text-center">
-                        <div className="w-5 h-5 rounded-full bg-[#E11D48] text-white flex items-center justify-center text-[10px] font-bold mb-1 shadow-sm">2</div>
-                        <p className="font-bold text-[10px] text-gray-800 leading-tight">Rekam Reaksinya</p>
-                        <p className="text-[9px] text-gray-500 leading-none mt-0.5">Wajib Video!</p>
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#E11D48] text-white flex items-center justify-center text-xs sm:text-sm font-bold mb-2 shadow-sm">2</div>
+                        <p className="font-bold text-[10px] sm:text-sm text-gray-800 leading-tight">Rekam Reaksinya</p>
+                        <p className="text-[9px] sm:text-xs text-gray-500 leading-none mt-1">Wajib Video!</p>
                       </div>
 
                       {/* Step 3 */}
                       <div className="flex flex-col items-center text-center">
-                        <div className="w-5 h-5 rounded-full bg-[#E11D48] text-white flex items-center justify-center text-[10px] font-bold mb-1 shadow-sm">3</div>
-                        <p className="font-bold text-[10px] text-gray-800 leading-tight">Kirim & Menang</p>
-                        <p className="text-[9px] text-gray-500 leading-none mt-0.5">Dapat Cuan!</p>
+                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#E11D48] text-white flex items-center justify-center text-xs sm:text-sm font-bold mb-2 shadow-sm">3</div>
+                        <p className="font-bold text-[10px] sm:text-sm text-gray-800 leading-tight">Kirim & Menang</p>
+                        <p className="text-[9px] sm:text-xs text-gray-500 leading-none mt-1">Dapat Cuan!</p>
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              <p className="text-center text-[9px] text-gray-400 mt-2 animate-pulse">Klik tombol di bawah untuk mulai 👇</p>
+              <p className="text-center text-[10px] sm:text-sm text-gray-400 mt-4 animate-bounce">Klik tombol di bawah untuk mulai 👇</p>
             </div>
           )}
 
@@ -1317,9 +1317,9 @@ export function ConfigRoute() {
 
           {/* BOTTOM NAV / CTA */}
           <div className="fixed inset-x-0 bottom-0 z-50 bg-white border-t border-gray-100 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-             <div className="mx-auto max-w-md flex flex-col gap-2">
+             <div className="mx-auto max-w-4xl flex flex-col gap-2">
                {step === 4 && (
-                 <div className="text-center text-[10px] text-gray-500 flex justify-center items-center gap-1">
+                 <div className="text-center text-[10px] sm:text-xs text-gray-500 flex justify-center items-center gap-1 mb-1">
                    <Timer className="h-3 w-3" /> Cerita tersimpan selama 9:56 — selesaikan checkout untuk menyimpannya
                  </div>
                )}
@@ -1331,18 +1331,19 @@ export function ConfigRoute() {
                    <Button 
                      type="button" 
                      variant="outline" 
-                     size="icon" 
-                     className="shrink-0 h-12 w-12 rounded-xl border-gray-200"
+                     size="lg" 
+                     className="shrink-0 h-12 sm:h-14 px-4 sm:px-8 rounded-xl border-gray-200 hover:bg-gray-50 active:scale-95 transition-all"
                      onClick={handleBack}
                      disabled={loading}
                    >
                      <ChevronLeft className="h-5 w-5" />
+                     <span className="hidden sm:inline ml-2 font-bold">Kembali</span>
                    </Button>
                  )}
                  
                  <Button 
                    type="submit" 
-                   className="h-12 w-full rounded-xl bg-[#E11D48] text-base font-bold text-white shadow-lg shadow-rose-200 hover:bg-rose-700 active:scale-95 transition-all"
+                   className="h-12 sm:h-14 w-full rounded-xl bg-[#E11D48] text-base sm:text-lg font-bold text-white shadow-lg shadow-rose-200 hover:bg-rose-700 active:scale-95 transition-all"
                    onClick={step < 4 ? (e) => { e.preventDefault(); handleNext(); } : undefined}
                   disabled={
                     loading ||
