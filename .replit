@@ -44,5 +44,5 @@ externalPort = 3002
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["bash", "-c", "cd /home/runner/workspace/apps/api && PORT=5000 node dist/src/index.js"]
-build = ["bash", "-c", "cd /home/runner/workspace && npm run build && cd apps/api && npx prisma db push --skip-generate"]
+run = ["bash", "-c", "cd /home/runner/workspace/apps/api && PORT=5000 npx tsx src/index.ts"]
+build = ["bash", "-c", "cd /home/runner/workspace && npm run build --workspace=shared && npm run build --workspace=web && cd apps/api && npx prisma generate && npx prisma db push --skip-generate"]
