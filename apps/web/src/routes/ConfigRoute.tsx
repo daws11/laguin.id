@@ -1205,7 +1205,7 @@ export function ConfigRoute() {
                                 if (normalizedLocal.startsWith('62')) normalizedLocal = normalizedLocal.slice(2)
                                 field.onChange(`62${normalizedLocal}`)
                              }}
-                             placeholder="8123456789"
+                             placeholder="Masukkan nomor WhatsApp"
                              inputMode="numeric"
                              pattern="[0-9]*"
                              type="tel"
