@@ -64,7 +64,10 @@ export function XenditCard({ settings, saveSettings, loading }: Props) {
                 value={webhookToken}
                 onChange={(e) => setWebhookToken(e.target.value)}
               />
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                URL Callback untuk diatur di dashboard Xendit:<br />
+                <code className="bg-muted px-1 rounded select-all font-mono">https://{window.location.host}/api/xendit/callback</code>
+                <br />
                 Bisa ditemukan di Xendit Dashboard → Settings → Callbacks
               </p>
             </div>
