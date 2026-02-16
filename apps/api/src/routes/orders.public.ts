@@ -90,11 +90,9 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
           })
       }
     }
-    if (!manualConfirmationEnabled) {
+    const emailRequired = !manualConfirmationEnabled && emailOtpEnabled
+    if (emailRequired) {
       if (!emailLower) return reply.code(400).send({ error: 'Email tidak valid.' })
-    }
-
-    if (!manualConfirmationEnabled) {
       const existingByEmail = await prisma.customer.findFirst({
         where: { emailLower },
         select: { id: true },
@@ -116,12 +114,12 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
         data: {
           name: customerName,
           whatsappNumber: whatsappEnabled ? whatsappNumber : null,
-          ...(manualConfirmationEnabled
-            ? { email: null, emailLower: null }
-            : {
+          ...(emailRequired
+            ? {
                 email: (normalizedInput as any).email,
                 emailLower,
-              }),
+              }
+            : { email: null, emailLower: null }),
         },
         select: { id: true },
       })

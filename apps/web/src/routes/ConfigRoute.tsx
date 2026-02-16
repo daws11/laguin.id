@@ -682,15 +682,15 @@ export function ConfigRoute() {
   }
 
   const onSubmit = async (data: OrderInput) => {
-    if (!manualConfirmationEnabled) {
+    if (!manualConfirmationEnabled && emailOtpEnabled) {
       if (!data.email) {
         setError('Masukkan alamat email untuk melanjutkan.')
         return
       }
-    }
-    if (!manualConfirmationEnabled && emailOtpEnabled && (!emailVerified || !data.emailVerificationId)) {
-      setError('Verifikasi email dulu sebelum lanjut ke checkout.')
-      return
+      if (!emailVerified || !data.emailVerificationId) {
+        setError('Verifikasi email dulu sebelum lanjut ke checkout.')
+        return
+      }
     }
     setLoading(true)
     setError(null)
@@ -701,10 +701,8 @@ export function ConfigRoute() {
       if (!whatsappEnabled) {
         delete payload.whatsappNumber
       }
-      if (manualConfirmationEnabled) {
+      if (manualConfirmationEnabled || !emailOtpEnabled) {
         delete payload.email
-        delete payload.emailVerificationId
-      } else if (!emailOtpEnabled) {
         delete payload.emailVerificationId
       }
       // Agreement UI is temporarily disabled, but backend may still enforce it.
@@ -1190,7 +1188,7 @@ export function ConfigRoute() {
                  </div>
                  )}
 
-                 {!manualConfirmationEnabled ? (
+                 {!manualConfirmationEnabled && emailOtpEnabled ? (
                    <>
                      <div className="space-y-1">
                        <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Alamat Email</label>
