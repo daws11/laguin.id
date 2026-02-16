@@ -44,6 +44,14 @@ A monorepo application for creating personalized songs for special occasions. Bu
 - Shared package must be built before other packages (`npm run build -w shared`)
 
 ## Recent Changes
+- 2026-02-16: Per-theme reviews/testimonials section
+  - Added ReviewItem type (style: accent/dark-chat/white, quote, chatMessages, authorName, authorMeta, authorAvatarUrl)
+  - Reviews section header (label, headline, subtext) editable per theme
+  - Review cards fully configurable with add/remove/edit in theme editor "Reviews" tab
+  - Dark-chat style supports chatMessages array for WhatsApp-like message bubbles
+  - Accent style renders with theme color bg and star rating
+  - White style renders with white bg and star rating
+  - LandingRoute renders reviews dynamically from theme config with smart defaults
 - 2026-02-16: Xendit payment gateway integration (full stack)
   - Backend: Xendit service (apps/api/src/lib/xendit.ts) for invoice creation with Basic auth
   - Webhook endpoint (POST /api/xendit/callback) for payment callbacks with token verification

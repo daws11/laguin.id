@@ -43,6 +43,14 @@ export type Settings = {
 
 export type LandingPlaylistItem = { title: string; subtitle: string; ctaLabel: string; audioUrl: string }
 export type ToastItem = { fullName: string; city: string; recipientName: string }
+export type ReviewItem = {
+  style: 'accent' | 'dark-chat' | 'white'
+  quote: string
+  chatMessages?: string[]
+  authorName: string
+  authorMeta: string
+  authorAvatarUrl: string
+}
 
 export type ThemeColors = {
   accentColor: string
@@ -95,6 +103,12 @@ export type PublicSiteDraft = {
       }
       playlist: LandingPlaylistItem[]
     }
+  }
+  reviews: {
+    sectionLabel: string
+    sectionHeadline: string
+    sectionSubtext: string
+    items: ReviewItem[]
   }
   heroCheckmarks: string[]
   trustBadges: {

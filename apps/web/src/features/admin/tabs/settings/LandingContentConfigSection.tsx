@@ -56,6 +56,7 @@ export function LandingContentConfigSection({
     { id: 'landing-overlay', label: 'Hero Overlay', icon: Type, group: 'Landing Page' },
     { id: 'landing-player', label: 'Hero Player', icon: PlayCircle, group: 'Landing Page' },
     { id: 'trust-stats', label: 'Trust & Stats', icon: ShieldCheck, group: 'Landing Page' },
+    { id: 'reviews', label: 'Reviews', icon: MessageSquare, group: 'Landing Page' },
     { id: 'music', label: 'Music Playlist', icon: Music, group: 'Content' },
     { id: 'toast', label: 'Activity Toast', icon: MessageSquare, group: 'Content' },
     { id: 'creation-delivery', label: t.creationDelivery ?? 'Creation & Delivery', icon: Zap, group: 'System' },
@@ -894,6 +895,200 @@ export function LandingContentConfigSection({
                     }))}
                   >
                     + Tambah Stat
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'reviews' && (
+              <div className="space-y-4 animate-in fade-in duration-300">
+                <div className="pb-2 border-b">
+                  <h3 className="text-base font-semibold">Section Header</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Judul dan deskripsi bagian review di landing page.</p>
+                </div>
+                <div className="grid gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Label</label>
+                    <Input
+                      className="h-8 text-sm"
+                      placeholder="Reaksi Nyata"
+                      value={draft.reviews.sectionLabel}
+                      onChange={(e) => setDraft(d => ({ ...d, reviews: { ...d.reviews, sectionLabel: e.target.value } }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Headline (HTML ok)</label>
+                    <Input
+                      className="h-8 text-sm"
+                      value={draft.reviews.sectionHeadline}
+                      onChange={(e) => setDraft(d => ({ ...d, reviews: { ...d.reviews, sectionHeadline: e.target.value } }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Subtext</label>
+                    <Input
+                      className="h-8 text-sm"
+                      value={draft.reviews.sectionSubtext}
+                      onChange={(e) => setDraft(d => ({ ...d, reviews: { ...d.reviews, sectionSubtext: e.target.value } }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="pb-2 border-b pt-4">
+                  <h3 className="text-base font-semibold">Review Cards</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Testimoni yang ditampilkan di landing page. Pilih style: accent (warna tema), dark-chat (WhatsApp), white (putih).</p>
+                </div>
+                <div className="space-y-4">
+                  {draft.reviews.items.map((item, idx) => (
+                    <div key={idx} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Review {idx + 1}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={() => setDraft(d => ({
+                            ...d,
+                            reviews: { ...d.reviews, items: d.reviews.items.filter((_, i) => i !== idx) }
+                          }))}
+                        >
+                          &times;
+                        </Button>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Style</label>
+                        <select
+                          className="w-full h-8 text-sm border rounded px-2 bg-background"
+                          value={item.style}
+                          onChange={(e) => setDraft(d => {
+                            const items = [...d.reviews.items]
+                            items[idx] = { ...items[idx], style: e.target.value as 'accent' | 'dark-chat' | 'white' }
+                            return { ...d, reviews: { ...d.reviews, items } }
+                          })}
+                        >
+                          <option value="accent">Accent (warna tema)</option>
+                          <option value="dark-chat">Dark Chat (WhatsApp)</option>
+                          <option value="white">White</option>
+                        </select>
+                      </div>
+                      {item.style === 'dark-chat' ? (
+                        <div className="space-y-2">
+                          <label className="text-xs font-medium text-muted-foreground">Chat Messages</label>
+                          {(item.chatMessages || []).map((msg, mi) => (
+                            <div key={mi} className="flex gap-2 items-center">
+                              <Input
+                                className="h-8 text-sm flex-1"
+                                value={msg}
+                                onChange={(e) => setDraft(d => {
+                                  const items = [...d.reviews.items]
+                                  const msgs = [...(items[idx].chatMessages || [])]
+                                  msgs[mi] = e.target.value
+                                  items[idx] = { ...items[idx], chatMessages: msgs }
+                                  return { ...d, reviews: { ...d.reviews, items } }
+                                })}
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive hover:text-destructive shrink-0"
+                                onClick={() => setDraft(d => {
+                                  const items = [...d.reviews.items]
+                                  const msgs = (items[idx].chatMessages || []).filter((_, i) => i !== mi)
+                                  items[idx] = { ...items[idx], chatMessages: msgs }
+                                  return { ...d, reviews: { ...d.reviews, items } }
+                                })}
+                              >
+                                &times;
+                              </Button>
+                            </div>
+                          ))}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => setDraft(d => {
+                              const items = [...d.reviews.items]
+                              items[idx] = { ...items[idx], chatMessages: [...(items[idx].chatMessages || []), ''] }
+                              return { ...d, reviews: { ...d.reviews, items } }
+                            })}
+                          >
+                            + Tambah Pesan
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-muted-foreground">Quote (HTML ok: &lt;strong&gt;)</label>
+                          <Textarea
+                            className="text-sm min-h-[60px]"
+                            value={item.quote}
+                            onChange={(e) => setDraft(d => {
+                              const items = [...d.reviews.items]
+                              items[idx] = { ...items[idx], quote: e.target.value }
+                              return { ...d, reviews: { ...d.reviews, items } }
+                            })}
+                          />
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-muted-foreground">Nama</label>
+                          <Input
+                            className="h-8 text-sm"
+                            value={item.authorName}
+                            onChange={(e) => setDraft(d => {
+                              const items = [...d.reviews.items]
+                              items[idx] = { ...items[idx], authorName: e.target.value }
+                              return { ...d, reviews: { ...d.reviews, items } }
+                            })}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-muted-foreground">Meta (lokasi/waktu)</label>
+                          <Input
+                            className="h-8 text-sm"
+                            value={item.authorMeta}
+                            onChange={(e) => setDraft(d => {
+                              const items = [...d.reviews.items]
+                              items[idx] = { ...items[idx], authorMeta: e.target.value }
+                              return { ...d, reviews: { ...d.reviews, items } }
+                            })}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Avatar URL</label>
+                        <Input
+                          className="h-8 text-sm"
+                          placeholder="https://..."
+                          value={item.authorAvatarUrl}
+                          onChange={(e) => setDraft(d => {
+                            const items = [...d.reviews.items]
+                            items[idx] = { ...items[idx], authorAvatarUrl: e.target.value }
+                            return { ...d, reviews: { ...d.reviews, items } }
+                          })}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setDraft(d => ({
+                      ...d,
+                      reviews: {
+                        ...d.reviews,
+                        items: [...d.reviews.items, {
+                          style: 'white' as const,
+                          quote: '',
+                          authorName: '',
+                          authorMeta: '',
+                          authorAvatarUrl: '',
+                        }]
+                      }
+                    }))}
+                  >
+                    + Tambah Review
                   </Button>
                 </div>
               </div>

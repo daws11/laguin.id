@@ -58,6 +58,19 @@ type PublicSiteConfig = {
   heroCheckmarks?: string[]
   trustBadges?: { badge1?: string; badge2?: string; badge3?: string }
   statsBar?: { items?: Array<{ val?: string; label?: string }> }
+  reviews?: {
+    sectionLabel?: string
+    sectionHeadline?: string
+    sectionSubtext?: string
+    items?: Array<{
+      style?: 'accent' | 'dark-chat' | 'white'
+      quote?: string
+      chatMessages?: string[]
+      authorName?: string
+      authorMeta?: string
+      authorAvatarUrl?: string
+    }>
+  }
   activityToast?: ActivityToastConfig
   colors?: { accentColor?: string; bgColor1?: string; bgColor2?: string }
 }
@@ -624,6 +637,35 @@ export function LandingRoute() {
         { val: deliveryEta.short, label: 'Pengiriman' },
         { val: '2,847', label: 'Lagu Terkirim' },
       ]
+  const reviewsSection = site.reviews ?? {}
+  const reviewSectionLabel = reviewsSection.sectionLabel || 'Reaksi Nyata'
+  const reviewSectionHeadline = reviewsSection.sectionHeadline || '"Dia <span class="text-[var(--theme-accent)] italic">tidak pernah</span> menangis"'
+  const reviewSectionSubtext = reviewsSection.sectionSubtext || '...mereka semua bilang begitu. 98% salah.'
+  const reviewItems = (reviewsSection.items && reviewsSection.items.length > 0)
+    ? reviewsSection.items
+    : [
+        {
+          style: 'accent' as const,
+          quote: 'Suami saya itu mantan TNI, orangnya keras. 12 tahun nikah, <strong class="bg-white/20 px-1 rounded">GAK PERNAH nangis.</strong> Eh, pas denger lagu ini, dia langsung mewek bahkan sebelum masuk reff.',
+          authorName: 'Rina',
+          authorMeta: 'Jakarta • Feb 2025',
+          authorAvatarUrl: 'https://images.unsplash.com/photo-1562904403-a5106bef8319?w=100&h=100&fit=crop',
+        },
+        {
+          style: 'dark-chat' as const,
+          chatMessages: ['Ka, lagunya baru masuk 😭😭😭', 'Sumpah ini aku gemeteran!!', 'Dia bakal MELELEH besok 🥺'],
+          authorName: 'Sinta',
+          authorMeta: 'WhatsApp • Kemarin',
+          authorAvatarUrl: 'https://images.unsplash.com/photo-1630758664435-72a78888fb9d?w=100&h=100&fit=crop',
+        },
+        {
+          style: 'white' as const,
+          quote: 'Doi terpaksa <strong class="text-[var(--theme-accent)]">minggirin mobil</strong> — katanya burem kena air mata. 15 tahun nikah, akhirnya bisa bikin doi nangis juga 😂',
+          authorName: 'Ema',
+          authorMeta: 'Surabaya • Jan 2025',
+          authorAvatarUrl: 'https://images.unsplash.com/photo-1613447895590-97f008b7fff3?w=100&h=100&fit=crop',
+        },
+      ]
 
   const heroHeadlineLine1 =
     typeof landing.heroHeadline?.line1 === 'string' && landing.heroHeadline.line1.trim()
@@ -1062,65 +1104,72 @@ export function LandingRoute() {
         {/* SOCIAL PROOF / REVIEWS */}
         <section className="space-y-10">
           <div className="text-center space-y-2">
-            <div className="text-[var(--theme-accent)] text-sm font-bold uppercase tracking-wider">Reaksi Nyata</div>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">"Dia <span className="text-[var(--theme-accent)] italic">tidak pernah</span> menangis"</h2>
-            <p className="text-gray-600">...mereka semua bilang begitu. 98% salah.</p>
+            <div className="text-[var(--theme-accent)] text-sm font-bold uppercase tracking-wider">{reviewSectionLabel}</div>
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900" dangerouslySetInnerHTML={{ __html: sanitizeHtml(reviewSectionHeadline) }} />
+            <p className="text-gray-600">{reviewSectionSubtext}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-[var(--theme-accent)] text-white p-8 rounded-3xl shadow-lg transform md:-rotate-1 hover:rotate-0 transition-transform">
-               <div className="flex text-yellow-300 mb-4">
-                 {[1,2,3,4,5].map(i => <Star key={i} className="h-4 w-4 fill-current" />)}
-               </div>
-               <p className="font-medium text-lg mb-6 leading-relaxed">
-                 "Suami saya itu mantan TNI, orangnya keras. 12 tahun nikah, <strong className="bg-white/20 px-1 rounded">GAK PERNAH nangis.</strong> Eh, pas denger lagu ini, dia langsung mewek bahkan sebelum masuk reff."
-               </p>
-               <div className="flex items-center gap-3">
-                 <img src="https://images.unsplash.com/photo-1562904403-a5106bef8319?w=100&h=100&fit=crop" alt="" className="w-10 h-10 rounded-full border-2 border-white/50 object-cover" loading="lazy" />
-                 <div>
-                   <div className="font-bold">Rina</div>
-                   <div className="text-xs opacity-80">Jakarta • Feb 2025</div>
-                 </div>
-               </div>
-            </div>
+            {reviewItems.map((review, idx) => {
+              const transforms = ['md:-rotate-1 hover:rotate-0', 'md:translate-y-4 hover:translate-y-2', 'md:rotate-1 hover:rotate-0']
+              const transform = transforms[idx % transforms.length]
 
-            <div className="bg-gray-900 text-white p-8 rounded-3xl shadow-lg transform md:translate-y-4 hover:translate-y-2 transition-transform">
-               {/* Chat UI */}
-               <div className="space-y-4 font-sans text-sm">
-                 <div className="bg-white/10 rounded-2xl rounded-tl-sm p-3 self-start max-w-[90%]">
-                    Ka, lagunya baru masuk 😭😭😭
-                 </div>
-                 <div className="bg-blue-600 rounded-2xl rounded-tr-sm p-3 self-end ml-auto max-w-[90%]">
-                    Sumpah ini aku gemeteran!!
-                 </div>
-                 <div className="bg-blue-600 rounded-2xl rounded-tr-sm p-3 self-end ml-auto max-w-[90%]">
-                    Dia bakal MELELEH besok 🥺
-                 </div>
-               </div>
-               <div className="mt-6 flex items-center gap-3 pt-6 border-t border-white/10">
-                 <img src="https://images.unsplash.com/photo-1630758664435-72a78888fb9d?w=100&h=100&fit=crop" alt="" className="w-10 h-10 rounded-full border-2 border-white/50 object-cover" loading="lazy" />
-                 <div>
-                   <div className="font-bold">Sinta</div>
-                   <div className="text-xs opacity-80">WhatsApp • Kemarin</div>
-                 </div>
-               </div>
-            </div>
+              if (review.style === 'accent') {
+                return (
+                  <div key={idx} className={`bg-[var(--theme-accent)] text-white p-8 rounded-3xl shadow-lg transform ${transform} transition-transform`}>
+                    <div className="flex text-yellow-300 mb-4">
+                      {[1,2,3,4,5].map(i => <Star key={i} className="h-4 w-4 fill-current" />)}
+                    </div>
+                    <p className="font-medium text-lg mb-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: `"${sanitizeHtml(review.quote || '')}"` }} />
+                    <div className="flex items-center gap-3">
+                      {review.authorAvatarUrl && <img src={review.authorAvatarUrl} alt="" className="w-10 h-10 rounded-full border-2 border-white/50 object-cover" loading="lazy" />}
+                      <div>
+                        <div className="font-bold">{review.authorName}</div>
+                        <div className="text-xs opacity-80">{review.authorMeta}</div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              }
 
-            <div className="bg-white border border-gray-100 p-8 rounded-3xl shadow-lg transform md:rotate-1 hover:rotate-0 transition-transform">
-               <div className="flex text-yellow-400 mb-4">
-                 {[1,2,3,4,5].map(i => <Star key={i} className="h-4 w-4 fill-current" />)}
-               </div>
-               <p className="font-medium text-gray-800 text-lg mb-6 leading-relaxed">
-                 "Doi terpaksa <strong className="text-[var(--theme-accent)]">minggirin mobil</strong> — katanya burem kena air mata. 15 tahun nikah, akhirnya bisa bikin doi nangis juga 😂"
-               </p>
-               <div className="flex items-center gap-3">
-                 <img src="https://images.unsplash.com/photo-1613447895590-97f008b7fff3?w=100&h=100&fit=crop" alt="" className="w-10 h-10 rounded-full border-2 border-gray-100 object-cover" loading="lazy" />
-                 <div>
-                   <div className="font-bold text-gray-900">Ema</div>
-                   <div className="text-xs text-gray-500">Surabaya • Jan 2025</div>
-                 </div>
-               </div>
-            </div>
+              if (review.style === 'dark-chat') {
+                const msgs = review.chatMessages || []
+                return (
+                  <div key={idx} className={`bg-gray-900 text-white p-8 rounded-3xl shadow-lg transform ${transform} transition-transform`}>
+                    <div className="space-y-4 font-sans text-sm">
+                      {msgs.map((msg, mi) => (
+                        <div key={mi} className={mi === 0 ? "bg-white/10 rounded-2xl rounded-tl-sm p-3 self-start max-w-[90%]" : "bg-blue-600 rounded-2xl rounded-tr-sm p-3 self-end ml-auto max-w-[90%]"}>
+                          {msg}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-6 flex items-center gap-3 pt-6 border-t border-white/10">
+                      {review.authorAvatarUrl && <img src={review.authorAvatarUrl} alt="" className="w-10 h-10 rounded-full border-2 border-white/50 object-cover" loading="lazy" />}
+                      <div>
+                        <div className="font-bold">{review.authorName}</div>
+                        <div className="text-xs opacity-80">{review.authorMeta}</div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              }
+
+              return (
+                <div key={idx} className={`bg-white border border-gray-100 p-8 rounded-3xl shadow-lg transform ${transform} transition-transform`}>
+                  <div className="flex text-yellow-400 mb-4">
+                    {[1,2,3,4,5].map(i => <Star key={i} className="h-4 w-4 fill-current" />)}
+                  </div>
+                  <p className="font-medium text-gray-800 text-lg mb-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: `"${sanitizeHtml(review.quote || '')}"` }} />
+                  <div className="flex items-center gap-3">
+                    {review.authorAvatarUrl && <img src={review.authorAvatarUrl} alt="" className="w-10 h-10 rounded-full border-2 border-gray-100 object-cover" loading="lazy" />}
+                    <div>
+                      <div className="font-bold text-gray-900">{review.authorName}</div>
+                      <div className="text-xs text-gray-500">{review.authorMeta}</div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </section>
 

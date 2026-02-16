@@ -56,6 +56,39 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
       ],
     },
   },
+  reviews: {
+    sectionLabel: 'Reaksi Nyata',
+    sectionHeadline: '"Dia <span class="text-[var(--theme-accent)] italic">tidak pernah</span> menangis"',
+    sectionSubtext: '...mereka semua bilang begitu. 98% salah.',
+    items: [
+      {
+        style: 'accent',
+        quote: 'Suami saya itu mantan TNI, orangnya keras. 12 tahun nikah, <strong>GAK PERNAH nangis.</strong> Eh, pas denger lagu ini, dia langsung mewek bahkan sebelum masuk reff.',
+        authorName: 'Rina',
+        authorMeta: 'Jakarta • Feb 2025',
+        authorAvatarUrl: 'https://images.unsplash.com/photo-1562904403-a5106bef8319?w=100&h=100&fit=crop',
+      },
+      {
+        style: 'dark-chat',
+        quote: '',
+        chatMessages: [
+          'Ka, lagunya baru masuk 😭😭😭',
+          'Sumpah ini aku gemeteran!!',
+          'Dia bakal MELELEH besok 🥺',
+        ],
+        authorName: 'Sinta',
+        authorMeta: 'WhatsApp • Kemarin',
+        authorAvatarUrl: 'https://images.unsplash.com/photo-1630758664435-72a78888fb9d?w=100&h=100&fit=crop',
+      },
+      {
+        style: 'white',
+        quote: 'Doi terpaksa <strong>minggirin mobil</strong> — katanya burem kena air mata. 15 tahun nikah, akhirnya bisa bikin doi nangis juga 😂',
+        authorName: 'Ema',
+        authorMeta: 'Surabaya • Jan 2025',
+        authorAvatarUrl: 'https://images.unsplash.com/photo-1613447895590-97f008b7fff3?w=100&h=100&fit=crop',
+      },
+    ],
+  },
   heroCheckmarks: ['Kualitas Studio', '98% Menangis', 'Revisi Gratis'],
   trustBadges: {
     badge1: '24h Delivery',
@@ -154,6 +187,15 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
   const colors = cfg?.colors && typeof cfg.colors === 'object' ? cfg.colors : {}
   const cd = cfg?.creationDelivery && typeof cfg.creationDelivery === 'object' ? cfg.creationDelivery : {}
   const toast = cfg?.activityToast && typeof cfg.activityToast === 'object' ? cfg.activityToast : {}
+  const rv = cfg?.reviews && typeof cfg.reviews === 'object' ? cfg.reviews : {} as any
+  const reviewItems = safeArr(rv?.items, (x: any) => ({
+    style: (['accent', 'dark-chat', 'white'].includes(x?.style) ? x.style : 'white') as 'accent' | 'dark-chat' | 'white',
+    quote: asString(x?.quote, ''),
+    chatMessages: Array.isArray(x?.chatMessages) ? x.chatMessages.filter((m: any) => typeof m === 'string' && m.trim()) : undefined,
+    authorName: asString(x?.authorName, ''),
+    authorMeta: asString(x?.authorMeta, ''),
+    authorAvatarUrl: asString(x?.authorAvatarUrl, ''),
+  }))
   const heroCheckmarksRaw = safeArr(cfg?.heroCheckmarks, (x) => typeof x === 'string' ? x : '').filter((x: string) => x.trim())
   const tb = cfg?.trustBadges && typeof cfg.trustBadges === 'object' ? cfg.trustBadges : {}
   const sb = cfg?.statsBar && typeof cfg.statsBar === 'object' ? cfg.statsBar : {}
@@ -217,6 +259,12 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
         },
         playlist: playlist.length ? playlist : defaultPublicSiteDraft.landing.audioSamples.playlist,
       },
+    },
+    reviews: {
+      sectionLabel: asString(rv?.sectionLabel, defaultPublicSiteDraft.reviews.sectionLabel),
+      sectionHeadline: asString(rv?.sectionHeadline, defaultPublicSiteDraft.reviews.sectionHeadline),
+      sectionSubtext: asString(rv?.sectionSubtext, defaultPublicSiteDraft.reviews.sectionSubtext),
+      items: reviewItems.length ? reviewItems : defaultPublicSiteDraft.reviews.items,
     },
     heroCheckmarks: heroCheckmarksRaw.length ? heroCheckmarksRaw : defaultPublicSiteDraft.heroCheckmarks,
     trustBadges: {
@@ -347,6 +395,20 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
 
   const nextHeroCheckmarks = draft.heroCheckmarks.map((x) => x.trim()).filter((x) => x)
 
-  return { logoUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, heroCheckmarks: nextHeroCheckmarks, trustBadges: nextTrustBadges, statsBar: nextStatsBar }
+  const nextReviews = {
+    sectionLabel: draft.reviews.sectionLabel.trim(),
+    sectionHeadline: draft.reviews.sectionHeadline.trim(),
+    sectionSubtext: draft.reviews.sectionSubtext.trim(),
+    items: draft.reviews.items.map((x) => ({
+      style: x.style,
+      quote: x.quote.trim(),
+      ...(x.style === 'dark-chat' && x.chatMessages ? { chatMessages: x.chatMessages.filter((m) => m.trim()) } : {}),
+      authorName: x.authorName.trim(),
+      authorMeta: x.authorMeta.trim(),
+      authorAvatarUrl: x.authorAvatarUrl.trim(),
+    })),
+  }
+
+  return { logoUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, heroCheckmarks: nextHeroCheckmarks, trustBadges: nextTrustBadges, statsBar: nextStatsBar, reviews: nextReviews }
 }
 
