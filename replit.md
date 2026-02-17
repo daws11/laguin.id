@@ -12,7 +12,7 @@ A monorepo application for creating personalized songs for special occasions. Bu
 
 ## Tech Stack
 - **Frontend**: React 19, Vite, TailwindCSS, React Router, React Hook Form, shadcn/ui
-- **Backend**: Fastify, Prisma ORM, JWT auth, OpenAI integration, Resend/SMTP email
+- **Backend**: Fastify, Prisma ORM, JWT auth, OpenRouter integration (via OpenAI SDK), Resend/SMTP email
 - **Database**: PostgreSQL (Replit built-in)
 - **Language**: TypeScript (ESM throughout)
 
@@ -44,6 +44,13 @@ A monorepo application for creating personalized songs for special occasions. Bu
 - Shared package must be built before other packages (`npm run build -w shared`)
 
 ## Recent Changes
+- 2026-02-17: OpenRouter integration with configurable model
+  - Replaced OpenAI direct integration with OpenRouter (uses OpenAI SDK with custom baseURL)
+  - New openaiModel column on Settings for admin-configurable model selection
+  - Admin API Keys card relabeled to "OpenRouter API Key" with model input field
+  - Model examples shown: openai/gpt-4o-mini, anthropic/claude-3.5-sonnet, google/gemini-2.0-flash
+  - Fallback chain: settings model -> OPENAI_MODEL env -> openai/gpt-4o-mini
+  - Generation pipeline passes configured model to all AI text generation calls
 - 2026-02-17: Admin Customers tab redesign & bulk delete
   - Rewrote AdminCustomersTab to match OrdersTab layout (table view, checkboxes, search, filter, sorting)
   - Type filter: All / Customers / Drafts

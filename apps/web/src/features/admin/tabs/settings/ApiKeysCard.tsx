@@ -8,7 +8,7 @@ import type { Settings } from '@/features/admin/types'
 interface Props {
   settings: Settings | null
   saveSettings: (
-    partial: Partial<Settings> & { openaiApiKey?: string; kaiAiApiKey?: string; ycloudApiKey?: string },
+    partial: Partial<Settings> & { openaiApiKey?: string; kaiAiApiKey?: string; ycloudApiKey?: string; openaiModel?: string | null },
   ) => Promise<Settings | null>
   t: any
 }
@@ -16,18 +16,22 @@ interface Props {
 export function ApiKeysCard({ settings, saveSettings, t }: Props) {
   const [openaiKey, setOpenaiKey] = useState('')
   const [kaiaiKey, setKaiaiKey] = useState('')
+  const [model, setModel] = useState(settings?.openaiModel ?? '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  const dirty = openaiKey.trim().length > 0 || kaiaiKey.trim().length > 0
+  const dirty = openaiKey.trim().length > 0 || kaiaiKey.trim().length > 0 || model !== (settings?.openaiModel ?? '')
 
   async function handleSave() {
     if (!dirty) return
     setSaving(true)
     try {
-      const payload: Record<string, string> = {}
+      const payload: Record<string, string | null> = {}
       if (openaiKey.trim()) payload.openaiApiKey = openaiKey.trim()
       if (kaiaiKey.trim()) payload.kaiAiApiKey = kaiaiKey.trim()
+      if (model !== (settings?.openaiModel ?? '')) {
+        payload.openaiModel = model.trim() || null
+      }
       await saveSettings(payload as any)
       setOpenaiKey('')
       setKaiaiKey('')
@@ -55,11 +59,11 @@ export function ApiKeysCard({ settings, saveSettings, t }: Props) {
           <>
             <div className="space-y-0.5">
               <div className="text-[10px] font-medium text-muted-foreground">
-                OpenAI API Key {settings.hasOpenaiKey && <span className="text-green-600">(tersimpan)</span>}
+                OpenRouter API Key {settings.hasOpenaiKey && <span className="text-green-600">(tersimpan)</span>}
               </div>
               <Input
                 className="h-7 text-xs"
-                placeholder={settings.hasOpenaiKey ? '••••••••••••••••' : t.setOpenai}
+                placeholder={settings.hasOpenaiKey ? '••••••••••••••••' : 'sk-or-...'}
                 type="password"
                 value={openaiKey}
                 onChange={(e) => setOpenaiKey(e.target.value)}
@@ -67,7 +71,21 @@ export function ApiKeysCard({ settings, saveSettings, t }: Props) {
             </div>
             <div className="space-y-0.5">
               <div className="text-[10px] font-medium text-muted-foreground">
-                kai.ai API Key {settings.hasKaiAiKey && <span className="text-green-600">(tersimpan)</span>}
+                Model
+              </div>
+              <Input
+                className="h-7 text-xs"
+                placeholder="openai/gpt-4o-mini"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+              />
+              <div className="text-[10px] text-muted-foreground">
+                Contoh: openai/gpt-4o-mini, anthropic/claude-3.5-sonnet, google/gemini-2.0-flash
+              </div>
+            </div>
+            <div className="space-y-0.5">
+              <div className="text-[10px] font-medium text-muted-foreground">
+                kie.ai API Key {settings.hasKaiAiKey && <span className="text-green-600">(tersimpan)</span>}
               </div>
               <Input
                 className="h-7 text-xs"

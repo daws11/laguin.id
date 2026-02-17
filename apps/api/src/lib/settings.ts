@@ -80,6 +80,11 @@ export async function getOpenAIApiKey() {
   return maybeDecrypt(settings.openaiApiKeyEnc) ?? process.env.OPENAI_API_KEY ?? null
 }
 
+export async function getOpenAIModel() {
+  const settings = await getOrCreateSettings()
+  return settings.openaiModel ?? null
+}
+
 export async function getKaiAiApiKey() {
   const settings = await getOrCreateSettings()
   return maybeDecrypt(settings.kaiAiApiKeyEnc) ?? process.env.KAI_AI_KEY ?? null

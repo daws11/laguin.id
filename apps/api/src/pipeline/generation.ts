@@ -2,7 +2,7 @@ import { renderPrompt, OrderInputSchema } from 'shared'
 
 import { prisma } from '../lib/prisma'
 import { addOrderEvent } from '../lib/events'
-import { getKaiAiApiKey, getOpenAIApiKey, getOrCreateSettings } from '../lib/settings'
+import { getKaiAiApiKey, getOpenAIApiKey, getOpenAIModel, getOrCreateSettings } from '../lib/settings'
 import { generateTextWithOpenAI } from '../clients/openaiClient'
 import { createSunoTaskWithKieAi, getSunoTaskWithKieAi } from '../clients/kaiAiClient'
 import type { Prisma } from '@prisma/client'
@@ -52,6 +52,7 @@ export async function processOrderGeneration(orderId: string) {
   let input = OrderInputSchema.parse(order.inputPayload)
 
   const settings = await getOrCreateSettings()
+  const aiModel = await getOpenAIModel()
   const templates = await prisma.promptTemplate.findMany({
     where: { isActive: true },
   })
@@ -112,6 +113,7 @@ export async function processOrderGeneration(orderId: string) {
         prompt,
         systemPrompt: 'Return only valid JSON.',
         temperature: 0.2,
+        model: aiModel,
       })
       const parsed = extractFirstJsonObject(raw)
       const nextMood = !isBlank(input.musicPreferences.mood) ? input.musicPreferences.mood : parsed?.mood
@@ -160,9 +162,9 @@ export async function processOrderGeneration(orderId: string) {
     const prompt = renderPrompt(lyricsTemplate.templateText, baseVars)
 
     if (!apiKey) {
-      lyricsText = `(${order.id}) Lyrics generation not configured. Set OpenAI key in Admin Settings.`
+      lyricsText = `(${order.id}) Lyrics generation not configured. Set OpenRouter key in Admin Settings.`
     } else {
-      lyricsText = await generateTextWithOpenAI({ apiKey, prompt })
+      lyricsText = await generateTextWithOpenAI({ apiKey, prompt, model: aiModel })
     }
 
     await prisma.order.update({
@@ -183,7 +185,7 @@ export async function processOrderGeneration(orderId: string) {
     if (!apiKey) {
       moodDescription = `(${order.id}) Mood generation not configured.`
     } else {
-      moodDescription = await generateTextWithOpenAI({ apiKey, prompt })
+      moodDescription = await generateTextWithOpenAI({ apiKey, prompt, model: aiModel })
     }
 
     await prisma.order.update({

@@ -22,6 +22,7 @@ const UpdateSchema = z.object({
   metaPixelWishlistId: z.string().optional().nullable(),
 
   openaiApiKey: z.string().min(1).optional(),
+  openaiModel: z.string().optional().nullable(),
   kaiAiApiKey: z.string().min(1).optional(),
 
   xenditSecretKey: z.string().min(1).optional(),
@@ -52,6 +53,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       whatsappConfig: s.whatsappConfig,
       publicSiteConfig: (s as any).publicSiteConfig ?? null,
       hasOpenaiKey: Boolean(maybeDecrypt(s.openaiApiKeyEnc)),
+      openaiModel: s.openaiModel ?? null,
       hasKaiAiKey: Boolean(maybeDecrypt(s.kaiAiApiKeyEnc)),
       ycloudFrom: typeof ycloud.from === 'string' ? ycloud.from : null,
       ycloudTemplateName: typeof ycloud.templateName === 'string' ? ycloud.templateName : null,
@@ -124,6 +126,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       allowMultipleOrdersPerWhatsapp: parsed.data.allowMultipleOrdersPerWhatsapp,
     }
 
+    if (parsed.data.openaiModel !== undefined) data.openaiModel = parsed.data.openaiModel
     if (parsed.data.openaiApiKey) data.openaiApiKeyEnc = encryptString(parsed.data.openaiApiKey)
     if (parsed.data.kaiAiApiKey) data.kaiAiApiKeyEnc = encryptString(parsed.data.kaiAiApiKey)
     if (parsed.data.xenditSecretKey) data.xenditSecretKeyEnc = encryptString(parsed.data.xenditSecretKey)
@@ -148,6 +151,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       whatsappConfig: updated.whatsappConfig,
       publicSiteConfig: (updated as any).publicSiteConfig ?? null,
       hasOpenaiKey: Boolean(maybeDecrypt(updated.openaiApiKeyEnc)),
+      openaiModel: updated.openaiModel ?? null,
       hasKaiAiKey: Boolean(maybeDecrypt(updated.kaiAiApiKeyEnc)),
       ycloudFrom: typeof ycloud.from === 'string' ? ycloud.from : null,
       ycloudTemplateName: typeof ycloud.templateName === 'string' ? ycloud.templateName : null,

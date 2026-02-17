@@ -5,6 +5,7 @@ type GenerateTextParams = {
   prompt: string
   systemPrompt?: string | null
   temperature?: number
+  model?: string | null
 }
 
 function inferBaseUrlFromApiKey(apiKey: string) {
@@ -16,7 +17,7 @@ function inferBaseUrlFromApiKey(apiKey: string) {
 
 export async function generateTextWithOpenAI(params: GenerateTextParams) {
   const baseURL = process.env.OPENAI_BASE_URL ?? inferBaseUrlFromApiKey(params.apiKey) ?? undefined
-  const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini'
+  const model = params.model || process.env.OPENAI_MODEL || 'openai/gpt-4o-mini'
   const system =
     params.systemPrompt ??
     process.env.OPENAI_SYSTEM_PROMPT ??

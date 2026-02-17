@@ -27,6 +27,7 @@ export type Settings = {
   defaultThemeSlug: string | null
   showThemesInFooter: boolean
   hasOpenaiKey: boolean
+  openaiModel: string | null
   hasKaiAiKey: boolean
   metaPixelId: string | null
   metaPixelWishlistId: string | null
