@@ -44,6 +44,14 @@ A monorepo application for creating personalized songs for special occasions. Bu
 - Shared package must be built before other packages (`npm run build -w shared`)
 
 ## Recent Changes
+- 2026-02-17: Admin Customers tab redesign & bulk delete
+  - Rewrote AdminCustomersTab to match OrdersTab layout (table view, checkboxes, search, filter, sorting)
+  - Type filter: All / Customers / Drafts
+  - Sortable columns: Name, WhatsApp, Email, Date, Type
+  - Bulk delete with confirmation dialog, cascading deletes (orders, events) in Prisma transaction
+  - New POST /api/admin/customers/bulk-delete endpoint (handles both customer IDs and draft IDs)
+  - Draft IDs prefixed with "draft:" for disambiguation
+  - Detail view accessible via row click with back navigation
 - 2026-02-17: Allow multiple orders per WhatsApp setting
   - New `allowMultipleOrdersPerWhatsapp` Boolean on Settings model (default false)
   - When enabled: skips WhatsApp and email uniqueness checks; reuses existing customer profile for repeat orders
