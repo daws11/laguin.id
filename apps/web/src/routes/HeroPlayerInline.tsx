@@ -90,8 +90,7 @@ export function HeroPlayerInline({
             const a = audioRef.current
             if (!a) return
             if (playing) {
-              a.pause()
-              setPlaying(false)
+              closeAndStop()
             } else {
               a.play()
                 .then(() => setPlaying(true))
@@ -110,8 +109,7 @@ export function HeroPlayerInline({
             const a = audioRef.current
             if (!a) return
             if (playing) {
-              a.pause()
-              setPlaying(false)
+              closeAndStop()
               return
             }
             a.play()
