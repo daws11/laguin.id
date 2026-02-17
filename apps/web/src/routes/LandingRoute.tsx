@@ -148,7 +148,7 @@ const defaultPublicSiteConfig: PublicSiteConfig = {
 
 function fmtCurrencyGlobal(amt: number | null | undefined) {
   if (amt === 0) return 'GRATIS'
-  if (!amt) return 'Rp 497rb'
+  if (amt === null || amt === undefined) return 'Rp 497rb'
   if (amt >= 100000 && amt < 1000000) {
     return `Rp ${Math.floor(amt / 1000)}rb`
   }
