@@ -45,6 +45,17 @@ export const adminCustomerRoutes: FastifyPluginAsync = async (app) => {
       draftUpdatedAt: null as Date | null,
     }))
 
+    const existingWhatsapps = new Set(
+      customers
+        .map((c) => c.whatsappNumber?.trim())
+        .filter((w): w is string => !!w && w.length > 0),
+    )
+    const existingEmails = new Set(
+      customers
+        .map((c) => c.email?.trim().toLowerCase())
+        .filter((e): e is string => !!e && e.length > 0),
+    )
+
     const draftItems = drafts
       .filter((d) => !d.convertedOrderId)
       .map((d) => {
@@ -55,7 +66,6 @@ export const adminCustomerRoutes: FastifyPluginAsync = async (app) => {
 
         return {
           kind: 'draft' as const,
-          // Prefix to avoid collision with real customer ids.
           id: `draft:${d.id}`,
           name: nameRaw || emailRaw || whatsappRaw || 'Draft registration',
           whatsappNumber: whatsappRaw,
@@ -67,6 +77,11 @@ export const adminCustomerRoutes: FastifyPluginAsync = async (app) => {
           draftStep: typeof d.step === 'number' ? d.step : 0,
           draftUpdatedAt: d.updatedAt,
         }
+      })
+      .filter((d) => {
+        if (d.whatsappNumber && existingWhatsapps.has(d.whatsappNumber)) return false
+        if (d.email && existingEmails.has(d.email.toLowerCase())) return false
+        return true
       })
 
     const combined = [...draftItems, ...customerItems]
