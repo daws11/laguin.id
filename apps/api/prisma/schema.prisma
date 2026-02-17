@@ -37,6 +37,7 @@ enum PaymentStatus {
 model Settings {
   id               String   @id @default(cuid())
   openaiApiKeyEnc  String?
+  openaiModel      String?
   kaiAiApiKeyEnc   String?
   whatsappProvider String   @default("mock")
   whatsappConfig   Json?
