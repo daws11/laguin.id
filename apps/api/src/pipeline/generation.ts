@@ -66,11 +66,14 @@ export async function processOrderGeneration(orderId: string) {
   }
 
   if (!order.generationStartedAt) {
-    await prisma.order.update({
-      where: { id: order.id },
-      data: { generationStartedAt: new Date() },
-    })
-    await addOrderEvent({ orderId: order.id, type: 'generation_started' })
+    const alreadyStarted = await prisma.order.findUnique({ where: { id: order.id }, select: { generationStartedAt: true } })
+    if (!alreadyStarted?.generationStartedAt) {
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { generationStartedAt: new Date() },
+      })
+      await addOrderEvent({ orderId: order.id, type: 'generation_started' })
+    }
   }
 
   // AI-enrich user music preferences (mood/vibe/tempo) if missing.
@@ -156,7 +159,8 @@ export async function processOrderGeneration(orderId: string) {
     language: input.musicPreferences.language ?? '',
   }
 
-  let lyricsText = order.lyricsText ?? null
+  const freshOrderForLyrics = await prisma.order.findUnique({ where: { id: order.id }, select: { lyricsText: true, moodDescription: true } })
+  let lyricsText = freshOrderForLyrics?.lyricsText ?? null
   if (!lyricsText) {
     const apiKey = await getOpenAIApiKey()
     const prompt = renderPrompt(lyricsTemplate.templateText, baseVars)
@@ -174,7 +178,8 @@ export async function processOrderGeneration(orderId: string) {
     await addOrderEvent({ orderId: order.id, type: 'lyrics_generated' })
   }
 
-  let moodDescription = order.moodDescription ?? null
+  const freshOrderForMood = await prisma.order.findUnique({ where: { id: order.id }, select: { moodDescription: true } })
+  let moodDescription = freshOrderForMood?.moodDescription ?? null
   if (!moodDescription) {
     const apiKey = await getOpenAIApiKey()
     const prompt = renderPrompt(moodTemplate.templateText, {
