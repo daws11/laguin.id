@@ -8,15 +8,10 @@ type GenerateTextParams = {
   model?: string | null
 }
 
-function inferBaseUrlFromApiKey(apiKey: string) {
-  // OpenRouter API keys typically start with "sk-or-".
-  // If the user didn't explicitly set a base URL, default to OpenRouter to reduce config friction.
-  if (apiKey.startsWith('sk-or-')) return 'https://openrouter.ai/api/v1'
-  return null
-}
+const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
 
 export async function generateTextWithOpenAI(params: GenerateTextParams) {
-  const baseURL = process.env.OPENAI_BASE_URL ?? inferBaseUrlFromApiKey(params.apiKey) ?? undefined
+  const baseURL = process.env.OPENAI_BASE_URL || OPENROUTER_BASE_URL
   const model = params.model || process.env.OPENAI_MODEL || 'openai/gpt-4o-mini'
   const system =
     params.systemPrompt ??
@@ -24,7 +19,6 @@ export async function generateTextWithOpenAI(params: GenerateTextParams) {
     'You are a helpful assistant that follows instructions precisely.'
 
   const defaultHeaders: Record<string, string> = {}
-  // Optional OpenRouter attribution headers.
   if (process.env.OPENAI_DEFAULT_HEADERS_REFERER) {
     defaultHeaders['HTTP-Referer'] = process.env.OPENAI_DEFAULT_HEADERS_REFERER
   }
@@ -50,4 +44,3 @@ export async function generateTextWithOpenAI(params: GenerateTextParams) {
   const text = completion.choices[0]?.message?.content ?? ''
   return text.trim()
 }
-
