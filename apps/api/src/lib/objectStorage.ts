@@ -1,63 +1,81 @@
-import { Storage } from '@google-cloud/storage'
+import { Client } from '@replit/object-storage'
 
-const REPLIT_SIDECAR_ENDPOINT = 'http://127.0.0.1:1106'
+const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID || undefined
+const client = new Client({ bucketId })
 
-export const storageClient = new Storage({
-  credentials: {
-    audience: 'replit',
-    subject_token_type: 'access_token',
-    token_url: `${REPLIT_SIDECAR_ENDPOINT}/token`,
-    type: 'external_account',
-    credential_source: {
-      url: `${REPLIT_SIDECAR_ENDPOINT}/credential`,
-      format: {
-        type: 'json',
-        subject_token_field_name: 'access_token',
-      },
-    },
-    universe_domain: 'googleapis.com',
-  } as any,
-  projectId: '',
-})
+let _prefix: string | null = null
 
-function parseObjectPath(p: string) {
-  if (!p.startsWith('/')) p = `/${p}`
-  const parts = p.split('/')
-  if (parts.length < 3) throw new Error('Invalid object path')
-  return { bucketName: parts[1], objectName: parts.slice(2).join('/') }
+function getPrefix(): string {
+  if (_prefix !== null) return _prefix
+
+  const dir = (process.env.PRIVATE_OBJECT_DIR || '').trim()
+  if (!dir) {
+    console.warn('[objectStorage] PRIVATE_OBJECT_DIR not set — uploads will be stored at bucket root')
+    _prefix = ''
+    return _prefix
+  }
+
+  const normalized = dir.replace(/^\/+/, '').replace(/\/+$/, '')
+  const parts = normalized.split('/')
+
+  if (parts.length < 2) {
+    _prefix = ''
+  } else {
+    _prefix = parts.slice(1).join('/') + '/'
+  }
+
+  return _prefix
 }
 
-function getPrivateDir(): string {
-  const dir = process.env.PRIVATE_OBJECT_DIR || ''
-  if (!dir) throw new Error('PRIVATE_OBJECT_DIR not set')
-  return dir
-}
-
-export async function uploadBuffer(objectKey: string, buf: Buffer, contentType: string): Promise<string> {
-  const privateDir = getPrivateDir()
-  const fullPath = `${privateDir}/uploads/${objectKey}`
-  const { bucketName, objectName } = parseObjectPath(fullPath)
-  const bucket = storageClient.bucket(bucketName)
-  const file = bucket.file(objectName)
-  await file.save(buf, { contentType, resumable: false })
+export async function uploadBuffer(objectKey: string, buf: Buffer, _contentType: string): Promise<string> {
+  const prefix = getPrefix()
+  const fullKey = `${prefix}uploads/${objectKey}`
+  const result = await client.uploadFromBytes(fullKey, buf)
+  if (!result.ok) {
+    throw new Error(`Object storage upload failed: ${JSON.stringify(result.error)}`)
+  }
   return `/uploads/${objectKey}`
 }
 
 export async function downloadToStream(objectKey: string): Promise<{ stream: NodeJS.ReadableStream; contentType: string; size: number } | null> {
-  const privateDir = getPrivateDir()
-  const fullPath = `${privateDir}/uploads/${objectKey}`
-  const { bucketName, objectName } = parseObjectPath(fullPath)
-  const bucket = storageClient.bucket(bucketName)
-  const file = bucket.file(objectName)
+  const prefix = getPrefix()
+  const fullKey = `${prefix}uploads/${objectKey}`
 
-  const [exists] = await file.exists()
-  if (!exists) return null
+  const result = await client.downloadAsBytes(fullKey)
+  if (!result.ok) {
+    return null
+  }
 
-  const [metadata] = await file.getMetadata()
-  const stream = file.createReadStream()
+  const buf = result.value
+  const ext = objectKey.split('.').pop()?.toLowerCase() ?? ''
+  const contentType = mimeFromExt(ext)
+
+  const { Readable } = await import('stream')
+  const stream = Readable.from(buf)
+
   return {
     stream,
-    contentType: (metadata.contentType as string) || 'application/octet-stream',
-    size: Number(metadata.size) || 0,
+    contentType,
+    size: buf.length,
   }
+}
+
+function mimeFromExt(ext: string): string {
+  const map: Record<string, string> = {
+    mp3: 'audio/mpeg',
+    wav: 'audio/wav',
+    ogg: 'audio/ogg',
+    m4a: 'audio/mp4',
+    mp4: 'video/mp4',
+    webm: 'video/webm',
+    mov: 'video/quicktime',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    svg: 'image/svg+xml',
+    pdf: 'application/pdf',
+  }
+  return map[ext] || 'application/octet-stream'
 }

@@ -44,6 +44,17 @@ A monorepo application for creating personalized songs for special occasions. Bu
 - Shared package must be built before other packages (`npm run build -w shared`)
 
 ## Recent Changes
+- 2026-02-17: Migrated Object Storage to @replit/object-storage client
+  - Replaced raw @google-cloud/storage with official @replit/object-storage Client
+  - Fixes file serving in production deployments (no more 404s after publishing)
+  - Bucket ID passed directly from DEFAULT_OBJECT_STORAGE_BUCKET_ID env var
+  - Backward compatible with existing uploads via PRIVATE_OBJECT_DIR prefix extraction
+  - Content type inferred from file extension for downloads
+- 2026-02-17: Admin Settings UX improvements
+  - API Keys card: Added explicit Save button, shows "(tersimpan)" + masked placeholder when keys exist
+  - WhatsApp Gateway: Shows stored key indicator for yCloud API key
+  - Meta Pixel: Save button always visible (disabled when no changes)
+  - Generated Prompts section in order detail: shows lyrics, mood, music prompt, style tags, song title
 - 2026-02-17: Per-theme configurable config steps (step 0, step 1, step 3)
   - New ConfigStep0, ConfigStep1, ConfigStep3 types in PublicSiteDraft
   - Step 0 (announcement): bannerHeadline, mainHeadline, guaranteeTitle/Text, howItWorksSteps[], bottomCtaText, enabled toggle
