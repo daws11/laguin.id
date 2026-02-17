@@ -73,33 +73,39 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
+    const allowMultipleOrders = (settings as any).allowMultipleOrdersPerWhatsapp ?? false
+
     if (whatsappEnabled) {
       if (!whatsappNumber) {
         return reply.code(400).send({ error: 'Nomor WhatsApp tidak valid.' })
       }
-      const existingByWhatsapp = await prisma.customer.findUnique({
-        where: { whatsappNumber },
-        select: { id: true },
-      })
-      if (existingByWhatsapp) {
-        return reply
-          .code(409)
-          .send({
-            error: 'duplicate_whatsapp',
-            message:
-              'Nomor WhatsApp ini sudah terdaftar dan pernah digunakan untuk membuat pesanan. Untuk menjaga keamanan dan kualitas layanan, setiap nomor WhatsApp hanya dapat melakukan pemesanan satu kali.',
-          })
+      if (!allowMultipleOrders) {
+        const existingByWhatsapp = await prisma.customer.findUnique({
+          where: { whatsappNumber },
+          select: { id: true },
+        })
+        if (existingByWhatsapp) {
+          return reply
+            .code(409)
+            .send({
+              error: 'duplicate_whatsapp',
+              message:
+                'Nomor WhatsApp ini sudah terdaftar dan pernah digunakan untuk membuat pesanan. Untuk menjaga keamanan dan kualitas layanan, setiap nomor WhatsApp hanya dapat melakukan pemesanan satu kali.',
+            })
+        }
       }
     }
     const emailRequired = !manualConfirmationEnabled && emailOtpEnabled
     if (emailRequired) {
       if (!emailLower) return reply.code(400).send({ error: 'Email tidak valid.' })
-      const existingByEmail = await prisma.customer.findFirst({
-        where: { emailLower },
-        select: { id: true },
-      })
-      if (existingByEmail) {
-        return reply.code(409).send({ error: 'Email sudah terdaftar. Setiap email hanya bisa mendaftar sekali.' })
+      if (!allowMultipleOrders) {
+        const existingByEmail = await prisma.customer.findFirst({
+          where: { emailLower },
+          select: { id: true },
+        })
+        if (existingByEmail) {
+          return reply.code(409).send({ error: 'Email sudah terdaftar. Setiap email hanya bisa mendaftar sekali.' })
+        }
       }
     }
 
@@ -110,26 +116,58 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
     }
 
     let customer: { id: string }
-    try {
-      customer = await prisma.customer.create({
-        data: {
-          name: customerName,
-          whatsappNumber: (whatsappEnabled ? whatsappNumber : null) as any,
-          ...(emailRequired
-            ? {
-                email: (normalizedInput as any).email,
-                emailLower,
-              }
-            : { email: null, emailLower: null }),
-        },
-        select: { id: true },
-      })
-    } catch (e: any) {
-      // Race-safety: if two requests pass the checks concurrently.
-      if (e?.code === 'P2002') {
-        return reply.code(409).send({ error: 'Email atau nomor WhatsApp sudah terdaftar.' })
+    if (allowMultipleOrders) {
+      let existing: { id: string } | null = null
+      if (whatsappEnabled && whatsappNumber) {
+        existing = await prisma.customer.findUnique({
+          where: { whatsappNumber },
+          select: { id: true },
+        })
       }
-      throw e
+      if (!existing && emailRequired && emailLower) {
+        existing = await prisma.customer.findFirst({
+          where: { emailLower },
+          select: { id: true },
+        })
+      }
+      if (existing) {
+        customer = existing
+      } else {
+        customer = await prisma.customer.create({
+          data: {
+            name: customerName,
+            whatsappNumber: (whatsappEnabled ? whatsappNumber : null) as any,
+            ...(emailRequired
+              ? {
+                  email: (normalizedInput as any).email,
+                  emailLower,
+                }
+              : { email: null, emailLower: null }),
+          },
+          select: { id: true },
+        })
+      }
+    } else {
+      try {
+        customer = await prisma.customer.create({
+          data: {
+            name: customerName,
+            whatsappNumber: (whatsappEnabled ? whatsappNumber : null) as any,
+            ...(emailRequired
+              ? {
+                  email: (normalizedInput as any).email,
+                  emailLower,
+                }
+              : { email: null, emailLower: null }),
+          },
+          select: { id: true },
+        })
+      } catch (e: any) {
+        if (e?.code === 'P2002') {
+          return reply.code(409).send({ error: 'Email atau nomor WhatsApp sudah terdaftar.' })
+        }
+        throw e
+      }
     }
 
     const rawPaymentAmount = themeCD ? (themeCD.paymentAmount ?? 497000) : 497000

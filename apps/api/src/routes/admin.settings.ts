@@ -26,6 +26,7 @@ const UpdateSchema = z.object({
 
   xenditSecretKey: z.string().min(1).optional(),
   xenditWebhookToken: z.string().optional().nullable(),
+  allowMultipleOrdersPerWhatsapp: z.boolean().optional(),
 
   // YCloud WhatsApp gateway settings (stored inside Settings.whatsappConfig.ycloud)
   ycloudFrom: z.string().min(1).optional(),
@@ -62,6 +63,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       metaPixelWishlistId: s.metaPixelWishlistId ?? null,
       hasXenditKey: Boolean(maybeDecrypt((s as any).xenditSecretKeyEnc)),
       xenditWebhookToken: (s as any).xenditWebhookToken ?? null,
+      allowMultipleOrdersPerWhatsapp: (s as any).allowMultipleOrdersPerWhatsapp ?? false,
     }
   })
 
@@ -119,6 +121,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       showThemesInFooter: parsed.data.showThemesInFooter,
       metaPixelId: parsed.data.metaPixelId,
       metaPixelWishlistId: parsed.data.metaPixelWishlistId,
+      allowMultipleOrdersPerWhatsapp: parsed.data.allowMultipleOrdersPerWhatsapp,
     }
 
     if (parsed.data.openaiApiKey) data.openaiApiKeyEnc = encryptString(parsed.data.openaiApiKey)
@@ -154,6 +157,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       showThemesInFooter: updated.showThemesInFooter ?? false,
       metaPixelId: updated.metaPixelId ?? null,
       metaPixelWishlistId: updated.metaPixelWishlistId ?? null,
+      allowMultipleOrdersPerWhatsapp: (updated as any).allowMultipleOrdersPerWhatsapp ?? false,
     }
   })
 }

@@ -39,6 +39,7 @@ export type Settings = {
 
   hasXenditKey: boolean
   xenditWebhookToken: string | null
+  allowMultipleOrdersPerWhatsapp: boolean
 }
 
 export type LandingPlaylistItem = { title: string; subtitle: string; ctaLabel: string; audioUrl: string }

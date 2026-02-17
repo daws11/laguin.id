@@ -53,6 +53,7 @@ model Settings {
   metaPixelWishlistId String?
   xenditSecretKeyEnc String?
   xenditWebhookToken String?
+  allowMultipleOrdersPerWhatsapp Boolean @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }

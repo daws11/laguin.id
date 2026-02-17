@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { Settings } from '@/features/admin/types'
-import { Smartphone, Key, BarChart3, CreditCard } from 'lucide-react'
+import { Smartphone, Key, BarChart3, CreditCard, Settings2 } from 'lucide-react'
 import { WhatsappGatewayCard } from './WhatsappGatewayCard'
 import { ApiKeysCard } from './ApiKeysCard'
 import { MetaPixelCard } from './MetaPixelCard'
@@ -31,6 +31,7 @@ export function SystemSettingsSection({
     { id: 'api-keys', label: t.apiKeys ?? 'API Keys', icon: Key, group: 'System' },
     { id: 'meta-pixel', label: 'Meta Pixel', icon: BarChart3, group: 'System' },
     { id: 'xendit', label: 'Xendit Payment', icon: CreditCard, group: 'System' },
+    { id: 'order-rules', label: 'Order Rules', icon: Settings2, group: 'System' },
   ]
 
   const SidebarItem = ({ item }: { item: typeof menuItems[0] }) => (
@@ -107,6 +108,47 @@ export function SystemSettingsSection({
                 saveSettings={saveSettings}
                 loading={loading}
               />
+            </div>
+          )}
+
+          {activeTab === 'order-rules' && (
+            <div className="animate-in fade-in duration-300 h-full">
+              <Card className="h-full shadow-sm">
+                <CardHeader className="p-3 pb-2 bg-muted/5">
+                  <CardTitle className="text-sm font-semibold">Order Rules</CardTitle>
+                </CardHeader>
+                <CardContent className="p-3 space-y-4 text-xs">
+                  <div className="flex items-center justify-between gap-4 py-2">
+                    <div className="space-y-0.5">
+                      <div className="text-sm font-medium">Allow multiple orders per WhatsApp number</div>
+                      <div className="text-xs text-muted-foreground">
+                        When enabled, the same WhatsApp number can be used to place more than one order.
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={settings.allowMultipleOrdersPerWhatsapp}
+                      onClick={() => {
+                        const next = !settings.allowMultipleOrdersPerWhatsapp
+                        setSettings((prev) => prev ? { ...prev, allowMultipleOrdersPerWhatsapp: next } : prev)
+                        saveSettings({ allowMultipleOrdersPerWhatsapp: next })
+                      }}
+                      className={cn(
+                        'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+                        settings.allowMultipleOrdersPerWhatsapp ? 'bg-primary' : 'bg-input'
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'pointer-events-none block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform',
+                          settings.allowMultipleOrdersPerWhatsapp ? 'translate-x-5' : 'translate-x-0'
+                        )}
+                      />
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           )}
         </div>

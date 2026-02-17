@@ -44,6 +44,12 @@ A monorepo application for creating personalized songs for special occasions. Bu
 - Shared package must be built before other packages (`npm run build -w shared`)
 
 ## Recent Changes
+- 2026-02-17: Allow multiple orders per WhatsApp setting
+  - New `allowMultipleOrdersPerWhatsapp` Boolean on Settings model (default false)
+  - When enabled: skips WhatsApp and email uniqueness checks; reuses existing customer profile for repeat orders
+  - When disabled (default): original behavior — one order per WhatsApp/email
+  - New "Order Rules" tab in admin Settings with toggle switch
+  - API GET/PUT endpoints return and accept the new field
 - 2026-02-17: Migrated Object Storage to @replit/object-storage client
   - Replaced raw @google-cloud/storage with official @replit/object-storage Client
   - Fixes file serving in production deployments (no more 404s after publishing)
