@@ -189,6 +189,89 @@ export function ConfigRoute() {
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [heroVideoUrl, setHeroVideoUrl] = useState<string | null>(null)
   const [publicSiteConfig, setPublicSiteConfig] = useState<unknown>(undefined)
+
+  const configSteps = useMemo(() => {
+    const cfg = publicSiteConfig && typeof publicSiteConfig === 'object' ? (publicSiteConfig as any) : {}
+    const cs = cfg?.configSteps && typeof cfg.configSteps === 'object' ? cfg.configSteps : {}
+    const s0 = cs?.step0 && typeof cs.step0 === 'object' ? cs.step0 : {}
+    const s1 = cs?.step1 && typeof cs.step1 === 'object' ? cs.step1 : {}
+    const s3 = cs?.step3 && typeof cs.step3 === 'object' ? cs.step3 : {}
+
+    const str = (v: unknown, fb: string) => typeof v === 'string' && v.trim() ? v : fb
+    const arr = <T,>(v: unknown, map: (x: any) => T): T[] => Array.isArray(v) ? v.map(map) : []
+
+    const howSteps = arr(s0?.howItWorksSteps, (x: any) => ({
+      title: str(x?.title, ''),
+      subtitle: str(x?.subtitle, ''),
+    })).filter((x: any) => x.title)
+
+    const relChips = arr(s1?.relationshipChips, (x: any) => ({
+      label: str(x?.label, ''),
+      icon: str(x?.icon, '✨'),
+      value: str(x?.value, ''),
+    })).filter((x: any) => x.label && x.value)
+
+    const tipBullets = arr(s3?.tipBullets, (x: any) => typeof x === 'string' ? x : '').filter((x: string) => x.trim())
+
+    const storyPrompts = arr(s3?.storyPrompts, (x: any) => ({
+      label: str(x?.label, ''),
+      icon: str(x?.icon, '💡'),
+    })).filter((x: any) => x.label)
+
+    return {
+      step0: {
+        enabled: typeof s0?.enabled === 'boolean' ? s0.enabled : true,
+        bannerHeadline: str(s0?.bannerHeadline, 'Kado Valentine Paling Romantis'),
+        mainHeadline: str(s0?.mainHeadline, 'Rekam emosi mereka saat mendengar lagu untuk menang <span class="text-[var(--theme-accent)]">Rp 1.000.000!</span>'),
+        guaranteeTitle: str(s0?.guaranteeTitle, 'GARANSI UANG TUNAI'),
+        guaranteeText: str(s0?.guaranteeText, 'Setiap video reaksi yang jelas <span class="font-bold underline decoration-green-500/50">pasti dapat Rp 75.000</span>.'),
+        howItWorksTitle: str(s0?.howItWorksTitle, 'Cara Ikutan'),
+        howItWorksSteps: howSteps.length ? howSteps : [
+          { title: 'Buat Lagu Gratis', subtitle: 'Hemat 100%' },
+          { title: 'Rekam Reaksinya', subtitle: 'Wajib Video!' },
+          { title: 'Kirim & Menang', subtitle: 'Dapat Cuan!' },
+        ],
+        bottomCtaText: str(s0?.bottomCtaText, 'Klik tombol di bawah untuk mulai 👇'),
+      },
+      step1: {
+        headline: str(s1?.headline, 'Siapa penerimanya?'),
+        subtitle: str(s1?.subtitle, 'Namanya akan ada di dalam lirik'),
+        relationshipChips: relChips.length ? relChips : [
+          { label: 'Pasangan', icon: '💕', value: 'Pasangan' },
+          { label: 'Suami', icon: '💍', value: 'Suami' },
+          { label: 'Pacar', icon: '❤️', value: 'Pacar' },
+          { label: 'Tunangan', icon: '💎', value: 'Tunangan' },
+          { label: 'Istri', icon: '👰', value: 'Istri' },
+        ],
+        nameFieldLabel: str(s1?.nameFieldLabel, 'Nama Panggilannya'),
+        nameFieldPlaceholder: str(s1?.nameFieldPlaceholder, 'cth. Salsa'),
+        occasionFieldLabel: str(s1?.occasionFieldLabel, 'Untuk momen apa?'),
+        occasionFieldPlaceholder: str(s1?.occasionFieldPlaceholder, 'cth. Anniversary, Ultah, Wisuda'),
+        socialProofText: str(s1?.socialProofText, 'Bergabung dengan 2,847 orang yang membuat pasangannya menangis bahagia'),
+      },
+      step3: {
+        headline: str(s3?.headline, 'Ceritakan kisahmu'),
+        subtitle: str(s3?.subtitle, 'Ini akan menjadi lirik. <span class="text-[var(--theme-accent)] font-medium">Beberapa kalimat saja!</span>'),
+        tipBullets: tipBullets.length ? tipBullets : [
+          'Semakin kaya detail, semakin kuat emosinya.',
+          'Ceritakan pertemuan, hal yang dicintai, atau kenangan lucu.',
+        ],
+        storyPrompts: storyPrompts.length ? storyPrompts : [
+          { label: 'Awal bertemu', icon: '💞' },
+          { label: 'Yang aku suka darinya', icon: '😍' },
+          { label: 'Jokes internal kami', icon: '😂' },
+          { label: 'Mimpi masa depan', icon: '🔮' },
+        ],
+        textareaPlaceholder: str(s3?.textareaPlaceholder, 'Mulai ketik ceritamu di sini...'),
+      },
+    }
+  }, [publicSiteConfig])
+  useEffect(() => {
+    if (settingsLoaded && !configSteps.step0.enabled && step === 0) {
+      setStep(1)
+    }
+  }, [settingsLoaded, configSteps.step0.enabled])
+
   const [emailVerificationId, setEmailVerificationId] = useState<string | null>(null)
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', ''])
   const otpRefs = useRef<Array<HTMLInputElement | null>>([])
@@ -527,8 +610,9 @@ export function ConfigRoute() {
           ? { label: 'Mantap!', pct: 75, color: 'bg-green-500', text: 'text-green-600' }
           : { label: 'Sempurna!', pct: 100, color: 'bg-green-600', text: 'text-green-700' }
 
+  const minStep = configSteps.step0.enabled ? 0 : 1
+
   const handleNext = async () => {
-    // Step 0 = announcement, no validation
     if (step === 0) {
       setStep(1)
       window.scrollTo(0, 0)
@@ -547,8 +631,7 @@ export function ConfigRoute() {
   }
 
   const handleBack = () => {
-    // Step 0 is the announcement page; always allow going back to it.
-    setStep((prev) => Math.max(prev - 1, 0))
+    setStep((prev) => Math.max(prev - 1, minStep))
     window.scrollTo(0, 0)
   }
 
@@ -884,7 +967,7 @@ export function ConfigRoute() {
         {step > 0 && step < 4 && (
           <div className="absolute top-full left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-[var(--theme-accent-soft)] py-1 text-center">
              <div className="text-[10px] font-medium text-gray-400">
-               {step === 1 ? 'Siapa penerimanya?' : step === 2 ? 'Pilih vibe musik' : 'Tulis ceritamu'}
+               {step === 1 ? configSteps.step1.headline : step === 2 ? 'Pilih vibe musik' : configSteps.step3.headline}
              </div>
           </div>
         )}
@@ -894,20 +977,18 @@ export function ConfigRoute() {
         <form onSubmit={form.handleSubmit(onSubmit, onInvalid)}>
           
           {/* STEP 0: ANNOUNCEMENT - halaman pengumuman */}
-          {step === 0 && (
+          {step === 0 && configSteps.step0.enabled && (
             <div className="flex flex-col items-center justify-start animate-in fade-in slide-in-from-bottom-4 duration-500 pb-4 max-w-2xl mx-auto">
               <Card className="w-full overflow-hidden border-[var(--theme-accent-soft)] bg-white shadow-xl">
                 {/* Header */}
                 <div className="bg-[var(--theme-accent)] px-4 py-3 flex items-center justify-center gap-2 text-white shadow-sm">
                   <Megaphone className="h-4 w-4 shrink-0" />
-                  <span className="text-xs sm:text-sm font-bold uppercase tracking-wider">Kado Valentine Paling Romantis</span>
+                  <span className="text-xs sm:text-sm font-bold uppercase tracking-wider">{configSteps.step0.bannerHeadline}</span>
                 </div>
 
                 <CardContent className="p-0">
                   <div className="p-4 sm:p-8 text-center space-y-4 sm:space-y-6">
-                    <h2 className="text-sm sm:text-xl md:text-2xl font-bold text-gray-900 leading-snug mx-auto max-w-lg">
-                      Rekam emosi mereka saat mendengar lagu untuk menang <span className="text-[var(--theme-accent)]">Rp 1.000.000!</span>
-                    </h2>
+                    <h2 className="text-sm sm:text-xl md:text-2xl font-bold text-gray-900 leading-snug mx-auto max-w-lg" dangerouslySetInnerHTML={{ __html: configSteps.step0.mainHeadline }} />
 
                     {/* Video Centered */}
                     <div className="relative mx-auto rounded-xl overflow-hidden bg-gray-100 shadow-md ring-1 ring-gray-200 w-[110px] sm:w-[180px] md:w-[220px] aspect-[9/16]">
@@ -928,8 +1009,8 @@ export function ConfigRoute() {
                     {/* Warranty Box Below Video */}
                     <div className="mx-auto max-w-md w-full">
                       <div className="bg-green-50 border border-green-200 rounded-xl p-3 sm:p-4 text-xs sm:text-sm text-green-800 shadow-sm text-center">
-                        <p className="font-bold mb-1 flex items-center justify-center gap-2 text-base sm:text-lg"><span className="text-xl">🤑</span> GARANSI UANG TUNAI</p>
-                        <p className="leading-relaxed opacity-90">Setiap video reaksi yang jelas <span className="font-bold underline decoration-green-500/50">pasti dapat Rp 75.000</span>.</p>
+                        <p className="font-bold mb-1 flex items-center justify-center gap-2 text-base sm:text-lg"><span className="text-xl">🤑</span> {configSteps.step0.guaranteeTitle}</p>
+                        <p className="leading-relaxed opacity-90" dangerouslySetInnerHTML={{ __html: configSteps.step0.guaranteeText }} />
                       </div>
                       <p className="text-[10px] sm:text-xs text-gray-400 italic mt-2 text-center">*Syarat dan ketentuan berlaku</p>
                     </div>
@@ -937,34 +1018,21 @@ export function ConfigRoute() {
 
                   {/* How it works - Ultra Compact Timeline */}
                   <div className="bg-gradient-to-b from-[var(--theme-accent-soft)] to-white px-4 py-6 sm:py-10 border-t border-[var(--theme-accent-soft)]">
-                    <h3 className="text-[10px] sm:text-xs font-bold text-[var(--theme-accent)] mb-4 sm:mb-8 text-center uppercase tracking-widest">Cara Ikutan</h3>
+                    <h3 className="text-[10px] sm:text-xs font-bold text-[var(--theme-accent)] mb-4 sm:mb-8 text-center uppercase tracking-widest">{configSteps.step0.howItWorksTitle}</h3>
                     
-                    <div className="grid grid-cols-3 gap-4 sm:gap-8 max-w-lg mx-auto">
-                      {/* Step 1 */}
-                      <div className="flex flex-col items-center text-center">
-                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[var(--theme-accent)] text-white flex items-center justify-center text-xs sm:text-sm font-bold mb-2 shadow-sm">1</div>
-                        <p className="font-bold text-[10px] sm:text-sm text-gray-800 leading-tight">Buat Lagu Gratis</p>
-                        <p className="text-[9px] sm:text-xs text-gray-500 leading-none mt-1">Hemat 100%</p>
-                      </div>
-
-                      {/* Step 2 */}
-                      <div className="flex flex-col items-center text-center">
-                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[var(--theme-accent)] text-white flex items-center justify-center text-xs sm:text-sm font-bold mb-2 shadow-sm">2</div>
-                        <p className="font-bold text-[10px] sm:text-sm text-gray-800 leading-tight">Rekam Reaksinya</p>
-                        <p className="text-[9px] sm:text-xs text-gray-500 leading-none mt-1">Wajib Video!</p>
-                      </div>
-
-                      {/* Step 3 */}
-                      <div className="flex flex-col items-center text-center">
-                        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[var(--theme-accent)] text-white flex items-center justify-center text-xs sm:text-sm font-bold mb-2 shadow-sm">3</div>
-                        <p className="font-bold text-[10px] sm:text-sm text-gray-800 leading-tight">Kirim & Menang</p>
-                        <p className="text-[9px] sm:text-xs text-gray-500 leading-none mt-1">Dapat Cuan!</p>
-                      </div>
+                    <div className={`grid ${configSteps.step0.howItWorksSteps.length <= 2 ? 'grid-cols-2' : configSteps.step0.howItWorksSteps.length >= 4 ? 'grid-cols-4' : 'grid-cols-3'} gap-4 sm:gap-8 max-w-lg mx-auto`}>
+                      {configSteps.step0.howItWorksSteps.map((s, i) => (
+                        <div key={i} className="flex flex-col items-center text-center">
+                          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[var(--theme-accent)] text-white flex items-center justify-center text-xs sm:text-sm font-bold mb-2 shadow-sm">{i + 1}</div>
+                          <p className="font-bold text-[10px] sm:text-sm text-gray-800 leading-tight">{s.title}</p>
+                          <p className="text-[9px] sm:text-xs text-gray-500 leading-none mt-1">{s.subtitle}</p>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              <p className="text-center text-[10px] sm:text-sm text-gray-400 mt-4 animate-bounce">Klik tombol di bawah untuk mulai 👇</p>
+              <p className="text-center text-[10px] sm:text-sm text-gray-400 mt-4 animate-bounce">{configSteps.step0.bottomCtaText}</p>
             </div>
           )}
 
@@ -974,44 +1042,44 @@ export function ConfigRoute() {
               <div className="text-center space-y-1">
                 <h1 className="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
                   <Heart className="h-5 w-5 text-[var(--theme-accent)] fill-[var(--theme-accent-soft)]" />
-                  Siapa penerimanya?
+                  {configSteps.step1.headline}
                 </h1>
-                <p className="text-xs text-gray-500">Namanya akan ada di dalam lirik</p>
+                <p className="text-xs text-gray-500">{configSteps.step1.subtitle}</p>
               </div>
 
               <div className="grid grid-cols-3 gap-2">
-                {['Pasangan', 'Suami', 'Pacar', 'Tunangan', 'Istri', 'Lainnya'].map((rel) => (
+                {[...configSteps.step1.relationshipChips, { label: 'Lainnya', icon: '✨', value: 'Lainnya' }].map((chip) => (
                   <SelectionChip
-                    key={rel}
-                    label={rel}
-                    icon={rel === 'Pasangan' ? '💕' : rel === 'Suami' ? '💍' : rel === 'Pacar' ? '❤️' : rel === 'Tunangan' ? '💎' : rel === 'Istri' ? '👰' : '✨'}
-                    selected={relationship === rel}
+                    key={chip.value}
+                    label={chip.label}
+                    icon={chip.icon}
+                    selected={relationship === chip.value}
                     onClick={() => {
-                      setRelationship(rel)
-                      setValue('extraNotes', `Relasi dengan penerima: ${rel}`)
-                      if (rel !== 'Lainnya') setValue('occasion', '')
+                      setRelationship(chip.value)
+                      setValue('extraNotes', `Relasi dengan penerima: ${chip.value}`)
+                      if (chip.value !== 'Lainnya') setValue('occasion', '')
                     }}
-                    className={relationship === rel ? "bg-[var(--theme-accent)] border-[var(--theme-accent)] text-white w-full shadow-md shadow-[var(--theme-accent-soft)] px-2 py-3" : "w-full bg-white shadow-sm px-2 py-3"}
+                    className={relationship === chip.value ? "bg-[var(--theme-accent)] border-[var(--theme-accent)] text-white w-full shadow-md shadow-[var(--theme-accent-soft)] px-2 py-3" : "w-full bg-white shadow-sm px-2 py-3"}
                   />
                 ))}
               </div>
 
               {relationship === 'Lainnya' && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Untuk momen apa?</label>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{configSteps.step1.occasionFieldLabel}</label>
                   <Input 
                     {...register('occasion')} 
-                    placeholder="cth. Anniversary, Ultah, Wisuda" 
+                    placeholder={configSteps.step1.occasionFieldPlaceholder}
                     className="h-11 rounded-xl border-gray-300 text-base shadow-sm bg-white focus-visible:ring-[var(--theme-accent)]"
                   />
                 </div>
               )}
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Nama Panggilannya</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{configSteps.step1.nameFieldLabel}</label>
                 <Input 
                   {...register('recipientName')} 
-                  placeholder="cth. Salsa" 
+                  placeholder={configSteps.step1.nameFieldPlaceholder}
                   className="h-11 rounded-xl border-gray-300 text-base shadow-sm focus-visible:ring-[var(--theme-accent)]"
                 />
                 {errors.recipientName && <p className="text-xs text-[var(--theme-accent)]">{errors.recipientName.message}</p>}
@@ -1021,9 +1089,11 @@ export function ConfigRoute() {
                 </div>
               </div>
 
-              <div className="text-center text-[10px] text-gray-400 mt-4">
-                Bergabung dengan 2,847 orang yang membuat pasangannya menangis bahagia
-              </div>
+              {configSteps.step1.socialProofText && (
+                <div className="text-center text-[10px] text-gray-400 mt-4">
+                  {configSteps.step1.socialProofText}
+                </div>
+              )}
             </div>
           )}
 
@@ -1097,20 +1167,18 @@ export function ConfigRoute() {
               <div className="text-center space-y-1">
                 <h1 className="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
                   <PenLine className="h-5 w-5 text-[var(--theme-accent)]" />
-                  Ceritakan kisahmu
+                  {configSteps.step3.headline}
                 </h1>
-                <p className="text-xs text-gray-500">Ini akan menjadi lirik. <span className="text-[var(--theme-accent)] font-medium">Beberapa kalimat saja!</span></p>
+                <p className="text-xs text-gray-500" dangerouslySetInnerHTML={{ __html: configSteps.step3.subtitle }} />
               </div>
 
               <div className="rounded-xl bg-[var(--theme-accent-soft)] border border-[var(--theme-accent-soft)] p-3 space-y-2 text-xs text-gray-600">
-                <div className="flex gap-2 items-start">
-                  <span className="text-[var(--theme-accent)] font-bold mt-0.5">•</span>
-                  <span>Semakin kaya detail, semakin kuat emosinya.</span>
-                </div>
-                <div className="flex gap-2 items-start">
-                  <span className="text-[var(--theme-accent)] font-bold mt-0.5">•</span>
-                  <span>Ceritakan pertemuan, hal yang dicintai, atau kenangan lucu.</span>
-                </div>
+                {configSteps.step3.tipBullets.map((bullet, i) => (
+                  <div key={i} className="flex gap-2 items-start">
+                    <span className="text-[var(--theme-accent)] font-bold mt-0.5">•</span>
+                    <span>{bullet}</span>
+                  </div>
+                ))}
               </div>
 
               <div className="space-y-2">
@@ -1118,12 +1186,12 @@ export function ConfigRoute() {
                   <Sparkles className="h-3 w-3" /> Ide Topik:
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {['Awal bertemu', 'Yang aku suka darinya', 'Jokes internal kami', 'Mimpi masa depan'].map((prompt) => (
+                  {configSteps.step3.storyPrompts.map((prompt) => (
                     <PromptChip 
-                      key={prompt} 
-                      label={prompt} 
-                      icon={prompt.includes('bertemu') ? '💞' : prompt.includes('suka') ? '😍' : prompt.includes('Jokes') ? '😂' : '🔮'}
-                      onClick={() => appendStoryPrompt(prompt)}
+                      key={prompt.label} 
+                      label={prompt.label} 
+                      icon={prompt.icon}
+                      onClick={() => appendStoryPrompt(prompt.label)}
                     />
                   ))}
                 </div>
@@ -1137,7 +1205,7 @@ export function ConfigRoute() {
                     storyTextareaRef.current = el
                   }}
                   rows={5} 
-                  placeholder="Mulai ketik ceritamu di sini..." 
+                  placeholder={configSteps.step3.textareaPlaceholder}
                   maxLength={4000}
                   className="rounded-xl border-gray-300 text-base shadow-sm focus-visible:ring-[var(--theme-accent)] resize-none p-4"
                 />
@@ -1449,7 +1517,7 @@ export function ConfigRoute() {
                     false
                   }
                  >
-                   {step === 0 ? 'Mulai Buat Lagu ->' : 
+                   {step === 0 && configSteps.step0.enabled ? 'Mulai Buat Lagu ->' : 
                     step === 1 ? 'Pilih vibenya ->' : 
                     step === 2 ? 'Tambahkan ceritamu ->' : 
                     step === 3 ? 'Hampir selesai! ->' : 

@@ -44,6 +44,15 @@ A monorepo application for creating personalized songs for special occasions. Bu
 - Shared package must be built before other packages (`npm run build -w shared`)
 
 ## Recent Changes
+- 2026-02-17: Per-theme configurable config steps (step 0, step 1, step 3)
+  - New ConfigStep0, ConfigStep1, ConfigStep3 types in PublicSiteDraft
+  - Step 0 (announcement): bannerHeadline, mainHeadline, guaranteeTitle/Text, howItWorksSteps[], bottomCtaText, enabled toggle
+  - Step 1 (recipient): headline, subtitle, relationshipChips[] (icon/label/value), nameField/occasionField labels & placeholders, socialProofText
+  - Step 3 (story): headline, subtitle (HTML), tipBullets[], storyPrompts[] (icon/label), textareaPlaceholder
+  - "Lainnya" (Other) always appended as last relationship chip
+  - Step 0 can be disabled per theme — flow skips directly to step 1
+  - Admin theme editor: 3 new tabs (Step 0, Step 1, Step 3) under "Config Steps" group
+  - ConfigRoute reads all text dynamically from theme settings with smart defaults
 - 2026-02-16: Persistent file uploads via Replit Object Storage
   - Uploaded files (audio, video, images) now stored in Google Cloud Storage via Replit's built-in App Storage
   - Files persist across deployments — no more 404s after publishing
