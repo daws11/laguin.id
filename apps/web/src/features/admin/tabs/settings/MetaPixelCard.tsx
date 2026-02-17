@@ -59,17 +59,15 @@ export function MetaPixelCard({ settings, saveSettings, loading }: Props) {
             onChange={(e) => setWishlistId(e.target.value)}
           />
         </div>
-        {dirty && (
-          <Button
-            size="sm"
-            className="h-7 text-xs gap-1"
-            disabled={saving || loading}
-            onClick={handleSave}
-          >
-            <Save className="h-3 w-3" />
-            {saving ? 'Saving…' : 'Save'}
-          </Button>
-        )}
+        <Button
+          size="sm"
+          className="h-7 text-xs gap-1"
+          disabled={saving || loading || !dirty}
+          onClick={handleSave}
+        >
+          <Save className="h-3 w-3" />
+          {saving ? 'Saving…' : 'Save'}
+        </Button>
       </CardContent>
     </Card>
   )

@@ -62,9 +62,12 @@ export function WhatsappGatewayCard({ settings, setSettings, saveSettings, loadi
                     setSettings((s) => (s ? { ...s, ycloudTemplateLangCode: e.target.value } : s))
                   }
                 />
+                <div className="text-[10px] font-medium text-muted-foreground">
+                  API Key {settings.hasYcloudKey && <span className="text-green-600">(tersimpan)</span>}
+                </div>
                 <Input
                   className="h-7 text-xs"
-                  placeholder={t.ycloudApiKey}
+                  placeholder={settings.hasYcloudKey ? '••••••••••••••••' : t.ycloudApiKey}
                   type="password"
                   onBlur={(e) => {
                     const v = e.target.value.trim()
