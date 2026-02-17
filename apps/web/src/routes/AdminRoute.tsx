@@ -390,6 +390,20 @@ function AdminRouteLegacy() {
     }
   }
 
+  async function loadDefaultPrompts() {
+    if (!token) return
+    setError(null)
+    setLoading(true)
+    try {
+      await adminApi.adminInstallRecommendedTemplates(token)
+      await refreshTemplates()
+    } catch (e: any) {
+      setError(e?.message ?? (t.failedInstallRecommended ?? 'Failed to load default templates'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function openCustomer(id: string) {
     if (!token) return
     setError(null)
@@ -610,6 +624,7 @@ function AdminRouteLegacy() {
               templates={templates}
               loading={loading}
               onSaveTemplate={(id, templateText) => void savePromptTemplate(id, templateText)}
+              onLoadDefaults={() => loadDefaultPrompts()}
             />
           </div>
         </AdminSettingsTab>

@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { PromptTemplate } from '@/features/admin/types'
 import { cn } from '@/lib/utils'
 import { useEffect, useMemo, useState } from 'react'
-import { AlertCircle, CheckCircle, FileCode } from 'lucide-react'
+import { AlertCircle, CheckCircle, FileCode, Download } from 'lucide-react'
 
 type PromptType = 'lyrics' | 'mood_description' | 'music'
 
@@ -16,11 +16,13 @@ export function AdminPromptsTab({
   templates,
   loading,
   onSaveTemplate,
+  onLoadDefaults,
 }: {
   t: any
   templates: PromptTemplate[]
   loading: boolean
   onSaveTemplate: (id: string, templateText: string) => Promise<void> | void
+  onLoadDefaults: () => Promise<void> | void
 }) {
   const PromptTypeMeta: Record<PromptType, { label: string; description: string }> = {
     lyrics: {
@@ -69,6 +71,16 @@ export function AdminPromptsTab({
     music: null,
   })
   const [selectedType, setSelectedType] = useState<PromptType>('lyrics')
+  const [loadingDefaults, setLoadingDefaults] = useState(false)
+
+  const wrappedLoadDefaults = async () => {
+    setLoadingDefaults(true)
+    try {
+      await onLoadDefaults()
+    } finally {
+      setLoadingDefaults(false)
+    }
+  }
 
   useEffect(() => {
     ;(['lyrics', 'mood_description', 'music'] as const).forEach((type) => {
@@ -100,6 +112,16 @@ export function AdminPromptsTab({
             <CardTitle className="text-sm font-semibold">{t.prompts}</CardTitle>
             <CardDescription className="text-[10px]">{t.promptsDesc ?? ''}</CardDescription>
           </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void wrappedLoadDefaults()}
+            disabled={loading || loadingDefaults}
+            className="shrink-0 text-xs gap-1.5"
+          >
+            <Download className="h-3.5 w-3.5" />
+            {loadingDefaults ? (t.loading ?? 'Loading...') : (t.loadDefaults ?? 'Load Defaults')}
+          </Button>
         </div>
       </CardHeader>
 
