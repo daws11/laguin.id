@@ -58,6 +58,58 @@ export type ThemeColors = {
   bgColor2: string
 }
 
+export type RelationshipChip = {
+  label: string
+  icon: string
+  value: string
+}
+
+export type StoryPromptChip = {
+  label: string
+  icon: string
+}
+
+export type HowItWorksStep = {
+  title: string
+  subtitle: string
+}
+
+export type ConfigStep0 = {
+  enabled: boolean
+  bannerHeadline: string
+  mainHeadline: string
+  guaranteeTitle: string
+  guaranteeText: string
+  howItWorksTitle: string
+  howItWorksSteps: HowItWorksStep[]
+  bottomCtaText: string
+}
+
+export type ConfigStep1 = {
+  headline: string
+  subtitle: string
+  relationshipChips: RelationshipChip[]
+  nameFieldLabel: string
+  nameFieldPlaceholder: string
+  occasionFieldLabel: string
+  occasionFieldPlaceholder: string
+  socialProofText: string
+}
+
+export type ConfigStep3 = {
+  headline: string
+  subtitle: string
+  tipBullets: string[]
+  storyPrompts: StoryPromptChip[]
+  textareaPlaceholder: string
+}
+
+export type ConfigSteps = {
+  step0: ConfigStep0
+  step1: ConfigStep1
+  step3: ConfigStep3
+}
+
 export type PublicSiteDraft = {
   logoUrl: string
   colors: ThemeColors
@@ -143,6 +195,7 @@ export type PublicSiteDraft = {
     paymentAmount: number
     originalAmount: number
   }
+  configSteps: ConfigSteps
 }
 
 export type CustomerListItem = {

@@ -130,6 +130,53 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
     paymentAmount: 497000,
     originalAmount: 497000,
   },
+  configSteps: {
+    step0: {
+      enabled: true,
+      bannerHeadline: 'Kado Valentine Paling Romantis',
+      mainHeadline: 'Rekam emosi mereka saat mendengar lagu untuk menang <span class="text-[var(--theme-accent)]">Rp 1.000.000!</span>',
+      guaranteeTitle: 'GARANSI UANG TUNAI',
+      guaranteeText: 'Setiap video reaksi yang jelas <span class="font-bold underline decoration-green-500/50">pasti dapat Rp 75.000</span>.',
+      howItWorksTitle: 'Cara Ikutan',
+      howItWorksSteps: [
+        { title: 'Buat Lagu Gratis', subtitle: 'Hemat 100%' },
+        { title: 'Rekam Reaksinya', subtitle: 'Wajib Video!' },
+        { title: 'Kirim & Menang', subtitle: 'Dapat Cuan!' },
+      ],
+      bottomCtaText: 'Klik tombol di bawah untuk mulai 👇',
+    },
+    step1: {
+      headline: 'Siapa penerimanya?',
+      subtitle: 'Namanya akan ada di dalam lirik',
+      relationshipChips: [
+        { label: 'Pasangan', icon: '💕', value: 'Pasangan' },
+        { label: 'Suami', icon: '💍', value: 'Suami' },
+        { label: 'Pacar', icon: '❤️', value: 'Pacar' },
+        { label: 'Tunangan', icon: '💎', value: 'Tunangan' },
+        { label: 'Istri', icon: '👰', value: 'Istri' },
+      ],
+      nameFieldLabel: 'Nama Panggilannya',
+      nameFieldPlaceholder: 'cth. Salsa',
+      occasionFieldLabel: 'Untuk momen apa?',
+      occasionFieldPlaceholder: 'cth. Anniversary, Ultah, Wisuda',
+      socialProofText: 'Bergabung dengan 2,847 orang yang membuat pasangannya menangis bahagia',
+    },
+    step3: {
+      headline: 'Ceritakan kisahmu',
+      subtitle: 'Ini akan menjadi lirik. <span class="text-[var(--theme-accent)] font-medium">Beberapa kalimat saja!</span>',
+      tipBullets: [
+        'Semakin kaya detail, semakin kuat emosinya.',
+        'Ceritakan pertemuan, hal yang dicintai, atau kenangan lucu.',
+      ],
+      storyPrompts: [
+        { label: 'Awal bertemu', icon: '💞' },
+        { label: 'Yang aku suka darinya', icon: '😍' },
+        { label: 'Jokes internal kami', icon: '😂' },
+        { label: 'Mimpi masa depan', icon: '🔮' },
+      ],
+      textareaPlaceholder: 'Mulai ketik ceritamu di sini...',
+    },
+  },
 }
 
 function asString(v: unknown, fallback: string) {
@@ -313,6 +360,63 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
       paymentAmount: asNumber(cd?.paymentAmount, defaultPublicSiteDraft.creationDelivery.paymentAmount),
       originalAmount: asNumber(cd?.originalAmount, defaultPublicSiteDraft.creationDelivery.originalAmount),
     },
+    configSteps: buildConfigSteps(cfg?.configSteps),
+  }
+}
+
+function buildConfigSteps(raw: any): PublicSiteDraft['configSteps'] {
+  const cs = raw && typeof raw === 'object' ? raw : {}
+  const s0 = cs?.step0 && typeof cs.step0 === 'object' ? cs.step0 : {}
+  const s1 = cs?.step1 && typeof cs.step1 === 'object' ? cs.step1 : {}
+  const s3 = cs?.step3 && typeof cs.step3 === 'object' ? cs.step3 : {}
+  const d = defaultPublicSiteDraft.configSteps
+
+  const relChips = safeArr(s1?.relationshipChips, (x: any) => ({
+    label: asString(x?.label, ''),
+    icon: asString(x?.icon, '✨'),
+    value: asString(x?.value, ''),
+  })).filter((x: any) => x.label && x.value)
+
+  const howSteps = safeArr(s0?.howItWorksSteps, (x: any) => ({
+    title: asString(x?.title, ''),
+    subtitle: asString(x?.subtitle, ''),
+  })).filter((x: any) => x.title)
+
+  const tipBullets = safeArr(s3?.tipBullets, (x: any) => typeof x === 'string' ? x : '').filter((x: string) => x.trim())
+
+  const storyPrompts = safeArr(s3?.storyPrompts, (x: any) => ({
+    label: asString(x?.label, ''),
+    icon: asString(x?.icon, '💡'),
+  })).filter((x: any) => x.label)
+
+  return {
+    step0: {
+      enabled: asBool(s0?.enabled, d.step0.enabled),
+      bannerHeadline: asString(s0?.bannerHeadline, d.step0.bannerHeadline),
+      mainHeadline: asString(s0?.mainHeadline, d.step0.mainHeadline),
+      guaranteeTitle: asString(s0?.guaranteeTitle, d.step0.guaranteeTitle),
+      guaranteeText: asString(s0?.guaranteeText, d.step0.guaranteeText),
+      howItWorksTitle: asString(s0?.howItWorksTitle, d.step0.howItWorksTitle),
+      howItWorksSteps: howSteps.length ? howSteps : d.step0.howItWorksSteps,
+      bottomCtaText: asString(s0?.bottomCtaText, d.step0.bottomCtaText),
+    },
+    step1: {
+      headline: asString(s1?.headline, d.step1.headline),
+      subtitle: asString(s1?.subtitle, d.step1.subtitle),
+      relationshipChips: relChips.length ? relChips : d.step1.relationshipChips,
+      nameFieldLabel: asString(s1?.nameFieldLabel, d.step1.nameFieldLabel),
+      nameFieldPlaceholder: asString(s1?.nameFieldPlaceholder, d.step1.nameFieldPlaceholder),
+      occasionFieldLabel: asString(s1?.occasionFieldLabel, d.step1.occasionFieldLabel),
+      occasionFieldPlaceholder: asString(s1?.occasionFieldPlaceholder, d.step1.occasionFieldPlaceholder),
+      socialProofText: asString(s1?.socialProofText, d.step1.socialProofText),
+    },
+    step3: {
+      headline: asString(s3?.headline, d.step3.headline),
+      subtitle: asString(s3?.subtitle, d.step3.subtitle),
+      tipBullets: tipBullets.length ? tipBullets : d.step3.tipBullets,
+      storyPrompts: storyPrompts.length ? storyPrompts : d.step3.storyPrompts,
+      textareaPlaceholder: asString(s3?.textareaPlaceholder, d.step3.textareaPlaceholder),
+    },
   }
 }
 
@@ -432,6 +536,36 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
     quotaBadgeText: draft.promoBanner.quotaBadgeText.trim(),
   }
 
-  return { logoUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, heroCheckmarks: nextHeroCheckmarks, trustBadges: nextTrustBadges, statsBar: nextStatsBar, reviews: nextReviews, promoBanner: nextPromoBanner }
+  const nextConfigSteps = {
+    step0: {
+      enabled: draft.configSteps.step0.enabled,
+      bannerHeadline: draft.configSteps.step0.bannerHeadline.trim(),
+      mainHeadline: draft.configSteps.step0.mainHeadline.trim(),
+      guaranteeTitle: draft.configSteps.step0.guaranteeTitle.trim(),
+      guaranteeText: draft.configSteps.step0.guaranteeText.trim(),
+      howItWorksTitle: draft.configSteps.step0.howItWorksTitle.trim(),
+      howItWorksSteps: draft.configSteps.step0.howItWorksSteps.map((s) => ({ title: s.title.trim(), subtitle: s.subtitle.trim() })).filter((s) => s.title),
+      bottomCtaText: draft.configSteps.step0.bottomCtaText.trim(),
+    },
+    step1: {
+      headline: draft.configSteps.step1.headline.trim(),
+      subtitle: draft.configSteps.step1.subtitle.trim(),
+      relationshipChips: draft.configSteps.step1.relationshipChips.map((c) => ({ label: c.label.trim(), icon: c.icon.trim(), value: c.value.trim() })).filter((c) => c.label && c.value),
+      nameFieldLabel: draft.configSteps.step1.nameFieldLabel.trim(),
+      nameFieldPlaceholder: draft.configSteps.step1.nameFieldPlaceholder.trim(),
+      occasionFieldLabel: draft.configSteps.step1.occasionFieldLabel.trim(),
+      occasionFieldPlaceholder: draft.configSteps.step1.occasionFieldPlaceholder.trim(),
+      socialProofText: draft.configSteps.step1.socialProofText.trim(),
+    },
+    step3: {
+      headline: draft.configSteps.step3.headline.trim(),
+      subtitle: draft.configSteps.step3.subtitle.trim(),
+      tipBullets: draft.configSteps.step3.tipBullets.map((b) => b.trim()).filter((b) => b),
+      storyPrompts: draft.configSteps.step3.storyPrompts.map((p) => ({ label: p.label.trim(), icon: p.icon.trim() })).filter((p) => p.label),
+      textareaPlaceholder: draft.configSteps.step3.textareaPlaceholder.trim(),
+    },
+  }
+
+  return { logoUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, heroCheckmarks: nextHeroCheckmarks, trustBadges: nextTrustBadges, statsBar: nextStatsBar, reviews: nextReviews, promoBanner: nextPromoBanner, configSteps: nextConfigSteps }
 }
 
