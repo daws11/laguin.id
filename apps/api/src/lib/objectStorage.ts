@@ -37,7 +37,7 @@ export async function uploadBuffer(objectKey: string, buf: Buffer, _contentType:
   return `/uploads/${objectKey}`
 }
 
-export async function downloadToStream(objectKey: string): Promise<{ stream: NodeJS.ReadableStream; contentType: string; size: number } | null> {
+export async function downloadBuffer(objectKey: string): Promise<{ buffer: Buffer; contentType: string } | null> {
   const prefix = getPrefix()
   const fullKey = `${prefix}uploads/${objectKey}`
 
@@ -46,17 +46,14 @@ export async function downloadToStream(objectKey: string): Promise<{ stream: Nod
     return null
   }
 
-  const buf = result.value
+  const raw = result.value
+  const buf = Array.isArray(raw) ? raw[0] : raw
   const ext = objectKey.split('.').pop()?.toLowerCase() ?? ''
   const contentType = mimeFromExt(ext)
 
-  const { Readable } = await import('stream')
-  const stream = Readable.from(buf)
-
   return {
-    stream,
+    buffer: buf as Buffer,
     contentType,
-    size: buf.length,
   }
 }
 

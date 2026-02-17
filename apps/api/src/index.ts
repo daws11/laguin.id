@@ -49,7 +49,7 @@ await app.register(multipart, {
 })
 
 import fs from 'node:fs'
-import { downloadToStream } from './lib/objectStorage'
+import { downloadBuffer } from './lib/objectStorage'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -58,13 +58,13 @@ app.get('/uploads/*', async (req, reply) => {
   if (!objectKey || objectKey.includes('..')) return reply.code(404).send({ error: 'Not found' })
 
   try {
-    const result = await downloadToStream(objectKey)
+    const result = await downloadBuffer(objectKey)
     if (!result) return reply.code(404).send({ error: 'Not found' })
 
     reply.header('Content-Type', result.contentType)
-    if (result.size) reply.header('Content-Length', result.size)
+    reply.header('Content-Length', result.buffer.length)
     reply.header('Cache-Control', 'public, max-age=86400')
-    return reply.send(result.stream)
+    return reply.send(result.buffer)
   } catch (err) {
     req.log.error(err, 'Error serving upload')
     return reply.code(500).send({ error: 'Failed to serve file' })
