@@ -105,10 +105,60 @@ export type ConfigStep3 = {
   textareaPlaceholder: string
 }
 
+export type VibeChip = {
+  id: string
+  label: string
+  desc: string
+  icon: string
+  badge?: string
+}
+
+export type VoiceOption = {
+  value: string
+  label: string
+}
+
+export type LanguageOption = {
+  value: string
+  label: string
+}
+
+export type ConfigStep2 = {
+  headline: string
+  subtitle: string
+  vibeChips: VibeChip[]
+  voiceLabel: string
+  voiceOptions: VoiceOption[]
+  languageLabel: string
+  languageOptions: LanguageOption[]
+}
+
+export type NextStepItem = {
+  text: string
+}
+
+export type ConfigStep4 = {
+  headline: string
+  subtitleTemplate: string
+  manualSubtitle: string
+  orderSummaryLabel: string
+  whatsappLabel: string
+  whatsappPlaceholder: string
+  emailLabel: string
+  emailPlaceholder: string
+  nextStepsTitle: string
+  nextSteps: NextStepItem[]
+  manualNextSteps: NextStepItem[]
+  securityBadges: string[]
+  draftTimerText: string
+}
+
 export type ConfigSteps = {
   step0: ConfigStep0
   step1: ConfigStep1
+  step2: ConfigStep2
   step3: ConfigStep3
+  step4: ConfigStep4
 }
 
 export type PublicSiteDraft = {

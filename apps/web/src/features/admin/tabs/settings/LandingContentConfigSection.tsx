@@ -8,7 +8,7 @@ import { resolveApiUrl } from '@/lib/http'
 import * as adminApi from '@/features/admin/api'
 import { moveItem, parseToastItemsJson } from '@/features/admin/publicSiteDraft'
 import type { PublicSiteDraft } from '@/features/admin/types'
-import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap, Palette, ImagePlus, ShieldCheck, Megaphone, Plus, Trash2, Heart, PenLine } from 'lucide-react'
+import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap, Palette, ImagePlus, ShieldCheck, Megaphone, Plus, Trash2, Heart, PenLine, PartyPopper } from 'lucide-react'
 
 interface LandingContentConfigProps {
   draft: PublicSiteDraft
@@ -63,7 +63,9 @@ export function LandingContentConfigSection({
     { id: 'creation-delivery', label: t.creationDelivery ?? 'Creation & Delivery', icon: Zap, group: 'System' },
     { id: 'config-step0', label: 'Step 0: Announcement', icon: Megaphone, group: 'Config Steps' },
     { id: 'config-step1', label: 'Step 1: Recipient', icon: Heart, group: 'Config Steps' },
+    { id: 'config-step2', label: 'Step 2: Vibe', icon: Music, group: 'Config Steps' },
     { id: 'config-step3', label: 'Step 3: Story', icon: PenLine, group: 'Config Steps' },
+    { id: 'config-step4', label: 'Step 4: Checkout', icon: PartyPopper, group: 'Config Steps' },
   ]
 
   const SidebarItem = ({ item }: { item: typeof menuItems[0] }) => (
@@ -1415,6 +1417,125 @@ export function LandingContentConfigSection({
                 </div>
             )}
 
+            {activeTab === 'config-step2' && (
+                <div className="space-y-4">
+                    <h3 className="text-sm font-semibold">Step 2: Vibe / Music Style</h3>
+                    <p className="text-xs text-muted-foreground">Configure the music genre selection, voice style options, and language choices.</p>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">Headline</label>
+                        <Input value={draft.configSteps.step2.headline} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, headline: e.target.value } } }))} />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">Subtitle</label>
+                        <Input value={draft.configSteps.step2.subtitle} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, subtitle: e.target.value } } }))} />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">Genre / Vibe Chips</label>
+                        <p className="text-[10px] text-muted-foreground">Each chip has an ID (sent to API), label, description, icon emoji, and optional badge text.</p>
+                        {draft.configSteps.step2.vibeChips.map((chip, i) => (
+                            <div key={i} className="flex gap-2 items-center">
+                                <Input className="w-12 shrink-0 text-center" placeholder="Icon" value={chip.icon} onChange={(e) => {
+                                    const arr = [...draft.configSteps.step2.vibeChips]
+                                    arr[i] = { ...arr[i], icon: e.target.value }
+                                    setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, vibeChips: arr } } }))
+                                }} />
+                                <Input className="w-24 shrink-0" placeholder="ID" value={chip.id} onChange={(e) => {
+                                    const arr = [...draft.configSteps.step2.vibeChips]
+                                    arr[i] = { ...arr[i], id: e.target.value }
+                                    setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, vibeChips: arr } } }))
+                                }} />
+                                <Input className="flex-1" placeholder="Label" value={chip.label} onChange={(e) => {
+                                    const arr = [...draft.configSteps.step2.vibeChips]
+                                    arr[i] = { ...arr[i], label: e.target.value }
+                                    setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, vibeChips: arr } } }))
+                                }} />
+                                <Input className="flex-1" placeholder="Description" value={chip.desc} onChange={(e) => {
+                                    const arr = [...draft.configSteps.step2.vibeChips]
+                                    arr[i] = { ...arr[i], desc: e.target.value }
+                                    setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, vibeChips: arr } } }))
+                                }} />
+                                <Input className="w-16 shrink-0" placeholder="Badge" value={chip.badge || ''} onChange={(e) => {
+                                    const arr = [...draft.configSteps.step2.vibeChips]
+                                    arr[i] = { ...arr[i], badge: e.target.value || undefined }
+                                    setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, vibeChips: arr } } }))
+                                }} />
+                                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => {
+                                    const arr = draft.configSteps.step2.vibeChips.filter((_, j) => j !== i)
+                                    setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, vibeChips: arr } } }))
+                                }}><Trash2 className="h-3 w-3" /></Button>
+                            </div>
+                        ))}
+                        <Button type="button" variant="outline" size="sm" onClick={() => {
+                            setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, vibeChips: [...d.configSteps.step2.vibeChips, { id: '', label: '', desc: '', icon: '🎵' }] } } }))
+                        }}><Plus className="h-3 w-3 mr-1" /> Add Genre</Button>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">Voice Section Label</label>
+                        <Input value={draft.configSteps.step2.voiceLabel} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, voiceLabel: e.target.value } } }))} />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">Voice Options</label>
+                        <p className="text-[10px] text-muted-foreground">Value is sent to API, Label is shown to user.</p>
+                        {draft.configSteps.step2.voiceOptions.map((opt, i) => (
+                            <div key={i} className="flex gap-2 items-center">
+                                <Input className="flex-1" placeholder="Value (e.g. Female)" value={opt.value} onChange={(e) => {
+                                    const arr = [...draft.configSteps.step2.voiceOptions]
+                                    arr[i] = { ...arr[i], value: e.target.value }
+                                    setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, voiceOptions: arr } } }))
+                                }} />
+                                <Input className="flex-1" placeholder="Label (e.g. Wanita)" value={opt.label} onChange={(e) => {
+                                    const arr = [...draft.configSteps.step2.voiceOptions]
+                                    arr[i] = { ...arr[i], label: e.target.value }
+                                    setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, voiceOptions: arr } } }))
+                                }} />
+                                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => {
+                                    const arr = draft.configSteps.step2.voiceOptions.filter((_, j) => j !== i)
+                                    setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, voiceOptions: arr } } }))
+                                }}><Trash2 className="h-3 w-3" /></Button>
+                            </div>
+                        ))}
+                        <Button type="button" variant="outline" size="sm" onClick={() => {
+                            setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, voiceOptions: [...d.configSteps.step2.voiceOptions, { value: '', label: '' }] } } }))
+                        }}><Plus className="h-3 w-3 mr-1" /> Add Voice Option</Button>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">Language Section Label</label>
+                        <Input value={draft.configSteps.step2.languageLabel} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, languageLabel: e.target.value } } }))} />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">Language Options</label>
+                        {draft.configSteps.step2.languageOptions.map((opt, i) => (
+                            <div key={i} className="flex gap-2 items-center">
+                                <Input className="flex-1" placeholder="Value (e.g. English)" value={opt.value} onChange={(e) => {
+                                    const arr = [...draft.configSteps.step2.languageOptions]
+                                    arr[i] = { ...arr[i], value: e.target.value }
+                                    setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, languageOptions: arr } } }))
+                                }} />
+                                <Input className="flex-1" placeholder="Label (e.g. Bahasa Indonesia)" value={opt.label} onChange={(e) => {
+                                    const arr = [...draft.configSteps.step2.languageOptions]
+                                    arr[i] = { ...arr[i], label: e.target.value }
+                                    setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, languageOptions: arr } } }))
+                                }} />
+                                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => {
+                                    const arr = draft.configSteps.step2.languageOptions.filter((_, j) => j !== i)
+                                    setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, languageOptions: arr } } }))
+                                }}><Trash2 className="h-3 w-3" /></Button>
+                            </div>
+                        ))}
+                        <Button type="button" variant="outline" size="sm" onClick={() => {
+                            setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step2: { ...d.configSteps.step2, languageOptions: [...d.configSteps.step2.languageOptions, { value: '', label: '' }] } } }))
+                        }}><Plus className="h-3 w-3 mr-1" /> Add Language</Button>
+                    </div>
+                </div>
+            )}
+
             {activeTab === 'config-step3' && (
                 <div className="space-y-4">
                     <h3 className="text-sm font-semibold">Step 3: Story</h3>
@@ -1478,6 +1599,132 @@ export function LandingContentConfigSection({
                     <div className="space-y-2">
                         <label className="text-xs font-medium text-muted-foreground">Textarea Placeholder</label>
                         <Input value={draft.configSteps.step3.textareaPlaceholder} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step3: { ...d.configSteps.step3, textareaPlaceholder: e.target.value } } }))} />
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'config-step4' && (
+                <div className="space-y-4">
+                    <h3 className="text-sm font-semibold">Step 4: Review / Checkout</h3>
+                    <p className="text-xs text-muted-foreground">Configure the final checkout step texts. Use {'{recipient}'} for the recipient's name and {'{delivery}'} for delivery estimate.</p>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">Headline</label>
+                        <Input value={draft.configSteps.step4.headline} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, headline: e.target.value } } }))} />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-muted-foreground">Subtitle (normal mode)</label>
+                            <Input value={draft.configSteps.step4.subtitleTemplate} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, subtitleTemplate: e.target.value } } }))} />
+                            <p className="text-[10px] text-muted-foreground">Use {'{recipient}'} for recipient name</p>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-muted-foreground">Subtitle (manual confirmation)</label>
+                            <Input value={draft.configSteps.step4.manualSubtitle} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, manualSubtitle: e.target.value } } }))} />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">Order Summary Label</label>
+                        <Input value={draft.configSteps.step4.orderSummaryLabel} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, orderSummaryLabel: e.target.value } } }))} />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-muted-foreground">WhatsApp Field Label</label>
+                            <Input value={draft.configSteps.step4.whatsappLabel} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, whatsappLabel: e.target.value } } }))} />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-muted-foreground">WhatsApp Placeholder</label>
+                            <Input value={draft.configSteps.step4.whatsappPlaceholder} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, whatsappPlaceholder: e.target.value } } }))} />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-muted-foreground">Email Field Label</label>
+                            <Input value={draft.configSteps.step4.emailLabel} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, emailLabel: e.target.value } } }))} />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-muted-foreground">Email Placeholder</label>
+                            <Input value={draft.configSteps.step4.emailPlaceholder} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, emailPlaceholder: e.target.value } } }))} />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">Next Steps Title</label>
+                        <Input value={draft.configSteps.step4.nextStepsTitle} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, nextStepsTitle: e.target.value } } }))} />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">Next Steps (normal mode)</label>
+                        <p className="text-[10px] text-muted-foreground">Use {'{delivery}'} for delivery estimate text</p>
+                        {draft.configSteps.step4.nextSteps.map((s, i) => (
+                            <div key={i} className="flex gap-2 items-center">
+                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-200 text-[9px] font-bold text-green-700">{i + 1}</div>
+                                <Input className="flex-1" value={s.text} onChange={(e) => {
+                                    const arr = [...draft.configSteps.step4.nextSteps]
+                                    arr[i] = { text: e.target.value }
+                                    setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, nextSteps: arr } } }))
+                                }} />
+                                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => {
+                                    const arr = draft.configSteps.step4.nextSteps.filter((_, j) => j !== i)
+                                    setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, nextSteps: arr } } }))
+                                }}><Trash2 className="h-3 w-3" /></Button>
+                            </div>
+                        ))}
+                        <Button type="button" variant="outline" size="sm" onClick={() => {
+                            setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, nextSteps: [...d.configSteps.step4.nextSteps, { text: '' }] } } }))
+                        }}><Plus className="h-3 w-3 mr-1" /> Add Step</Button>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">Next Steps (manual confirmation mode)</label>
+                        {draft.configSteps.step4.manualNextSteps.map((s, i) => (
+                            <div key={i} className="flex gap-2 items-center">
+                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-200 text-[9px] font-bold text-green-700">{i + 1}</div>
+                                <Input className="flex-1" value={s.text} onChange={(e) => {
+                                    const arr = [...draft.configSteps.step4.manualNextSteps]
+                                    arr[i] = { text: e.target.value }
+                                    setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, manualNextSteps: arr } } }))
+                                }} />
+                                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => {
+                                    const arr = draft.configSteps.step4.manualNextSteps.filter((_, j) => j !== i)
+                                    setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, manualNextSteps: arr } } }))
+                                }}><Trash2 className="h-3 w-3" /></Button>
+                            </div>
+                        ))}
+                        <Button type="button" variant="outline" size="sm" onClick={() => {
+                            setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, manualNextSteps: [...d.configSteps.step4.manualNextSteps, { text: '' }] } } }))
+                        }}><Plus className="h-3 w-3 mr-1" /> Add Step</Button>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">Security Badges</label>
+                        <p className="text-[10px] text-muted-foreground">Use {'{delivery}'} for delivery estimate</p>
+                        {draft.configSteps.step4.securityBadges.map((badge, i) => (
+                            <div key={i} className="flex gap-2 items-center">
+                                <Input className="flex-1" value={badge} onChange={(e) => {
+                                    const arr = [...draft.configSteps.step4.securityBadges]
+                                    arr[i] = e.target.value
+                                    setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, securityBadges: arr } } }))
+                                }} />
+                                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => {
+                                    const arr = draft.configSteps.step4.securityBadges.filter((_, j) => j !== i)
+                                    setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, securityBadges: arr } } }))
+                                }}><Trash2 className="h-3 w-3" /></Button>
+                            </div>
+                        ))}
+                        <Button type="button" variant="outline" size="sm" onClick={() => {
+                            setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, securityBadges: [...d.configSteps.step4.securityBadges, ''] } } }))
+                        }}><Plus className="h-3 w-3 mr-1" /> Add Badge</Button>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">Draft Timer Text</label>
+                        <Input value={draft.configSteps.step4.draftTimerText} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, draftTimerText: e.target.value } } }))} />
+                        <p className="text-[10px] text-muted-foreground">Use {'{timer}'} for countdown timer</p>
                     </div>
                 </div>
             )}

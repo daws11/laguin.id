@@ -161,6 +161,29 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
       occasionFieldPlaceholder: 'cth. Anniversary, Ultah, Wisuda',
       socialProofText: 'Bergabung dengan 2,847 orang yang membuat pasangannya menangis bahagia',
     },
+    step2: {
+      headline: 'Pilih Vibe',
+      subtitle: 'Sesuaikan dengan selera musiknya',
+      vibeChips: [
+        { id: 'Country', label: 'Country', desc: 'Bercerita & tulus', icon: '🤠' },
+        { id: 'Acoustic', label: 'Acoustic', desc: 'Hangat & intim', icon: '🎸' },
+        { id: 'Pop Ballad', label: 'Pop Ballad', desc: 'Modern & emosional', icon: '🎹', badge: 'Best' },
+        { id: 'R&B Soul', label: 'R&B Soul', desc: 'Halus & romantis', icon: '🌙' },
+        { id: 'Rock', label: 'Rock', desc: 'Kuat & penuh gairah', icon: '⚡' },
+        { id: 'Piano Ballad', label: 'Piano Ballad', desc: 'Elegan & abadi', icon: '🎻' },
+      ],
+      voiceLabel: 'Suara Penyanyi',
+      voiceOptions: [
+        { value: 'Female', label: 'Wanita' },
+        { value: 'Male', label: 'Pria' },
+        { value: 'Surprise me', label: 'Bebas' },
+      ],
+      languageLabel: 'Bahasa lirik',
+      languageOptions: [
+        { value: 'English', label: 'English' },
+        { value: 'Indonesian', label: 'Bahasa Indonesia' },
+      ],
+    },
     step3: {
       headline: 'Ceritakan kisahmu',
       subtitle: 'Ini akan menjadi lirik. <span class="text-[var(--theme-accent)] font-medium">Beberapa kalimat saja!</span>',
@@ -175,6 +198,29 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
         { label: 'Mimpi masa depan', icon: '🔮' },
       ],
       textareaPlaceholder: 'Mulai ketik ceritamu di sini...',
+    },
+    step4: {
+      headline: 'Semua siap!',
+      subtitleTemplate: 'Kirim lagu {recipient} ke mana?',
+      manualSubtitle: 'Konfirmasi pesanan via WhatsApp',
+      orderSummaryLabel: 'Ringkasan Pesanan',
+      whatsappLabel: 'Nomor WhatsApp',
+      whatsappPlaceholder: 'Masukkan nomor WhatsApp',
+      emailLabel: 'Alamat Email',
+      emailPlaceholder: 'nama@email.com',
+      nextStepsTitle: 'Apa selanjutnya?',
+      nextSteps: [
+        { text: 'Kami membuat lagu personalmu' },
+        { text: 'Dikirim via email & WA {delivery}' },
+        { text: 'Putar untuknya dan lihat dia menangis 😭' },
+      ],
+      manualNextSteps: [
+        { text: 'Admin memproses pesanan' },
+        { text: 'Lanjut chat admin WhatsApp untuk konfirmasi.' },
+        { text: 'Putar untuknya dan lihat dia menangis 😭' },
+      ],
+      securityBadges: ['Checkout aman', '{delivery}'],
+      draftTimerText: 'Cerita tersimpan selama {timer} — selesaikan checkout untuk menyimpannya',
     },
   },
 }
@@ -368,7 +414,9 @@ function buildConfigSteps(raw: any): PublicSiteDraft['configSteps'] {
   const cs = raw && typeof raw === 'object' ? raw : {}
   const s0 = cs?.step0 && typeof cs.step0 === 'object' ? cs.step0 : {}
   const s1 = cs?.step1 && typeof cs.step1 === 'object' ? cs.step1 : {}
+  const s2 = cs?.step2 && typeof cs.step2 === 'object' ? cs.step2 : {}
   const s3 = cs?.step3 && typeof cs.step3 === 'object' ? cs.step3 : {}
+  const s4 = cs?.step4 && typeof cs.step4 === 'object' ? cs.step4 : {}
   const d = defaultPublicSiteDraft.configSteps
 
   const relChips = safeArr(s1?.relationshipChips, (x: any) => ({
@@ -388,6 +436,34 @@ function buildConfigSteps(raw: any): PublicSiteDraft['configSteps'] {
     label: asString(x?.label, ''),
     icon: asString(x?.icon, '💡'),
   })).filter((x: any) => x.label)
+
+  const vibeChips = safeArr(s2?.vibeChips, (x: any) => ({
+    id: asString(x?.id, ''),
+    label: asString(x?.label, ''),
+    desc: asString(x?.desc, ''),
+    icon: asString(x?.icon, '🎵'),
+    badge: x?.badge ? asString(x.badge, '') : undefined,
+  })).filter((x: any) => x.id && x.label)
+
+  const voiceOptions = safeArr(s2?.voiceOptions, (x: any) => ({
+    value: asString(x?.value, ''),
+    label: asString(x?.label, ''),
+  })).filter((x: any) => x.value && x.label)
+
+  const languageOptions = safeArr(s2?.languageOptions, (x: any) => ({
+    value: asString(x?.value, ''),
+    label: asString(x?.label, ''),
+  })).filter((x: any) => x.value && x.label)
+
+  const nextSteps = safeArr(s4?.nextSteps, (x: any) => ({
+    text: asString(x?.text, ''),
+  })).filter((x: any) => x.text)
+
+  const manualNextSteps = safeArr(s4?.manualNextSteps, (x: any) => ({
+    text: asString(x?.text, ''),
+  })).filter((x: any) => x.text)
+
+  const securityBadges = safeArr(s4?.securityBadges, (x: any) => typeof x === 'string' ? x : '').filter((x: string) => x.trim())
 
   return {
     step0: {
@@ -410,12 +486,36 @@ function buildConfigSteps(raw: any): PublicSiteDraft['configSteps'] {
       occasionFieldPlaceholder: asString(s1?.occasionFieldPlaceholder, d.step1.occasionFieldPlaceholder),
       socialProofText: asString(s1?.socialProofText, d.step1.socialProofText),
     },
+    step2: {
+      headline: asString(s2?.headline, d.step2.headline),
+      subtitle: asString(s2?.subtitle, d.step2.subtitle),
+      vibeChips: vibeChips.length ? vibeChips : d.step2.vibeChips,
+      voiceLabel: asString(s2?.voiceLabel, d.step2.voiceLabel),
+      voiceOptions: voiceOptions.length ? voiceOptions : d.step2.voiceOptions,
+      languageLabel: asString(s2?.languageLabel, d.step2.languageLabel),
+      languageOptions: languageOptions.length ? languageOptions : d.step2.languageOptions,
+    },
     step3: {
       headline: asString(s3?.headline, d.step3.headline),
       subtitle: asString(s3?.subtitle, d.step3.subtitle),
       tipBullets: tipBullets.length ? tipBullets : d.step3.tipBullets,
       storyPrompts: storyPrompts.length ? storyPrompts : d.step3.storyPrompts,
       textareaPlaceholder: asString(s3?.textareaPlaceholder, d.step3.textareaPlaceholder),
+    },
+    step4: {
+      headline: asString(s4?.headline, d.step4.headline),
+      subtitleTemplate: asString(s4?.subtitleTemplate, d.step4.subtitleTemplate),
+      manualSubtitle: asString(s4?.manualSubtitle, d.step4.manualSubtitle),
+      orderSummaryLabel: asString(s4?.orderSummaryLabel, d.step4.orderSummaryLabel),
+      whatsappLabel: asString(s4?.whatsappLabel, d.step4.whatsappLabel),
+      whatsappPlaceholder: asString(s4?.whatsappPlaceholder, d.step4.whatsappPlaceholder),
+      emailLabel: asString(s4?.emailLabel, d.step4.emailLabel),
+      emailPlaceholder: asString(s4?.emailPlaceholder, d.step4.emailPlaceholder),
+      nextStepsTitle: asString(s4?.nextStepsTitle, d.step4.nextStepsTitle),
+      nextSteps: nextSteps.length ? nextSteps : d.step4.nextSteps,
+      manualNextSteps: manualNextSteps.length ? manualNextSteps : d.step4.manualNextSteps,
+      securityBadges: securityBadges.length ? securityBadges : d.step4.securityBadges,
+      draftTimerText: asString(s4?.draftTimerText, d.step4.draftTimerText),
     },
   }
 }
@@ -557,12 +657,36 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
       occasionFieldPlaceholder: draft.configSteps.step1.occasionFieldPlaceholder.trim(),
       socialProofText: draft.configSteps.step1.socialProofText.trim(),
     },
+    step2: {
+      headline: draft.configSteps.step2.headline.trim(),
+      subtitle: draft.configSteps.step2.subtitle.trim(),
+      vibeChips: draft.configSteps.step2.vibeChips.map((c) => ({ id: c.id.trim(), label: c.label.trim(), desc: c.desc.trim(), icon: c.icon.trim(), ...(c.badge ? { badge: c.badge.trim() } : {}) })).filter((c) => c.id && c.label),
+      voiceLabel: draft.configSteps.step2.voiceLabel.trim(),
+      voiceOptions: draft.configSteps.step2.voiceOptions.map((o) => ({ value: o.value.trim(), label: o.label.trim() })).filter((o) => o.value && o.label),
+      languageLabel: draft.configSteps.step2.languageLabel.trim(),
+      languageOptions: draft.configSteps.step2.languageOptions.map((o) => ({ value: o.value.trim(), label: o.label.trim() })).filter((o) => o.value && o.label),
+    },
     step3: {
       headline: draft.configSteps.step3.headline.trim(),
       subtitle: draft.configSteps.step3.subtitle.trim(),
       tipBullets: draft.configSteps.step3.tipBullets.map((b) => b.trim()).filter((b) => b),
       storyPrompts: draft.configSteps.step3.storyPrompts.map((p) => ({ label: p.label.trim(), icon: p.icon.trim() })).filter((p) => p.label),
       textareaPlaceholder: draft.configSteps.step3.textareaPlaceholder.trim(),
+    },
+    step4: {
+      headline: draft.configSteps.step4.headline.trim(),
+      subtitleTemplate: draft.configSteps.step4.subtitleTemplate.trim(),
+      manualSubtitle: draft.configSteps.step4.manualSubtitle.trim(),
+      orderSummaryLabel: draft.configSteps.step4.orderSummaryLabel.trim(),
+      whatsappLabel: draft.configSteps.step4.whatsappLabel.trim(),
+      whatsappPlaceholder: draft.configSteps.step4.whatsappPlaceholder.trim(),
+      emailLabel: draft.configSteps.step4.emailLabel.trim(),
+      emailPlaceholder: draft.configSteps.step4.emailPlaceholder.trim(),
+      nextStepsTitle: draft.configSteps.step4.nextStepsTitle.trim(),
+      nextSteps: draft.configSteps.step4.nextSteps.map((s) => ({ text: s.text.trim() })).filter((s) => s.text),
+      manualNextSteps: draft.configSteps.step4.manualNextSteps.map((s) => ({ text: s.text.trim() })).filter((s) => s.text),
+      securityBadges: draft.configSteps.step4.securityBadges.map((b) => b.trim()).filter((b) => b),
+      draftTimerText: draft.configSteps.step4.draftTimerText.trim(),
     },
   }
 

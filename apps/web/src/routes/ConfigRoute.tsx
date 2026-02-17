@@ -195,7 +195,9 @@ export function ConfigRoute() {
     const cs = cfg?.configSteps && typeof cfg.configSteps === 'object' ? cfg.configSteps : {}
     const s0 = cs?.step0 && typeof cs.step0 === 'object' ? cs.step0 : {}
     const s1 = cs?.step1 && typeof cs.step1 === 'object' ? cs.step1 : {}
+    const s2 = cs?.step2 && typeof cs.step2 === 'object' ? cs.step2 : {}
     const s3 = cs?.step3 && typeof cs.step3 === 'object' ? cs.step3 : {}
+    const s4 = cs?.step4 && typeof cs.step4 === 'object' ? cs.step4 : {}
 
     const str = (v: unknown, fb: string) => typeof v === 'string' && v.trim() ? v : fb
     const arr = <T,>(v: unknown, map: (x: any) => T): T[] => Array.isArray(v) ? v.map(map) : []
@@ -211,12 +213,34 @@ export function ConfigRoute() {
       value: str(x?.value, ''),
     })).filter((x: any) => x.label && x.value)
 
+    const vibeChips = arr(s2?.vibeChips, (x: any) => ({
+      id: str(x?.id, ''),
+      label: str(x?.label, ''),
+      desc: str(x?.desc, ''),
+      icon: str(x?.icon, '🎵'),
+      badge: x?.badge ? str(x.badge, '') : undefined,
+    })).filter((x: any) => x.id && x.label)
+
+    const voiceOptions = arr(s2?.voiceOptions, (x: any) => ({
+      value: str(x?.value, ''),
+      label: str(x?.label, ''),
+    })).filter((x: any) => x.value && x.label)
+
+    const languageOptions = arr(s2?.languageOptions, (x: any) => ({
+      value: str(x?.value, ''),
+      label: str(x?.label, ''),
+    })).filter((x: any) => x.value && x.label)
+
     const tipBullets = arr(s3?.tipBullets, (x: any) => typeof x === 'string' ? x : '').filter((x: string) => x.trim())
 
     const storyPrompts = arr(s3?.storyPrompts, (x: any) => ({
       label: str(x?.label, ''),
       icon: str(x?.icon, '💡'),
     })).filter((x: any) => x.label)
+
+    const nextSteps = arr(s4?.nextSteps, (x: any) => ({ text: str(x?.text, '') })).filter((x: any) => x.text)
+    const manualNextSteps = arr(s4?.manualNextSteps, (x: any) => ({ text: str(x?.text, '') })).filter((x: any) => x.text)
+    const securityBadges = arr(s4?.securityBadges, (x: any) => typeof x === 'string' ? x : '').filter((x: string) => x.trim())
 
     return {
       step0: {
@@ -249,6 +273,29 @@ export function ConfigRoute() {
         occasionFieldPlaceholder: str(s1?.occasionFieldPlaceholder, 'cth. Anniversary, Ultah, Wisuda'),
         socialProofText: str(s1?.socialProofText, 'Bergabung dengan 2,847 orang yang membuat pasangannya menangis bahagia'),
       },
+      step2: {
+        headline: str(s2?.headline, 'Pilih Vibe'),
+        subtitle: str(s2?.subtitle, 'Sesuaikan dengan selera musiknya'),
+        vibeChips: vibeChips.length ? vibeChips : [
+          { id: 'Country', label: 'Country', desc: 'Bercerita & tulus', icon: '🤠' },
+          { id: 'Acoustic', label: 'Acoustic', desc: 'Hangat & intim', icon: '🎸' },
+          { id: 'Pop Ballad', label: 'Pop Ballad', desc: 'Modern & emosional', icon: '🎹', badge: 'Best' },
+          { id: 'R&B Soul', label: 'R&B Soul', desc: 'Halus & romantis', icon: '🌙' },
+          { id: 'Rock', label: 'Rock', desc: 'Kuat & penuh gairah', icon: '⚡' },
+          { id: 'Piano Ballad', label: 'Piano Ballad', desc: 'Elegan & abadi', icon: '🎻' },
+        ],
+        voiceLabel: str(s2?.voiceLabel, 'Suara Penyanyi'),
+        voiceOptions: voiceOptions.length ? voiceOptions : [
+          { value: 'Female', label: 'Wanita' },
+          { value: 'Male', label: 'Pria' },
+          { value: 'Surprise me', label: 'Bebas' },
+        ],
+        languageLabel: str(s2?.languageLabel, 'Bahasa lirik'),
+        languageOptions: languageOptions.length ? languageOptions : [
+          { value: 'English', label: 'English' },
+          { value: 'Indonesian', label: 'Bahasa Indonesia' },
+        ],
+      },
       step3: {
         headline: str(s3?.headline, 'Ceritakan kisahmu'),
         subtitle: str(s3?.subtitle, 'Ini akan menjadi lirik. <span class="text-[var(--theme-accent)] font-medium">Beberapa kalimat saja!</span>'),
@@ -263,6 +310,29 @@ export function ConfigRoute() {
           { label: 'Mimpi masa depan', icon: '🔮' },
         ],
         textareaPlaceholder: str(s3?.textareaPlaceholder, 'Mulai ketik ceritamu di sini...'),
+      },
+      step4: {
+        headline: str(s4?.headline, 'Semua siap!'),
+        subtitleTemplate: str(s4?.subtitleTemplate, 'Kirim lagu {recipient} ke mana?'),
+        manualSubtitle: str(s4?.manualSubtitle, 'Konfirmasi pesanan via WhatsApp'),
+        orderSummaryLabel: str(s4?.orderSummaryLabel, 'Ringkasan Pesanan'),
+        whatsappLabel: str(s4?.whatsappLabel, 'Nomor WhatsApp'),
+        whatsappPlaceholder: str(s4?.whatsappPlaceholder, 'Masukkan nomor WhatsApp'),
+        emailLabel: str(s4?.emailLabel, 'Alamat Email'),
+        emailPlaceholder: str(s4?.emailPlaceholder, 'nama@email.com'),
+        nextStepsTitle: str(s4?.nextStepsTitle, 'Apa selanjutnya?'),
+        nextSteps: nextSteps.length ? nextSteps : [
+          { text: 'Kami membuat lagu personalmu' },
+          { text: 'Dikirim via email & WA {delivery}' },
+          { text: 'Putar untuknya dan lihat dia menangis 😭' },
+        ],
+        manualNextSteps: manualNextSteps.length ? manualNextSteps : [
+          { text: 'Admin memproses pesanan' },
+          { text: 'Lanjut chat admin WhatsApp untuk konfirmasi.' },
+          { text: 'Putar untuknya dan lihat dia menangis 😭' },
+        ],
+        securityBadges: securityBadges.length ? securityBadges : ['Checkout aman', '{delivery}'],
+        draftTimerText: str(s4?.draftTimerText, 'Cerita tersimpan selama {timer} — selesaikan checkout untuk menyimpannya'),
       },
     }
   }, [publicSiteConfig])
@@ -1109,20 +1179,13 @@ export function ConfigRoute() {
               <div className="text-center space-y-1">
                 <h1 className="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
                   <Music className="h-5 w-5 text-[var(--theme-accent)]" />
-                  Pilih Vibe
+                  {configSteps.step2.headline}
                 </h1>
-                <p className="text-xs text-gray-500">Sesuaikan dengan selera musiknya</p>
+                <p className="text-xs text-gray-500">{configSteps.step2.subtitle}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                {[
-                  { id: 'Country', label: 'Country', desc: 'Bercerita & tulus', icon: '🤠' },
-                  { id: 'Acoustic', label: 'Acoustic', desc: 'Hangat & intim', icon: '🎸' },
-                  { id: 'Pop Ballad', label: 'Pop Ballad', desc: 'Modern & emosional', icon: '🎹', badge: 'Best' },
-                  { id: 'R&B Soul', label: 'R&B Soul', desc: 'Halus & romantis', icon: '🌙' },
-                  { id: 'Rock', label: 'Rock', desc: 'Kuat & penuh gairah', icon: '⚡' },
-                  { id: 'Piano Ballad', label: 'Piano Ballad', desc: 'Elegan & abadi', icon: '🎻' },
-                ].map((g) => (
+                {configSteps.step2.vibeChips.map((g) => (
                   <VibeCard
                     key={g.id}
                     label={g.label}
@@ -1137,31 +1200,32 @@ export function ConfigRoute() {
               </div>
 
               <div className="rounded-xl bg-white p-3 shadow-sm border border-gray-100 text-center space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Suara Penyanyi</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{configSteps.step2.voiceLabel}</label>
                 <div className="flex justify-center gap-4">
-                  {['Female', 'Male', 'Surprise me'].map((v) => (
-                    <label key={v} className="flex items-center gap-1.5 cursor-pointer bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 hover:bg-gray-100 transition-colors">
+                  {configSteps.step2.voiceOptions.map((v) => (
+                    <label key={v.value} className="flex items-center gap-1.5 cursor-pointer bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 hover:bg-gray-100 transition-colors">
                       <input 
                         type="radio" 
-                        value={v} 
+                        value={v.value} 
                         {...register('musicPreferences.voiceStyle')}
                         className="text-[var(--theme-accent)] focus:ring-[var(--theme-accent)] w-3 h-3" 
                       />
-                      <span className="text-xs font-medium">{v === 'Female' ? 'Wanita' : v === 'Male' ? 'Pria' : 'Bebas'}</span>
+                      <span className="text-xs font-medium">{v.label}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
               <div className="rounded-xl bg-white p-3 shadow-sm border border-gray-100 text-center space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Bahasa lirik</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{configSteps.step2.languageLabel}</label>
                 <select
                   className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)]"
-                  value={language || 'Indonesian'}
+                  value={language || configSteps.step2.languageOptions[1]?.value || 'Indonesian'}
                   onChange={(e) => setValue('musicPreferences.language', e.target.value)}
                 >
-                  <option value="English">English</option>
-                  <option value="Indonesian">Bahasa Indonesia</option>
+                  {configSteps.step2.languageOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -1236,11 +1300,11 @@ export function ConfigRoute() {
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2">
               <div className="text-center space-y-1">
                 <PartyPopper className="mx-auto h-6 w-6 text-yellow-500" />
-                <h1 className="text-2xl font-serif font-bold text-gray-900">Semua siap!</h1>
+                <h1 className="text-2xl font-serif font-bold text-gray-900">{configSteps.step4.headline}</h1>
                 <p className="text-sm text-gray-500">
                   {manualConfirmationEnabled
-                    ? 'Konfirmasi pesanan via WhatsApp'
-                    : `Kirim lagu ${currentRecipient} ke mana?`}
+                    ? configSteps.step4.manualSubtitle
+                    : configSteps.step4.subtitleTemplate.replace('{recipient}', currentRecipient)}
                 </p>
               </div>
 
@@ -1255,7 +1319,7 @@ export function ConfigRoute() {
                       <div className="flex items-center gap-2">
                         <span className="text-base">💝</span>
                         <div className="flex flex-col items-start">
-                          <span className="text-xs font-bold text-gray-700">Ringkasan Pesanan</span>
+                          <span className="text-xs font-bold text-gray-700">{configSteps.step4.orderSummaryLabel}</span>
                           <span className="text-[10px] text-gray-500">{genre}, {language || 'Indonesian'}</span>
                         </div>
                       </div>
@@ -1294,7 +1358,7 @@ export function ConfigRoute() {
                  {whatsappEnabled && (
                  <div className="space-y-1">
                    <div ref={whatsappSectionRef} />
-                   <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Nomor WhatsApp</label>
+                   <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{configSteps.step4.whatsappLabel}</label>
                    <Controller
                      name="whatsappNumber"
                      control={form.control}
@@ -1316,7 +1380,7 @@ export function ConfigRoute() {
                                 if (normalizedLocal.startsWith('62')) normalizedLocal = normalizedLocal.slice(2)
                                 field.onChange(`62${normalizedLocal}`)
                              }}
-                             placeholder="Masukkan nomor WhatsApp"
+                             placeholder={configSteps.step4.whatsappPlaceholder}
                              inputMode="numeric"
                              pattern="[0-9]*"
                              type="tel"
@@ -1333,14 +1397,14 @@ export function ConfigRoute() {
                  {!manualConfirmationEnabled && emailOtpEnabled ? (
                    <>
                      <div className="space-y-1">
-                       <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Alamat Email</label>
+                       <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{configSteps.step4.emailLabel}</label>
                        <div className="relative">
                          <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
                            <Mail className="h-4 w-4" />
                          </div>
                          <Input
                            {...register('email')}
-                           placeholder="nama@email.com"
+                           placeholder={configSteps.step4.emailPlaceholder}
                            type="email"
                            disabled={emailVerified}
                            className={`h-12 rounded-xl border-gray-300 shadow-sm focus-visible:ring-[var(--theme-accent)] pl-10 ${emailVerified ? 'bg-gray-50 cursor-not-allowed' : ''}`}
@@ -1456,32 +1520,24 @@ export function ConfigRoute() {
                 </div>
 
                  <div className="rounded-xl bg-green-50 p-3 border border-green-100 space-y-2">
-                  <div className="text-[10px] font-bold text-green-800 uppercase tracking-wider">Apa selanjutnya?</div>
+                  <div className="text-[10px] font-bold text-green-800 uppercase tracking-wider">{configSteps.step4.nextStepsTitle}</div>
                    <div className="space-y-1.5 text-xs text-green-900">
-                     <div className="flex gap-2 items-start">
-                       <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-green-200 text-[9px] font-bold text-green-700 mt-0.5">1</div>
-                      <span className="leading-tight">{manualConfirmationEnabled ? 'Admin memproses pesanan' : 'Kami membuat lagu personalmu'}</span>
-                     </div>
-                     <div className="flex gap-2 items-start">
-                       <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-green-200 text-[9px] font-bold text-green-700 mt-0.5">2</div>
-                      {manualConfirmationEnabled ? (
-                        <span className="leading-tight">Lanjut chat admin WhatsApp untuk konfirmasi.</span>
-                      ) : (
-                        <span className="leading-tight">
-                          Dikirim via email & WA <span className="font-bold">{deliveryEta.sentenceLower}</span>
-                        </span>
-                      )}
-                     </div>
-                    <div className="flex gap-2 items-start">
-                      <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-green-200 text-[9px] font-bold text-green-700 mt-0.5">3</div>
-                      <span className="leading-tight">Putar untuknya dan lihat dia menangis 😭</span>
-                    </div>
+                     {(manualConfirmationEnabled ? configSteps.step4.manualNextSteps : configSteps.step4.nextSteps).map((s, i) => (
+                       <div key={i} className="flex gap-2 items-start">
+                         <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-green-200 text-[9px] font-bold text-green-700 mt-0.5">{i + 1}</div>
+                         <span className="leading-tight" dangerouslySetInnerHTML={{ __html: s.text.replace('{delivery}', `<span class="font-bold">${deliveryEta.sentenceLower}</span>`) }} />
+                       </div>
+                     ))}
                    </div>
                  </div>
 
                  <div className="flex justify-center gap-4 text-[10px] text-gray-400">
-                   <div className="flex items-center gap-1"><ShieldCheck className="h-3 w-3" /> Checkout aman</div>
-                  <div className="flex items-center gap-1"><Clock className="h-3 w-3" /> {deliveryEta.short}</div>
+                   {configSteps.step4.securityBadges.map((badge, i) => (
+                     <div key={i} className="flex items-center gap-1">
+                       {i === 0 ? <ShieldCheck className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                       {badge.replace('{delivery}', deliveryEta.short)}
+                     </div>
+                   ))}
                  </div>
               </div>
             </div>
@@ -1492,7 +1548,7 @@ export function ConfigRoute() {
              <div className="mx-auto max-w-4xl flex flex-col gap-2">
                {step === 4 && (
                  <div className="text-center text-[10px] sm:text-xs text-gray-500 flex justify-center items-center gap-1 mb-1">
-                   <Timer className="h-3 w-3" /> Cerita tersimpan selama {Math.floor(draftCountdown / 60)}:{String(draftCountdown % 60).padStart(2, '0')} — selesaikan checkout untuk menyimpannya
+                   <Timer className="h-3 w-3" /> {configSteps.step4.draftTimerText.replace('{timer}', `${Math.floor(draftCountdown / 60)}:${String(draftCountdown % 60).padStart(2, '0')}`)}
                  </div>
                )}
 
