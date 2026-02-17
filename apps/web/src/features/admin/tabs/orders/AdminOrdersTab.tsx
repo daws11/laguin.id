@@ -22,6 +22,7 @@ import {
   FileText,
   Terminal,
   Trash2,
+  Sparkles,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -429,6 +430,67 @@ export function AdminOrdersTab({
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
                     {t.noInputData ?? 'No input data found.'}
+                  </div>
+                )}
+
+                {(selectedOrder.lyricsText || selectedOrder.moodDescription || (selectedOrder.trackMetadata as any)?.prompt || (selectedOrder.trackMetadata as any)?.style) && (
+                  <div className="space-y-4 pt-4 border-t">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      {t.generatedPrompts ?? 'Generated Prompts'}
+                    </h4>
+                    <div className="grid gap-4">
+                      {selectedOrder.lyricsText && (
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            {t.lyricsText ?? 'Generated Lyrics'}
+                          </label>
+                          <div className="p-3 bg-muted/30 rounded-lg text-sm border whitespace-pre-wrap max-h-[300px] overflow-y-auto font-mono leading-relaxed">
+                            {selectedOrder.lyricsText}
+                          </div>
+                        </div>
+                      )}
+                      {selectedOrder.moodDescription && (
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            {t.moodDescription ?? 'Mood / Style Description'}
+                          </label>
+                          <div className="p-3 bg-muted/30 rounded-lg text-sm border whitespace-pre-wrap max-h-[200px] overflow-y-auto font-mono leading-relaxed">
+                            {selectedOrder.moodDescription}
+                          </div>
+                        </div>
+                      )}
+                      {(selectedOrder.trackMetadata as any)?.prompt && (
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            {t.musicPrompt ?? 'Music Prompt (sent to Suno)'}
+                          </label>
+                          <div className="p-3 bg-muted/30 rounded-lg text-sm border whitespace-pre-wrap max-h-[200px] overflow-y-auto font-mono leading-relaxed">
+                            {(selectedOrder.trackMetadata as any).prompt}
+                          </div>
+                        </div>
+                      )}
+                      {(selectedOrder.trackMetadata as any)?.style && (
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            {t.musicStyle ?? 'Style Tags'}
+                          </label>
+                          <div className="p-3 bg-muted/30 rounded-lg text-sm border whitespace-pre-wrap font-mono leading-relaxed">
+                            {(selectedOrder.trackMetadata as any).style}
+                          </div>
+                        </div>
+                      )}
+                      {(selectedOrder.trackMetadata as any)?.title && (
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            {t.musicTitle ?? 'Song Title'}
+                          </label>
+                          <div className="p-3 bg-muted/30 rounded-lg text-sm border font-mono">
+                            {(selectedOrder.trackMetadata as any).title}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </TabsContent>
