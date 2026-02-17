@@ -1045,7 +1045,10 @@ export function LandingRoute() {
                 Bayangkan mendengar <span className="text-[var(--theme-accent)] font-medium italic">namanya</span> di lagu seperti ini...
               </p>
               <Button asChild size="lg" className="h-12 px-8 rounded-xl bg-[var(--theme-accent)] font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90">
-                <Link to={themeSlug ? `/${themeSlug}/config` : '/config'}>Buat Lagunya — {fmtCurrency(paymentAmount)}</Link>
+                <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center gap-2">
+                  <span>Buat Lagunya — {fmtCurrency(paymentAmount)}</span>
+                  <span className="text-xs font-normal line-through opacity-70 decoration-white/50">{fmtCurrency(originalAmount)}</span>
+                </Link>
               </Button>
             </div>
           </div>
@@ -1221,7 +1224,10 @@ export function LandingRoute() {
 
           <div className="text-center pt-4">
             <Button asChild size="lg" className="h-14 px-10 rounded-full bg-[var(--theme-accent)] text-lg font-bold shadow-xl shadow-[var(--theme-accent-soft)] hover:opacity-90">
-               <Link to={themeSlug ? `/${themeSlug}/config` : '/config'}>Buat Lagunya — {fmtCurrency(paymentAmount)}</Link>
+               <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center gap-2">
+                 <span>Buat Lagunya — {fmtCurrency(paymentAmount)}</span>
+                 <span className="text-xs font-normal line-through opacity-70 decoration-white/50">{fmtCurrency(originalAmount)}</span>
+               </Link>
             </Button>
           </div>
         </section>
@@ -1277,7 +1283,7 @@ export function LandingRoute() {
              <Button asChild size="lg" className="h-auto min-h-[4rem] px-6 py-4 sm:px-12 rounded-full bg-[var(--theme-accent)] text-lg sm:text-xl font-bold shadow-2xl shadow-[var(--theme-accent-soft)] hover:opacity-90 hover:scale-105 transition-all">
                <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 leading-none">
                  <span>Buat Lagunya — {fmtCurrency(paymentAmount)}</span>
-                 <span className="text-xs sm:text-sm font-normal line-through opacity-80 text-[var(--theme-accent-soft)]">Rp 497.000</span>
+                 <span className="text-xs sm:text-sm font-normal line-through opacity-80 text-[var(--theme-accent-soft)]">{fmtCurrency(originalAmount)}</span>
                </Link>
              </Button>
            </div>
