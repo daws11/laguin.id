@@ -989,11 +989,23 @@ export function ConfigRoute() {
                     onClick={() => {
                       setRelationship(rel)
                       setValue('extraNotes', `Relasi dengan penerima: ${rel}`)
+                      if (rel !== 'Lainnya') setValue('occasion', '')
                     }}
                     className={relationship === rel ? "bg-[var(--theme-accent)] border-[var(--theme-accent)] text-white w-full shadow-md shadow-[var(--theme-accent-soft)] px-2 py-3" : "w-full bg-white shadow-sm px-2 py-3"}
                   />
                 ))}
               </div>
+
+              {relationship === 'Lainnya' && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Untuk momen apa?</label>
+                  <Input 
+                    {...register('occasion')} 
+                    placeholder="cth. Anniversary, Ultah, Wisuda" 
+                    className="h-11 rounded-xl border-gray-300 text-base shadow-sm bg-white focus-visible:ring-[var(--theme-accent)]"
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Nama Panggilannya</label>
