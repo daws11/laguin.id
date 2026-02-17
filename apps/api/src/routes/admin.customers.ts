@@ -80,6 +80,43 @@ export const adminCustomerRoutes: FastifyPluginAsync = async (app) => {
     return combined
   })
 
+  app.post('/customers/bulk-delete', async (req, reply) => {
+    const schema = z.object({ ids: z.array(z.string().min(1)).min(1).max(100) })
+    const parsed = schema.safeParse(req.body)
+    if (!parsed.success) return reply.code(400).send({ error: 'invalid_body', message: 'Provide an array of IDs (max 100).' })
+
+    const customerIds: string[] = []
+    const draftIds: string[] = []
+    for (const id of parsed.data.ids) {
+      if (id.startsWith('draft:')) {
+        draftIds.push(id.slice('draft:'.length))
+      } else {
+        customerIds.push(id)
+      }
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      let deletedCustomers = 0
+      let deletedDrafts = 0
+
+      if (customerIds.length > 0) {
+        await tx.orderEvent.deleteMany({ where: { order: { customerId: { in: customerIds } } } })
+        await tx.order.deleteMany({ where: { customerId: { in: customerIds } } })
+        const r = await tx.customer.deleteMany({ where: { id: { in: customerIds } } })
+        deletedCustomers = r.count
+      }
+
+      if (draftIds.length > 0) {
+        const r = await tx.orderDraft.deleteMany({ where: { id: { in: draftIds } } })
+        deletedDrafts = r.count
+      }
+
+      return deletedCustomers + deletedDrafts
+    })
+
+    return { ok: true, deleted: result }
+  })
+
   app.get('/customers/:id', async (req, reply) => {
     const params = ParamsIdSchema.safeParse(req.params)
     if (!params.success) return reply.code(400).send({ error: 'invalid_params' })

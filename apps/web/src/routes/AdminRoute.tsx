@@ -486,6 +486,21 @@ function AdminRouteLegacy() {
     }
   }
 
+  async function bulkDeleteCustomers(ids: string[]) {
+    if (!token) return
+    setError(null)
+    setLoading(true)
+    try {
+      await adminApi.adminBulkDeleteCustomers(token, ids)
+      setSelectedCustomer(null)
+      await Promise.all([refreshCustomers(), refreshOrders()])
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to delete customers')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (!token) {
     return (
       <div className="mx-auto max-w-md px-4 py-10">
@@ -610,6 +625,8 @@ function AdminRouteLegacy() {
               onSelectCustomer={setSelectedCustomer}
               onOpenCustomer={(id) => void openCustomer(id)}
               onOpenOrder={(id) => void openOrder(id)}
+              onBulkDelete={bulkDeleteCustomers}
+              loading={loading}
             />
           </div>
         </AdminSettingsTab>
