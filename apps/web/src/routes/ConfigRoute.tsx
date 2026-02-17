@@ -950,7 +950,13 @@ export function ConfigRoute() {
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-[var(--theme-accent-soft)] bg-white/95 backdrop-blur-sm shadow-sm">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-2">
-          <img src={logoUrl} alt="Laguin - Musikmu Ceritamu" className="h-8 sm:h-10 w-auto object-contain" />
+          <button 
+            type="button"
+            onClick={() => navigate(`/${themeSlug || ''}`)}
+            className="hover:opacity-80 transition-opacity"
+          >
+            <img src={logoUrl} alt="Laguin - Musikmu Ceritamu" className="h-8 sm:h-10 w-auto object-contain" />
+          </button>
           <div className="text-right flex items-center gap-1.5">
              <span className="text-[10px] sm:text-xs text-gray-400 line-through">{fmtCurrency(originalAmount)}</span>
              <span className="text-sm sm:text-lg font-bold text-[var(--theme-accent)]">{fmtCurrency(paymentAmount)}</span>
