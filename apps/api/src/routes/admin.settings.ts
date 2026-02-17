@@ -66,6 +66,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       hasXenditKey: Boolean(maybeDecrypt((s as any).xenditSecretKeyEnc)),
       xenditWebhookToken: (s as any).xenditWebhookToken ?? null,
       allowMultipleOrdersPerWhatsapp: (s as any).allowMultipleOrdersPerWhatsapp ?? false,
+      kieAiCallbackUrl: process.env.KIE_AI_CALLBACK_URL || null,
     }
   })
 
@@ -162,6 +163,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       metaPixelId: updated.metaPixelId ?? null,
       metaPixelWishlistId: updated.metaPixelWishlistId ?? null,
       allowMultipleOrdersPerWhatsapp: (updated as any).allowMultipleOrdersPerWhatsapp ?? false,
+      kieAiCallbackUrl: process.env.KIE_AI_CALLBACK_URL || null,
     }
   })
 }

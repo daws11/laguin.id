@@ -95,6 +95,19 @@ export function ApiKeysCard({ settings, saveSettings, t }: Props) {
                 onChange={(e) => setKaiaiKey(e.target.value)}
               />
             </div>
+            <div className="space-y-0.5">
+              <div className="text-[10px] font-medium text-muted-foreground">
+                kie.ai Callback URL
+              </div>
+              <Input
+                className="h-7 text-xs bg-muted/50"
+                value={settings.kieAiCallbackUrl ?? 'Belum diatur'}
+                readOnly
+              />
+              <div className="text-[10px] text-muted-foreground">
+                Diatur via environment variable KIE_AI_CALLBACK_URL
+              </div>
+            </div>
             <Button
               size="sm"
               className="h-7 text-xs gap-1"
