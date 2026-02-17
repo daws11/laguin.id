@@ -1254,7 +1254,14 @@ export function LandingRoute() {
             </div>
           </div>
           <div className="mt-6">
-            <img src="/laguin-studio.jpg" alt="Laguin Studio" className="w-full rounded-2xl shadow-md" loading="lazy" />
+            <video 
+              src="/laguin-studio.mp4" 
+              className="w-full rounded-2xl shadow-md" 
+              autoPlay 
+              muted 
+              loop 
+              playsInline
+            />
           </div>
         </section>
 
