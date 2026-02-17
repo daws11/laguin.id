@@ -60,7 +60,7 @@ export function AdminCustomersTab({
   onOpenCustomer,
   onOpenOrder,
   onBulkDelete,
-  loading,
+  loading: _loading,
 }: {
   t: any
   customers: CustomerListItem[]
