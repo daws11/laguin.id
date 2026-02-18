@@ -79,7 +79,6 @@ if (hasWebDist) {
     prefix: '/',
     decorateReply: false,
     wildcard: false,
-    index: false,
     setHeaders(res, filePath) {
       if (/\/assets\//.test(filePath)) {
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
@@ -118,15 +117,6 @@ app.get('/health', async () => {
   return { ok: true }
 })
 
-app.get('/', async (_req, reply) => {
-  if (hasWebDist) {
-    const indexPath = path.join(webDistRoot, 'index.html')
-    const html = fs.readFileSync(indexPath, 'utf-8')
-    return reply.header('Content-Type', 'text/html; charset=utf-8').header('Cache-Control', 'no-cache').send(html)
-  }
-  return { ok: true, service: 'laguin-api' }
-})
-
 await app.register(publicSettingsRoutes, { prefix: '/api' })
 await app.register(publicOrdersRoutes, { prefix: '/api' })
 await app.register(orderDraftsRoutes, { prefix: '/api' })
@@ -160,7 +150,7 @@ if (hasWebDist) {
 }
 
 const port = Number(process.env.PORT ?? 3001)
-const host = '0.0.0.0'
+const host = process.env.HOST ?? '0.0.0.0'
 
 await app.listen({ port, host })
 
