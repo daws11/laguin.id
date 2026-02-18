@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { LandingContentConfigSection } from '@/features/admin/tabs/settings/LandingContentConfigSection'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Sparkles, Loader2 } from 'lucide-react'
 
 function buildDraftFromThemeSettings(settings: any): PublicSiteDraft {
   const fakeSettings = { publicSiteConfig: settings } as any
@@ -34,6 +34,10 @@ export function AdminThemesTab({ t, token, defaultThemeSlug, onDefaultThemeChang
   const [themeDraftBaseline, setThemeDraftBaseline] = useState<string>('')
   const [themeSavedAt, setThemeSavedAt] = useState<string | null>(null)
   const [themeError, setThemeError] = useState<string | null>(null)
+
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiGenerating, setAiGenerating] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
 
   const themeDraftCurrent = useMemo(
     () => JSON.stringify(buildPublicSiteConfigPayload(themeDraft)),
@@ -136,6 +140,78 @@ export function AdminThemesTab({ t, token, defaultThemeSlug, onDefaultThemeChang
     }
   }
 
+  async function handleAiGenerate() {
+    if (!aiPrompt.trim() || aiGenerating) return
+    setAiGenerating(true)
+    setAiError(null)
+    try {
+      const res = await adminApi.adminAiGenerateTheme(token, aiPrompt.trim())
+      if (res?.settings && typeof res.settings === 'object') {
+        const currentDraft = themeDraft
+        const aiDraft = buildDraftFromThemeSettings(res.settings)
+        setThemeDraft({
+          ...aiDraft,
+          logoUrl: currentDraft.logoUrl,
+          landing: {
+            ...aiDraft.landing,
+            heroMedia: currentDraft.landing.heroMedia,
+            heroOverlay: {
+              ...aiDraft.landing.heroOverlay,
+              authorAvatarUrl: currentDraft.landing.heroOverlay.authorAvatarUrl,
+            },
+            heroPlayer: {
+              ...aiDraft.landing.heroPlayer,
+              enabled: currentDraft.landing.heroPlayer.enabled,
+              audioUrl: currentDraft.landing.heroPlayer.audioUrl,
+              authorAvatarUrl: currentDraft.landing.heroPlayer.authorAvatarUrl,
+            },
+            audioSamples: {
+              nowPlaying: {
+                ...aiDraft.landing.audioSamples.nowPlaying,
+                audioUrl: currentDraft.landing.audioSamples.nowPlaying.audioUrl,
+              },
+              playlist: aiDraft.landing.audioSamples.playlist.map((p, i) => ({
+                ...p,
+                audioUrl: currentDraft.landing.audioSamples.playlist[i]?.audioUrl ?? '',
+              })),
+            },
+          },
+          promoBanner: {
+            ...aiDraft.promoBanner,
+            enabled: currentDraft.promoBanner.enabled,
+          },
+          activityToast: {
+            ...aiDraft.activityToast,
+            enabled: currentDraft.activityToast.enabled,
+            intervalMs: currentDraft.activityToast.intervalMs,
+            durationMs: currentDraft.activityToast.durationMs,
+          },
+          reviews: {
+            ...aiDraft.reviews,
+            items: aiDraft.reviews.items.map((item, i) => ({
+              ...item,
+              authorAvatarUrl: currentDraft.reviews.items[i]?.authorAvatarUrl ?? item.authorAvatarUrl,
+            })),
+          },
+          creationDelivery: currentDraft.creationDelivery,
+          configSteps: {
+            ...aiDraft.configSteps,
+            step0: {
+              ...aiDraft.configSteps.step0,
+              enabled: currentDraft.configSteps.step0.enabled,
+            },
+          },
+        })
+      } else {
+        setAiError('AI returned an unexpected response format.')
+      }
+    } catch (e: any) {
+      setAiError(e?.message ?? 'Failed to generate content with AI.')
+    } finally {
+      setAiGenerating(false)
+    }
+  }
+
   async function handleSetDefault(slug: string) {
     setError(null)
     setLoading(true)
@@ -181,6 +257,48 @@ export function AdminThemesTab({ t, token, defaultThemeSlug, onDefaultThemeChang
               <input type="checkbox" checked={formActive} onChange={(e) => setFormActive(e.target.checked)} id="theme-active-edit" />
               <label htmlFor="theme-active-edit" className="text-sm">{t.themeActive ?? 'Active'}</label>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-amber-500" />
+              <span className="text-sm font-medium">AI Content Generator</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Describe the theme and the AI will fill in all text fields (headlines, reviews, config steps, etc). Prices, toggles, and uploaded files won't be changed.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="e.g. Landing page for Mother's Day in Indonesia, warm and emotional tone"
+                disabled={aiGenerating}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAiGenerate() } }}
+              />
+              <Button
+                onClick={handleAiGenerate}
+                disabled={aiGenerating || !aiPrompt.trim()}
+                size="sm"
+                className="shrink-0 gap-1.5"
+              >
+                {aiGenerating ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Generate
+                  </>
+                )}
+              </Button>
+            </div>
+            {aiError && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{aiError}</div>
+            )}
           </CardContent>
         </Card>
 

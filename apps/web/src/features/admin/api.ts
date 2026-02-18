@@ -118,6 +118,10 @@ export async function adminUpdateTheme(token: string, slug: string, body: { name
   return apiPut<ThemeItem>(`/api/admin/themes/${encodeURIComponent(slug)}`, body, { token })
 }
 
+export async function adminAiGenerateTheme(token: string, prompt: string) {
+  return apiPost<{ settings: any }>('/api/admin/themes/ai-generate', { prompt }, { token })
+}
+
 export async function adminDeleteTheme(token: string, slug: string) {
   const res = await fetch(`/api/admin/themes/${encodeURIComponent(slug)}`, {
     method: 'DELETE',

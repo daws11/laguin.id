@@ -1,197 +1,53 @@
 # Valentine Projects (Laguin.id)
 
 ## Overview
-A monorepo application for creating personalized songs for special occasions. Built with a React + Vite frontend and Fastify API backend, using PostgreSQL with Prisma ORM. Supports multiple themed landing pages (Valentine, Mother's Day, etc.).
+A monorepo application designed to create personalized songs for various special occasions (e.g., Valentine's Day, Mother's Day). It features a dynamic multi-theme system, allowing for custom landing pages and song configuration flows for different events. The project aims to provide a streamlined experience for users to order personalized songs and for administrators to manage themes, orders, and customer data.
 
-## Project Architecture
-- **Monorepo** using npm workspaces
-- `apps/web` - React + Vite frontend (port 5000 in dev)
-- `apps/api` - Fastify backend API (port 3001)
-- `packages/shared` - Shared types and utilities (built with tsup)
-- `infra/` - Infrastructure configs (Docker Compose for local Postgres)
+## User Preferences
+I want iterative development. Ask before making major changes.
 
-## Tech Stack
-- **Frontend**: React 19, Vite, TailwindCSS, React Router, React Hook Form, shadcn/ui
-- **Backend**: Fastify, Prisma ORM, JWT auth, OpenRouter integration (via OpenAI SDK), Resend/SMTP email
-- **Database**: PostgreSQL (Replit built-in)
-- **Language**: TypeScript (ESM throughout)
+## System Architecture
+The project uses a monorepo structure with `npm workspaces`, separating the frontend (`apps/web`), backend (`apps/api`), and shared utilities (`packages/shared`).
 
-## Multi-Theme System
-- Each theme has its own slug, name, active status, and settings (landing page config JSON)
-- Routes: `/:themeSlug` (landing page), `/:themeSlug/config` (configurator)
-- Root `/` renders the default theme (set in admin Settings)
-- Theme context provided via `ThemeProvider` -> `useThemeSlug()` hook
-- Orders, drafts, page views all tagged with `themeSlug`
-- Admin: Themes tab for CRUD with visual form editor (Colors, Hero Media, Overlay, Player, Trust & Stats, Music, Toast, Creation & Delivery)
-- Admin Settings tab shows only global/system settings (WhatsApp, API Keys)
-- Per-theme colors: accentColor, bgColor1 (soft bg), bgColor2 (page bg) via CSS custom properties
-- CSS variables: --theme-accent, --theme-accent-soft, --theme-bg applied to all public pages
-- Creation & Delivery settings (instant delivery, email OTP, agreement, manual confirmation, delay) are per-theme
-- Backend and order pipeline use theme-specific Creation & Delivery settings with global fallback
-- Theme filter on Orders and Funnel admin tabs
-- API: `/api/public/settings?theme=slug`, `/api/public/themes`, `/api/admin/themes`
+**Frontend (`apps/web`):**
+- Built with React 19, Vite, TailwindCSS, React Router, React Hook Form, and `shadcn/ui`.
+- Supports a multi-theme system where each theme has a unique slug and configurable settings (colors, hero media, player, reviews, promo banners, config steps, logo, text content).
+- Themes define custom CSS variables (`--theme-accent`, `--theme-bg`) for consistent branding.
+- Public routes: `/:themeSlug` (landing page), `/:themeSlug/config` (song configurator). The root `/` path renders the default theme.
+- Optimized for performance with self-hosted fonts, WebP image compression, lazy loading, and code splitting.
 
-## Development
-- Frontend runs on `0.0.0.0:5000` with Vite dev server
-- API runs on `localhost:3001`
-- Vite proxies `/api` and `/uploads` to the API
-- Workflow: `npx concurrently` runs both servers together
+**Backend (`apps/api`):**
+- Developed with Fastify, utilizing Prisma ORM for database interactions.
+- Implements JWT authentication.
+- Integrates with OpenRouter for AI content generation, Resend/SMTP for email, and Xendit for payment processing.
+- Provides APIs for public theme settings, theme management, order processing, customer management, and funnel analytics.
+- Handles file uploads to Replit Object Storage for persistence.
+- Creation & Delivery settings (e.g., instant delivery, email OTP, manual confirmation, delivery delay) are configurable per theme, with a global fallback.
 
-## Key Configuration
-- API env in `apps/api/.env` (DATABASE_URL inherited from Replit environment)
-- Admin password: `admin123` (set in .env)
-- Prisma schema at `apps/api/prisma/schema.prisma`
-- Shared package must be built before other packages (`npm run build -w shared`)
+**Database:**
+- PostgreSQL is used, managed by Prisma ORM. The Replit built-in database is utilized in the Replit environment.
 
-## Recent Changes
-- 2026-02-18: Mobile performance optimizations (self-hosted fonts, image compression)
-  - Self-hosted Inter and Playfair Display fonts (Latin subset, woff2) in /fonts/
-  - Removed Google Fonts external requests — eliminates render-blocking DNS lookups
-  - Font files preloaded in HTML head for fast first paint
-  - @font-face declarations with font-display:swap in index.css
-  - Compressed logo.png (123KB→4.2KB) and image.png (518KB→36KB) to WebP format
-  - Hero image: fetchPriority="high" + decoding="async" for LCP optimization
-  - Hero video: preload="metadata" + poster image fallback for faster initial render
-- 2026-02-17: OpenRouter integration with configurable model
-  - Replaced OpenAI direct integration with OpenRouter (uses OpenAI SDK with custom baseURL)
-  - New openaiModel column on Settings for admin-configurable model selection
-  - Admin API Keys card relabeled to "OpenRouter API Key" with model input field
-  - Model examples shown: openai/gpt-4o-mini, anthropic/claude-3.5-sonnet, google/gemini-2.0-flash
-  - Fallback chain: settings model -> OPENAI_MODEL env -> openai/gpt-4o-mini
-  - Generation pipeline passes configured model to all AI text generation calls
-- 2026-02-17: Admin Customers tab redesign & bulk delete
-  - Rewrote AdminCustomersTab to match OrdersTab layout (table view, checkboxes, search, filter, sorting)
-  - Type filter: All / Customers / Drafts
-  - Sortable columns: Name, WhatsApp, Email, Date, Type
-  - Bulk delete with confirmation dialog, cascading deletes (orders, events) in Prisma transaction
-  - New POST /api/admin/customers/bulk-delete endpoint (handles both customer IDs and draft IDs)
-  - Draft IDs prefixed with "draft:" for disambiguation
-  - Detail view accessible via row click with back navigation
-- 2026-02-17: Allow multiple orders per WhatsApp setting
-  - New `allowMultipleOrdersPerWhatsapp` Boolean on Settings model (default false)
-  - When enabled: skips WhatsApp and email uniqueness checks; reuses existing customer profile for repeat orders
-  - When disabled (default): original behavior — one order per WhatsApp/email
-  - New "Order Rules" tab in admin Settings with toggle switch
-  - API GET/PUT endpoints return and accept the new field
-- 2026-02-17: Migrated Object Storage to @replit/object-storage client
-  - Replaced raw @google-cloud/storage with official @replit/object-storage Client
-  - Fixes file serving in production deployments (no more 404s after publishing)
-  - Bucket ID passed directly from DEFAULT_OBJECT_STORAGE_BUCKET_ID env var
-  - Backward compatible with existing uploads via PRIVATE_OBJECT_DIR prefix extraction
-  - Content type inferred from file extension for downloads
-- 2026-02-17: Admin Settings UX improvements
-  - API Keys card: Added explicit Save button, shows "(tersimpan)" + masked placeholder when keys exist
-  - WhatsApp Gateway: Shows stored key indicator for yCloud API key
-  - Meta Pixel: Save button always visible (disabled when no changes)
-  - Generated Prompts section in order detail: shows lyrics, mood, music prompt, style tags, song title
-- 2026-02-17: Per-theme configurable config steps (step 0, step 1, step 3)
-  - New ConfigStep0, ConfigStep1, ConfigStep3 types in PublicSiteDraft
-  - Step 0 (announcement): bannerHeadline, mainHeadline, guaranteeTitle/Text, howItWorksSteps[], bottomCtaText, enabled toggle
-  - Step 1 (recipient): headline, subtitle, relationshipChips[] (icon/label/value), nameField/occasionField labels & placeholders, socialProofText
-  - Step 3 (story): headline, subtitle (HTML), tipBullets[], storyPrompts[] (icon/label), textareaPlaceholder
-  - "Lainnya" (Other) always appended as last relationship chip
-  - Step 0 can be disabled per theme — flow skips directly to step 1
-  - Admin theme editor: 3 new tabs (Step 0, Step 1, Step 3) under "Config Steps" group
-  - ConfigRoute reads all text dynamically from theme settings with smart defaults
-- 2026-02-16: Persistent file uploads via Replit Object Storage
-  - Uploaded files (audio, video, images) now stored in Google Cloud Storage via Replit's built-in App Storage
-  - Files persist across deployments — no more 404s after publishing
-  - New `apps/api/src/lib/objectStorage.ts` with uploadBuffer/downloadToStream helpers
-  - Admin upload route rewritten to stream to GCS instead of local filesystem
-  - `/uploads/*` route serves files from object storage with proper Content-Type and caching
-  - Path traversal protection on uploads serving route
-  - Note: Previously uploaded files (stored locally) will need to be re-uploaded
-- 2026-02-16: Per-theme promo banner (countdown, badges)
-  - Added promoBanner to theme settings (enabled, countdownLabel, countdownTargetDate, promoBadgeText, quotaBadgeText)
-  - New "Promo Banner" tab in theme editor for configuring countdown text, target date, promo badge, and quota badge
-  - CountdownTimer now uses configurable target date and label text
-  - Promo banner can be toggled on/off per theme
-  - Badge texts can be customized or emptied to hide
-- 2026-02-16: Per-theme reviews/testimonials section
-  - Added ReviewItem type (style: accent/dark-chat/white, quote, chatMessages, authorName, authorMeta, authorAvatarUrl)
-  - Reviews section header (label, headline, subtext) editable per theme
-  - Review cards fully configurable with add/remove/edit in theme editor "Reviews" tab
-  - Dark-chat style supports chatMessages array for WhatsApp-like message bubbles
-  - Accent style renders with theme color bg and star rating
-  - White style renders with white bg and star rating
-  - LandingRoute renders reviews dynamically from theme config with smart defaults
-- 2026-02-16: Xendit payment gateway integration (full stack)
-  - Backend: Xendit service (apps/api/src/lib/xendit.ts) for invoice creation with Basic auth
-  - Webhook endpoint (POST /api/xendit/callback) for payment callbacks with token verification
-  - Order creation auto-creates Xendit invoice when: manual confirmation OFF + Xendit key configured + paymentAmount > 0
-  - Webhook auto-confirms orders on PAID/SETTLED, marks failed on EXPIRED
-  - Admin Settings: new "Xendit Payment" tab for secret key and webhook token management
-  - Per-theme paymentAmount in creationDelivery settings (default 497000 IDR, 0 = free)
-  - Checkout UI: "Bayar Sekarang" card when payment pending, redirect to Xendit invoice page
-  - ConfigRoute redirects directly to Xendit invoice URL after order creation when payment required
-  - xenditInvoiceId and xenditInvoiceUrl columns on Order model
-  - xenditSecretKeyEnc (encrypted) and xenditWebhookToken on Settings model
-  - Public settings API returns paymentAmount and xenditEnabled
-- 2026-02-16: Performance optimizations for landing page speed
-  - Added @fastify/compress for brotli/gzip compression on all API responses and static files
-  - Route-level code splitting with React.lazy() (Admin, Config, Checkout lazy-loaded; Landing stays eager)
-  - Vite manual chunks: vendor-react, vendor-ui, vendor-form split for better browser caching
-  - Font loading optimized: preload + async media swap to avoid render-blocking
-  - Below-fold images use loading="lazy"
-  - Production static assets: immutable Cache-Control for hashed assets, no-cache for HTML
-  - Initial JS bundle reduced from 648KB to 237KB (72KB gzipped) for landing page visitors
-- 2026-02-16: Per-theme WhatsApp field visibility
-  - Added whatsappEnabled to creationDelivery in theme settings (default: true)
-  - Toggle in theme editor Creation & Delivery section
-  - ConfigRoute hides WhatsApp field when disabled; order created without WhatsApp number
-  - Backend skips WhatsApp validation when disabled; Customer.whatsappNumber made nullable
-  - Shared OrderInputSchema whatsappNumber made optional
-- 2026-02-16: Per-theme logo customization
-  - Added logoUrl to theme settings JSON (PublicSiteDraft type)
-  - New "Logo" tab in theme editor (Appearance group) with URL input, file upload, and preview
-  - LandingRoute and ConfigRoute use theme-specific logo with /logo.png fallback
-- 2026-02-16: Meta Pixel IDs editable in global settings
-  - Added metaPixelId and metaPixelWishlistId columns to Settings model
-  - New "Meta Pixel" tab in global Settings sidebar with save-on-demand UI
-  - Public settings API returns pixel IDs; PublicRoot fetches them dynamically
-  - Removed hardcoded pixel IDs from frontend code
-- 2026-02-16: Editable hero text and footer CTA per theme
-  - Added heroHeadline (line1, line2), heroSubtext, and footerCta (headline, subtitle) to theme settings
-  - Theme editor "Hero Text" section with inputs, live preview, and HTML support (<strong>, <em>)
-  - LandingRoute uses theme-specific text with sanitized HTML rendering
-  - Footer CTA section also uses theme-specific headline and subtitle
-- 2026-02-16: Creation & Delivery moved to per-theme
-  - Added creationDelivery to theme settings JSON (instantEnabled, emailOtpEnabled, agreementEnabled, manualConfirmationEnabled, deliveryDelayHours)
-  - Theme editor shows Creation & Delivery section in sidebar
-  - Public settings API returns theme-specific values with global fallback
-  - Order creation and delivery pipeline use theme-specific settings
-  - ConfigRoute and CheckoutRoute pass theme slug when fetching settings
-  - Removed Creation & Delivery from global Settings tab
-- 2026-02-16: Theme settings visual editor
-  - Split PublicSiteConfigSection into LandingContentConfigSection (per-theme) and SystemSettingsSection (global)
-  - Theme edit uses visual form UI (Hero Media, Overlay, Player, Music, Toast, Creation & Delivery) instead of raw JSON
-  - Settings tab shows only system settings (WhatsApp Gateway, API Keys)
-  - Draft state management with dirty tracking and save-on-demand for theme settings
-- 2026-02-16: Multi-theme system
-  - New Theme model (slug, name, isActive, settings JSON)
-  - themeSlug added to Order, OrderDraft, PageView
-  - defaultThemeSlug + showThemesInFooter in Settings
-  - Admin CRUD for themes (/api/admin/themes)
-  - Public settings returns theme-specific config via ?theme=slug
-  - Frontend routing: /:themeSlug, /:themeSlug/config, / (default theme)
-  - ThemeContext provider for passing theme slug to components
-  - Admin Themes tab with create/edit/delete/set-default
-  - Theme filter on Funnel and Orders admin tabs
-  - Valentine seeded as first theme and set as default
-- 2026-02-16: Added Funnel analytics feature
-  - New PageView model for tracking homepage visits
-  - Public /api/public/track endpoint for page view tracking
-  - Landing page auto-tracks visits with sessionId
-  - Admin /api/admin/funnel endpoint aggregates funnel data by date range
-  - New "Funnel" admin tab with visual funnel chart and date range picker
-  - Funnel tracks: Homepage -> Config Steps 0-4 -> Order Created -> Order Confirmed
-- 2026-02-16: UI/UX improvements
-  - Optimized landing page header/hero for mobile above-the-fold CTA visibility
-  - Made /config page responsive for larger screens
-  - Admin menu order: Orders, Funnel, Customers, Settings, Prompts
-  - Indonesian validation error messages
-- 2026-02-16: Initial Replit import setup
-  - Configured Vite for Replit (allowedHosts, host 0.0.0.0, port 5000)
-  - Set up PostgreSQL with Replit built-in database
-  - Ran all Prisma migrations
-  - Created API .env with required secrets
+**Multi-Theme System Details:**
+- Each theme can be configured with specific content for the landing page (hero text, reviews, promo banner), and a step-by-step song configuration process (ConfigStep0, ConfigStep1, ConfigStep3).
+- An AI theme content generator is integrated to automatically populate text fields based on prompts using OpenRouter.
+- Admin interface includes a comprehensive theme editor for visual configuration of all theme-specific settings.
+
+**Admin Features:**
+- CRUD operations for themes with a visual editor.
+- Settings management for global configurations like API keys, WhatsApp integration, and Meta Pixel IDs.
+- Orders and Customers tabs with search, filter, sorting, and bulk actions.
+- Funnel analytics to track user journeys from homepage to order confirmation.
+
+## External Dependencies
+- **PostgreSQL:** For data storage.
+- **OpenRouter:** Integrated via OpenAI SDK for AI text generation.
+- **Resend/SMTP:** For sending emails.
+- **Xendit:** Payment gateway for processing transactions.
+- **@replit/object-storage:** For persistent file uploads (audio, video, images).
+- **Vite:** Frontend build tool.
+- **TailwindCSS:** Utility-first CSS framework.
+- **React Hook Form:** For form management.
+- **shadcn/ui:** UI component library.
+- **Prisma ORM:** Database toolkit.
+- **Fastify:** Backend web framework.
+- **JWT:** For authentication.
