@@ -156,6 +156,8 @@ export type ConfigStep4 = {
   checkoutButtonText: string
   manualCheckoutButtonText: string
   showPriceInButton: boolean
+  checkoutImageUrl: string
+  showCheckoutImage: boolean
 }
 
 export type ConfigSteps = {

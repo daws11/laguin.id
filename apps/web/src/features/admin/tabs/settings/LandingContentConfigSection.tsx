@@ -1728,6 +1728,23 @@ export function LandingContentConfigSection({
                     </div>
 
                     <div className="space-y-3 border-t pt-4">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Checkout Image</h4>
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-muted-foreground">Image URL</label>
+                            <Input value={draft.configSteps.step4.checkoutImageUrl} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, checkoutImageUrl: e.target.value } } }))} />
+                        </div>
+                        <label className="flex items-center justify-between gap-2 rounded border p-3 bg-background cursor-pointer hover:bg-muted/40 transition-colors">
+                            <span className="text-sm font-medium">Show image in checkout</span>
+                            <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                checked={draft.configSteps.step4.showCheckoutImage}
+                                onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, showCheckoutImage: e.target.checked } } }))}
+                            />
+                        </label>
+                    </div>
+
+                    <div className="space-y-3 border-t pt-4">
                         <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Checkout Button</h4>
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-2">

@@ -336,6 +336,8 @@ export function ConfigRoute() {
         checkoutButtonText: str(s4?.checkoutButtonText, 'Ke checkout'),
         manualCheckoutButtonText: str(s4?.manualCheckoutButtonText, 'Konfirmasi via WhatsApp'),
         showPriceInButton: typeof s4?.showPriceInButton === 'boolean' ? s4.showPriceInButton : true,
+        checkoutImageUrl: str(s4?.checkoutImageUrl, '/images/checkout-studio.png'),
+        showCheckoutImage: typeof s4?.showCheckoutImage === 'boolean' ? s4.showCheckoutImage : true,
       },
     }
   }, [publicSiteConfig])
@@ -1513,14 +1515,16 @@ export function ConfigRoute() {
 
                 {/* Agreement UI temporarily disabled (keep announcement step). */}
 
-                <div className="rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm">
-                  <img
-                    src="/image.webp"
-                    alt="Proses produksi lagu di studio"
-                    className="h-auto w-full object-cover"
-                    loading="lazy"
-                  />
-                </div>
+                {configSteps.step4.showCheckoutImage && (
+                  <div className="rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm">
+                    <img
+                      src={configSteps.step4.checkoutImageUrl}
+                      alt="Proses produksi lagu di studio"
+                      className="h-auto w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
 
                  <div className="rounded-xl bg-green-50 p-3 border border-green-100 space-y-2">
                   <div className="text-[10px] font-bold text-green-800 uppercase tracking-wider">{configSteps.step4.nextStepsTitle}</div>

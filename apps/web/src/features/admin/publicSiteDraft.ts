@@ -224,6 +224,8 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
       checkoutButtonText: 'Ke checkout',
       manualCheckoutButtonText: 'Konfirmasi via WhatsApp',
       showPriceInButton: true,
+      checkoutImageUrl: '/images/checkout-studio.png',
+      showCheckoutImage: true,
     },
   },
 }
@@ -522,6 +524,8 @@ function buildConfigSteps(raw: any): PublicSiteDraft['configSteps'] {
       checkoutButtonText: asString(s4?.checkoutButtonText, d.step4.checkoutButtonText),
       manualCheckoutButtonText: asString(s4?.manualCheckoutButtonText, d.step4.manualCheckoutButtonText),
       showPriceInButton: asBool(s4?.showPriceInButton, d.step4.showPriceInButton),
+      checkoutImageUrl: asString(s4?.checkoutImageUrl, d.step4.checkoutImageUrl),
+      showCheckoutImage: asBool(s4?.showCheckoutImage, d.step4.showCheckoutImage),
     },
   }
 }
@@ -696,6 +700,8 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
       checkoutButtonText: draft.configSteps.step4.checkoutButtonText.trim(),
       manualCheckoutButtonText: draft.configSteps.step4.manualCheckoutButtonText.trim(),
       showPriceInButton: draft.configSteps.step4.showPriceInButton,
+      checkoutImageUrl: draft.configSteps.step4.checkoutImageUrl.trim(),
+      showCheckoutImage: draft.configSteps.step4.showCheckoutImage,
     },
   }
 
