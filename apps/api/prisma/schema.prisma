@@ -55,6 +55,16 @@ model Settings {
   xenditSecretKeyEnc String?
   xenditWebhookToken String?
   allowMultipleOrdersPerWhatsapp Boolean @default(false)
+
+  emailProvider      String   @default("smtp")
+  smtpHost           String?
+  smtpPort           Int?
+  smtpSecure         Boolean  @default(false)
+  smtpUser           String?
+  smtpPassEnc        String?
+  smtpFrom           String?
+  resendApiKeyEnc    String?
+  resendFrom         String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
