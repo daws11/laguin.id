@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { Settings } from '@/features/admin/types'
-import { Smartphone, Key, BarChart3, CreditCard, Settings2 } from 'lucide-react'
+import { Smartphone, Key, BarChart3, CreditCard, Settings2, Mail } from 'lucide-react'
 import { WhatsappGatewayCard } from './WhatsappGatewayCard'
 import { ApiKeysCard } from './ApiKeysCard'
 import { MetaPixelCard } from './MetaPixelCard'
 import { XenditCard } from './XenditCard'
+import { EmailSettingsCard } from './EmailSettingsCard'
 
 interface SystemSettingsSectionProps {
   settings: Settings
@@ -24,9 +25,10 @@ export function SystemSettingsSection({
   loading,
   t,
 }: SystemSettingsSectionProps) {
-  const [activeTab, setActiveTab] = useState('whatsapp-gateway')
+  const [activeTab, setActiveTab] = useState('email')
 
   const menuItems = [
+    { id: 'email', label: 'Email', icon: Mail, group: 'System' },
     { id: 'whatsapp-gateway', label: t.whatsappGateway ?? 'WhatsApp Gateway', icon: Smartphone, group: 'System' },
     { id: 'api-keys', label: t.apiKeys ?? 'API Keys', icon: Key, group: 'System' },
     { id: 'meta-pixel', label: 'Meta Pixel', icon: BarChart3, group: 'System' },
@@ -69,6 +71,18 @@ export function SystemSettingsSection({
         </aside>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
+          {activeTab === 'email' && (
+            <div className="animate-in fade-in duration-300 h-full">
+              <EmailSettingsCard
+                settings={settings}
+                setSettings={setSettings}
+                saveSettings={saveSettings}
+                loading={loading}
+                t={t}
+              />
+            </div>
+          )}
+
           {activeTab === 'whatsapp-gateway' && (
             <div className="animate-in fade-in duration-300 h-full">
               <WhatsappGatewayCard

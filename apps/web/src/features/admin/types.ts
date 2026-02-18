@@ -42,6 +42,16 @@ export type Settings = {
   xenditWebhookToken: string | null
   allowMultipleOrdersPerWhatsapp: boolean
   kieAiCallbackUrl: string | null
+
+  emailProvider: string
+  smtpHost: string | null
+  smtpPort: number | null
+  smtpSecure: boolean
+  smtpUser: string | null
+  hasSmtpPass: boolean
+  smtpFrom: string | null
+  hasResendKey: boolean
+  resendFrom: string | null
 }
 
 export type LandingPlaylistItem = { title: string; subtitle: string; ctaLabel: string; audioUrl: string }

@@ -34,6 +34,17 @@ const UpdateSchema = z.object({
   ycloudTemplateName: z.string().min(1).optional(),
   ycloudTemplateLangCode: z.string().min(1).optional(),
   ycloudApiKey: z.string().min(1).optional(),
+
+  // Email settings
+  emailProvider: z.enum(['smtp', 'resend']).optional(),
+  smtpHost: z.string().optional().nullable(),
+  smtpPort: z.number().int().min(1).max(65535).optional().nullable(),
+  smtpSecure: z.boolean().optional(),
+  smtpUser: z.string().optional().nullable(),
+  smtpPass: z.string().min(1).optional(),
+  smtpFrom: z.string().optional().nullable(),
+  resendApiKey: z.string().min(1).optional(),
+  resendFrom: z.string().optional().nullable(),
 })
 
 export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
@@ -67,6 +78,16 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       xenditWebhookToken: (s as any).xenditWebhookToken ?? null,
       allowMultipleOrdersPerWhatsapp: (s as any).allowMultipleOrdersPerWhatsapp ?? false,
       kieAiCallbackUrl: process.env.KIE_AI_CALLBACK_URL || null,
+
+      emailProvider: (s as any).emailProvider ?? 'smtp',
+      smtpHost: (s as any).smtpHost ?? null,
+      smtpPort: (s as any).smtpPort ?? null,
+      smtpSecure: (s as any).smtpSecure ?? false,
+      smtpUser: (s as any).smtpUser ?? null,
+      hasSmtpPass: Boolean(maybeDecrypt((s as any).smtpPassEnc)),
+      smtpFrom: (s as any).smtpFrom ?? null,
+      hasResendKey: Boolean(maybeDecrypt((s as any).resendApiKeyEnc)),
+      resendFrom: (s as any).resendFrom ?? null,
     }
   })
 
@@ -133,6 +154,16 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
     if (parsed.data.xenditSecretKey) data.xenditSecretKeyEnc = encryptString(parsed.data.xenditSecretKey)
     if (parsed.data.xenditWebhookToken !== undefined) data.xenditWebhookToken = parsed.data.xenditWebhookToken
 
+    if (parsed.data.emailProvider !== undefined) data.emailProvider = parsed.data.emailProvider
+    if (parsed.data.smtpHost !== undefined) data.smtpHost = parsed.data.smtpHost
+    if (parsed.data.smtpPort !== undefined) data.smtpPort = parsed.data.smtpPort
+    if (parsed.data.smtpSecure !== undefined) data.smtpSecure = parsed.data.smtpSecure
+    if (parsed.data.smtpUser !== undefined) data.smtpUser = parsed.data.smtpUser
+    if (parsed.data.smtpPass) data.smtpPassEnc = encryptString(parsed.data.smtpPass)
+    if (parsed.data.smtpFrom !== undefined) data.smtpFrom = parsed.data.smtpFrom
+    if (parsed.data.resendApiKey) data.resendApiKeyEnc = encryptString(parsed.data.resendApiKey)
+    if (parsed.data.resendFrom !== undefined) data.resendFrom = parsed.data.resendFrom
+
     const updated = await prisma.settings.update({
       where: { id: s.id },
       data,
@@ -164,6 +195,16 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       metaPixelWishlistId: updated.metaPixelWishlistId ?? null,
       allowMultipleOrdersPerWhatsapp: (updated as any).allowMultipleOrdersPerWhatsapp ?? false,
       kieAiCallbackUrl: process.env.KIE_AI_CALLBACK_URL || null,
+
+      emailProvider: (updated as any).emailProvider ?? 'smtp',
+      smtpHost: (updated as any).smtpHost ?? null,
+      smtpPort: (updated as any).smtpPort ?? null,
+      smtpSecure: (updated as any).smtpSecure ?? false,
+      smtpUser: (updated as any).smtpUser ?? null,
+      hasSmtpPass: Boolean(maybeDecrypt((updated as any).smtpPassEnc)),
+      smtpFrom: (updated as any).smtpFrom ?? null,
+      hasResendKey: Boolean(maybeDecrypt((updated as any).resendApiKeyEnc)),
+      resendFrom: (updated as any).resendFrom ?? null,
     }
   })
 }
