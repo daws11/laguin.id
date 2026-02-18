@@ -1726,6 +1726,31 @@ export function LandingContentConfigSection({
                         <Input value={draft.configSteps.step4.draftTimerText} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, draftTimerText: e.target.value } } }))} />
                         <p className="text-[10px] text-muted-foreground">Use {'{timer}'} for countdown timer</p>
                     </div>
+
+                    <div className="space-y-3 border-t pt-4">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Checkout Button</h4>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                                <label className="text-xs font-medium text-muted-foreground">Button Text (normal)</label>
+                                <Input value={draft.configSteps.step4.checkoutButtonText} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, checkoutButtonText: e.target.value } } }))} />
+                                <p className="text-[10px] text-muted-foreground">e.g. "Ke checkout", "Buat Lagu Sekarang"</p>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-medium text-muted-foreground">Button Text (manual confirmation)</label>
+                                <Input value={draft.configSteps.step4.manualCheckoutButtonText} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, manualCheckoutButtonText: e.target.value } } }))} />
+                                <p className="text-[10px] text-muted-foreground">e.g. "Konfirmasi via WhatsApp"</p>
+                            </div>
+                        </div>
+                        <label className="flex items-center justify-between gap-2 rounded border p-3 bg-background cursor-pointer hover:bg-muted/40 transition-colors">
+                            <span className="text-sm font-medium">Show price in button</span>
+                            <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                checked={draft.configSteps.step4.showPriceInButton}
+                                onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, showPriceInButton: e.target.checked } } }))}
+                            />
+                        </label>
+                    </div>
                 </div>
             )}
 

@@ -221,6 +221,9 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
       ],
       securityBadges: ['Checkout aman', '{delivery}'],
       draftTimerText: 'Cerita tersimpan selama {timer} — selesaikan checkout untuk menyimpannya',
+      checkoutButtonText: 'Ke checkout',
+      manualCheckoutButtonText: 'Konfirmasi via WhatsApp',
+      showPriceInButton: true,
     },
   },
 }
@@ -516,6 +519,9 @@ function buildConfigSteps(raw: any): PublicSiteDraft['configSteps'] {
       manualNextSteps: manualNextSteps.length ? manualNextSteps : d.step4.manualNextSteps,
       securityBadges: securityBadges.length ? securityBadges : d.step4.securityBadges,
       draftTimerText: asString(s4?.draftTimerText, d.step4.draftTimerText),
+      checkoutButtonText: asString(s4?.checkoutButtonText, d.step4.checkoutButtonText),
+      manualCheckoutButtonText: asString(s4?.manualCheckoutButtonText, d.step4.manualCheckoutButtonText),
+      showPriceInButton: asBool(s4?.showPriceInButton, d.step4.showPriceInButton),
     },
   }
 }
@@ -687,6 +693,9 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
       manualNextSteps: draft.configSteps.step4.manualNextSteps.map((s) => ({ text: s.text.trim() })).filter((s) => s.text),
       securityBadges: draft.configSteps.step4.securityBadges.map((b) => b.trim()).filter((b) => b),
       draftTimerText: draft.configSteps.step4.draftTimerText.trim(),
+      checkoutButtonText: draft.configSteps.step4.checkoutButtonText.trim(),
+      manualCheckoutButtonText: draft.configSteps.step4.manualCheckoutButtonText.trim(),
+      showPriceInButton: draft.configSteps.step4.showPriceInButton,
     },
   }
 

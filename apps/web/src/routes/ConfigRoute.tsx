@@ -333,6 +333,9 @@ export function ConfigRoute() {
         ],
         securityBadges: securityBadges.length ? securityBadges : ['Checkout aman', '{delivery}'],
         draftTimerText: str(s4?.draftTimerText, 'Cerita tersimpan selama {timer} — selesaikan checkout untuk menyimpannya'),
+        checkoutButtonText: str(s4?.checkoutButtonText, 'Ke checkout'),
+        manualCheckoutButtonText: str(s4?.manualCheckoutButtonText, 'Konfirmasi via WhatsApp'),
+        showPriceInButton: typeof s4?.showPriceInButton === 'boolean' ? s4.showPriceInButton : true,
       },
     }
   }, [publicSiteConfig])
@@ -1583,7 +1586,7 @@ export function ConfigRoute() {
                     step === 1 ? 'Pilih vibenya ->' : 
                     step === 2 ? 'Tambahkan ceritamu ->' : 
                     step === 3 ? 'Hampir selesai! ->' : 
-                    loading ? 'Memproses...' : (manualConfirmationEnabled ? 'Konfirmasi via WhatsApp' : emailOtpEnabled ? (emailVerified ? `Ke checkout — ${fmtCurrency(paymentAmount)}` : 'Verifikasi email dulu') : `Ke checkout — ${fmtCurrency(paymentAmount)}`)}
+                    loading ? 'Memproses...' : (manualConfirmationEnabled ? configSteps.step4.manualCheckoutButtonText : emailOtpEnabled ? (emailVerified ? `${configSteps.step4.checkoutButtonText}${configSteps.step4.showPriceInButton ? ` — ${fmtCurrency(paymentAmount)}` : ''}` : 'Verifikasi email dulu') : `${configSteps.step4.checkoutButtonText}${configSteps.step4.showPriceInButton ? ` — ${fmtCurrency(paymentAmount)}` : ''}`)}
                  </Button>
                </div>
              </div>

@@ -153,6 +153,9 @@ export type ConfigStep4 = {
   manualNextSteps: NextStepItem[]
   securityBadges: string[]
   draftTimerText: string
+  checkoutButtonText: string
+  manualCheckoutButtonText: string
+  showPriceInButton: boolean
 }
 
 export type ConfigSteps = {
