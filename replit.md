@@ -44,6 +44,14 @@ A monorepo application for creating personalized songs for special occasions. Bu
 - Shared package must be built before other packages (`npm run build -w shared`)
 
 ## Recent Changes
+- 2026-02-18: Mobile performance optimizations (self-hosted fonts, image compression)
+  - Self-hosted Inter and Playfair Display fonts (Latin subset, woff2) in /fonts/
+  - Removed Google Fonts external requests — eliminates render-blocking DNS lookups
+  - Font files preloaded in HTML head for fast first paint
+  - @font-face declarations with font-display:swap in index.css
+  - Compressed logo.png (123KB→4.2KB) and image.png (518KB→36KB) to WebP format
+  - Hero image: fetchPriority="high" + decoding="async" for LCP optimization
+  - Hero video: preload="metadata" + poster image fallback for faster initial render
 - 2026-02-17: OpenRouter integration with configurable model
   - Replaced OpenAI direct integration with OpenRouter (uses OpenAI SDK with custom baseURL)
   - New openaiModel column on Settings for admin-configurable model selection

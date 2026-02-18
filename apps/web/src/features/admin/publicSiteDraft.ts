@@ -7,7 +7,7 @@ export const defaultThemeColors = {
 }
 
 export const defaultPublicSiteDraft: PublicSiteDraft = {
-  logoUrl: '/logo.png',
+  logoUrl: '/logo.webp',
   colors: { ...defaultThemeColors },
   landing: {
     heroHeadline: {

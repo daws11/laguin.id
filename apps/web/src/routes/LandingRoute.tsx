@@ -625,7 +625,7 @@ export function LandingRoute() {
 
   const logoUrl = typeof (publicSiteConfig as any)?.logoUrl === 'string' && (publicSiteConfig as any).logoUrl.trim()
     ? resolveAsset((publicSiteConfig as any).logoUrl)
-    : '/logo.png'
+    : '/logo.webp'
 
   const landing = site.landing ?? defaultPublicSiteConfig.landing!
   const heroMedia = landing.heroMedia ?? defaultPublicSiteConfig.landing!.heroMedia!
@@ -887,6 +887,8 @@ export function LandingRoute() {
                    muted
                    loop
                    playsInline
+                   preload="metadata"
+                   poster={heroImageUrl}
                  />
                ) : (
                  <img
@@ -894,6 +896,8 @@ export function LandingRoute() {
                    alt="Pasangan merayakan Valentine - Lagu personal Laguin.id dengan nama di lirik, hadiah yang tak terlupakan"
                    className="h-full w-full object-cover"
                    loading="eager"
+                   fetchPriority="high"
+                   decoding="async"
                  />
                )}
                {heroOpen && heroPlayerEnabled ? (

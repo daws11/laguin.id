@@ -667,7 +667,7 @@ export function LandingContentConfigSection({
                                 className="text-sm"
                                 value={draft.logoUrl}
                                 onChange={(e) => setDraft(d => ({ ...d, logoUrl: e.target.value }))}
-                                placeholder="/logo.png"
+                                placeholder="/logo.webp"
                             />
                         </div>
                         <div className="space-y-1">

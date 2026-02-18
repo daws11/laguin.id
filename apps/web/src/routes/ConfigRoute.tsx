@@ -1000,7 +1000,7 @@ export function ConfigRoute() {
   }
   const logoUrl = typeof (publicSiteConfig as any)?.logoUrl === 'string' && (publicSiteConfig as any).logoUrl.trim()
     ? resolveAsset((publicSiteConfig as any).logoUrl)
-    : '/logo.png'
+    : '/logo.webp'
 
   if (!isHydrated || publicSiteConfig === undefined) {
     return (
@@ -1512,7 +1512,7 @@ export function ConfigRoute() {
 
                 <div className="rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm">
                   <img
-                    src="/image.png"
+                    src="/image.webp"
                     alt="Proses produksi lagu di studio"
                     className="h-auto w-full object-cover"
                     loading="lazy"
