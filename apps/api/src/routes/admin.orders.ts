@@ -6,6 +6,7 @@ import { prisma } from '../lib/prisma'
 import { addOrderEvent } from '../lib/events'
 import { deliverCompletedOrder, sendSongEmailForOrder, sendWhatsAppReminderForOrder } from '../delivery/deliver'
 import { triggerGenerationInBackground } from '../pipeline/triggerGeneration'
+import { completeOrder } from '../pipeline/generation'
 
 const ListQuerySchema = z.object({
   status: z.enum(['created', 'processing', 'completed', 'failed']).optional(),
@@ -135,20 +136,18 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     })
     if (!order) return reply.code(404).send({ error: 'not_found' })
 
-    if (order.deliveryStatus !== 'delivery_failed') {
-      return reply.code(400).send({ error: 'invalid_state', message: `deliveryStatus=${order.deliveryStatus}` })
-    }
-    if (order.status !== 'completed') {
-      return reply.code(400).send({ error: 'invalid_state', message: `status=${order.status}` })
-    }
     if (!order.trackUrl) {
       return reply.code(400).send({ error: 'invalid_state', message: 'Missing trackUrl' })
+    }
+    if (order.status === 'processing' && order.trackUrl) {
+      await completeOrder(order.id, { skipTrackCheck: true })
+    } else if (order.status !== 'completed') {
+      return reply.code(400).send({ error: 'invalid_state', message: `status=${order.status}` })
     }
 
     await prisma.order.update({
       where: { id: order.id },
       data: {
-        // make it eligible for worker if immediate send fails and schedules retry
         deliveryStatus: 'delivery_pending',
         deliveryScheduledAt: new Date(),
         deliveredAt: null,
@@ -170,7 +169,13 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
 
     const order = await prisma.order.findUnique({ where: { id: params.data.id } })
     if (!order) return reply.code(404).send({ error: 'not_found' })
-    if (order.status !== 'completed') return reply.code(400).send({ error: 'invalid_state', message: `status=${order.status}` })
+    if (!order.trackUrl) return reply.code(400).send({ error: 'invalid_state', message: 'No song URL available yet' })
+
+    if (order.status === 'processing' && order.trackUrl) {
+      await completeOrder(order.id, { skipTrackCheck: true })
+    } else if (order.status !== 'completed') {
+      return reply.code(400).send({ error: 'invalid_state', message: `status=${order.status}` })
+    }
     if (order.deliveryStatus === 'delivered') return reply.code(400).send({ error: 'invalid_state', message: 'already_delivered' })
 
     await prisma.order.update({

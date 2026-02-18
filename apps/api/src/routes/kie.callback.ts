@@ -3,7 +3,8 @@ import crypto from 'node:crypto'
 
 import { prisma } from '../lib/prisma'
 import { addOrderEvent } from '../lib/events'
-import { triggerGenerationInBackground } from '../pipeline/triggerGeneration'
+import { completeOrder } from '../pipeline/generation'
+import { tryDeliverOrder } from '../pipeline/triggerGeneration'
 
 function verifyKieWebhookSignature(params: {
   webhookHmacKey: string
@@ -97,14 +98,25 @@ export const kieCallbackRoutes: FastifyPluginAsync = async (app) => {
       data: { taskId, callbackType, code, hasAudioUrl: Boolean(audioUrl) },
     })
 
-    if (!order.trackUrl && audioUrl && callbackType === 'complete') {
+    if (audioUrl && callbackType === 'complete') {
       await addOrderEvent({
         orderId: order.id,
         type: 'music_generated',
         data: { taskId, source: 'callback' },
       })
 
-      triggerGenerationInBackground(order.id, app.log)
+      setImmediate(async () => {
+        try {
+          const result = await completeOrder(order.id)
+          app.log.info({ orderId: order.id, result }, 'Order completion attempted via Kie.ai callback')
+
+          if (result && 'completed' in result && result.completed) {
+            await tryDeliverOrder(order.id, app.log)
+          }
+        } catch (e: any) {
+          app.log.error({ orderId: order.id, error: e?.message }, 'Failed to complete/deliver order from Kie.ai callback')
+        }
+      })
     }
 
     return reply.code(200).send({ status: 'received', taskId, orderId: order.id })

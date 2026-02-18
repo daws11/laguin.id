@@ -319,65 +319,73 @@ export async function processOrderGeneration(orderId: string) {
     }
   }
 
-  // Mark generation completed only when music URL is available.
-  const finalOrder = await prisma.order.findUnique({ where: { id: order.id } })
-  if (!finalOrder) throw new Error('Order not found (final)')
-  if (!finalOrder.trackUrl) return { ok: true, pending: true, reason: 'track_not_ready' }
-
-  // Kie.ai commonly returns 2 variations. Avoid completing/delivering too early (e.g. only first track ready).
-  const finalMeta: any =
-    (finalOrder.trackMetadata && typeof finalOrder.trackMetadata === 'object' ? finalOrder.trackMetadata : null) ?? {}
-  const finalTracks: string[] = Array.isArray(finalMeta?.tracks)
-    ? (finalMeta.tracks as unknown[]).filter((x): x is string => typeof x === 'string' && x.length > 0)
-    : []
-  const isMocked = finalMeta?.mocked === true
-  const hasAllTracks = finalTracks.length >= 2
-
-  const startedAtMs = finalOrder.generationStartedAt ? finalOrder.generationStartedAt.getTime() : null
-  const waitedMs = startedAtMs ? Date.now() - startedAtMs : 0
-  const waitTimeoutMs = 10 * 60 * 1000 // 10 minutes safety valve
-
-  if (!isMocked && !hasAllTracks && waitedMs < waitTimeoutMs) {
-    return { ok: true, pending: true, reason: 'waiting_for_all_tracks', trackCount: finalTracks.length }
-  }
-
-  if (!finalOrder.generationCompletedAt) {
-    let effectiveInstantEnabled = settings.instantEnabled
-    let effectiveDeliveryDelayHours = settings.deliveryDelayHours ?? 24
-    if (finalOrder.themeSlug) {
-      const theme = await prisma.theme.findUnique({ where: { slug: finalOrder.themeSlug } })
-      if (theme?.settings && typeof theme.settings === 'object') {
-        const cd = (theme.settings as any)?.creationDelivery
-        if (cd && typeof cd === 'object') {
-          effectiveInstantEnabled = cd.instantEnabled ?? effectiveInstantEnabled
-          effectiveDeliveryDelayHours = cd.deliveryDelayHours ?? effectiveDeliveryDelayHours
-        }
-      }
-    }
-
-    const generationCompletedAt = new Date()
-    const deliveryScheduledAt = effectiveInstantEnabled
-      ? generationCompletedAt
-      : new Date(generationCompletedAt.getTime() + effectiveDeliveryDelayHours * 60 * 60 * 1000)
-
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        status: 'completed',
-        generationCompletedAt,
-        deliveryStatus: effectiveInstantEnabled ? 'delivery_pending' : 'delivery_scheduled',
-        deliveryScheduledAt,
-      },
-    })
-
-    await addOrderEvent({
-      orderId: order.id,
-      type: 'generation_completed',
-      data: { deliveryScheduledAt: deliveryScheduledAt.toISOString(), instantEnabled: effectiveInstantEnabled },
-    })
+  const completionResult = await completeOrder(order.id)
+  if (completionResult && 'pending' in completionResult) {
+    return { ok: true, pending: true, reason: completionResult.reason }
   }
 
   return { ok: true }
+}
+
+export async function completeOrder(orderId: string, opts?: { skipTrackCheck?: boolean }) {
+  const order = await prisma.order.findUnique({ where: { id: orderId } })
+  if (!order) throw new Error('Order not found for completion')
+  if (order.status === 'completed') return { alreadyCompleted: true }
+  if (order.generationCompletedAt) return { alreadyCompleted: true }
+  if (!order.trackUrl) return { pending: true, reason: 'no_track_url' }
+
+  if (!opts?.skipTrackCheck) {
+    const meta: any = (order.trackMetadata && typeof order.trackMetadata === 'object' ? order.trackMetadata : null) ?? {}
+    const tracks: string[] = Array.isArray(meta?.tracks)
+      ? (meta.tracks as unknown[]).filter((x): x is string => typeof x === 'string' && x.length > 0)
+      : []
+    const isMocked = meta?.mocked === true
+    const hasAllTracks = tracks.length >= 2
+    const startedAtMs = order.generationStartedAt ? order.generationStartedAt.getTime() : null
+    const waitedMs = startedAtMs ? Date.now() - startedAtMs : 0
+    const waitTimeoutMs = 10 * 60 * 1000
+
+    if (!isMocked && !hasAllTracks && waitedMs < waitTimeoutMs) {
+      return { pending: true, reason: 'waiting_for_all_tracks', trackCount: tracks.length }
+    }
+  }
+
+  const settings = await getOrCreateSettings()
+  let effectiveInstantEnabled = settings.instantEnabled
+  let effectiveDeliveryDelayHours = settings.deliveryDelayHours ?? 24
+  if (order.themeSlug) {
+    const theme = await prisma.theme.findUnique({ where: { slug: order.themeSlug } })
+    if (theme?.settings && typeof theme.settings === 'object') {
+      const cd = (theme.settings as any)?.creationDelivery
+      if (cd && typeof cd === 'object') {
+        effectiveInstantEnabled = cd.instantEnabled ?? effectiveInstantEnabled
+        effectiveDeliveryDelayHours = cd.deliveryDelayHours ?? effectiveDeliveryDelayHours
+      }
+    }
+  }
+
+  const generationCompletedAt = new Date()
+  const deliveryScheduledAt = effectiveInstantEnabled
+    ? generationCompletedAt
+    : new Date(generationCompletedAt.getTime() + effectiveDeliveryDelayHours * 60 * 60 * 1000)
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      status: 'completed',
+      generationCompletedAt,
+      deliveryStatus: effectiveInstantEnabled ? 'delivery_pending' : 'delivery_scheduled',
+      deliveryScheduledAt,
+    },
+  })
+
+  await addOrderEvent({
+    orderId,
+    type: 'generation_completed',
+    data: { deliveryScheduledAt: deliveryScheduledAt.toISOString(), instantEnabled: effectiveInstantEnabled },
+  })
+
+  return { completed: true, instantEnabled: effectiveInstantEnabled }
 }
 
 export async function failOrder(orderId: string, errorMessage: string) {
