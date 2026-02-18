@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify'
 import { prisma } from '../lib/prisma'
 import { addOrderEvent } from '../lib/events'
 import { getXenditWebhookToken, verifyXenditWebhookToken } from '../lib/xendit'
+import { triggerGenerationInBackground } from '../pipeline/triggerGeneration'
 
 export const xenditWebhookRoutes: FastifyPluginAsync = async (app) => {
   app.post('/xendit/callback', async (req, reply) => {
@@ -90,6 +91,9 @@ export const xenditWebhookRoutes: FastifyPluginAsync = async (app) => {
       })
 
       app.log.info({ orderId: order.id }, 'Order confirmed via Xendit payment')
+
+      triggerGenerationInBackground(order.id, app.log)
+
       return { ok: true }
     }
 

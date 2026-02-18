@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '../lib/prisma'
 import { addOrderEvent } from '../lib/events'
 import { deliverCompletedOrder, sendSongEmailForOrder, sendWhatsAppReminderForOrder } from '../delivery/deliver'
+import { triggerGenerationInBackground } from '../pipeline/triggerGeneration'
 
 const ListQuerySchema = z.object({
   status: z.enum(['created', 'processing', 'completed', 'failed']).optional(),
@@ -93,6 +94,9 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     })
 
     await addOrderEvent({ orderId: updated.id, type: 'admin_retry', message: 'Retry triggered by admin.' })
+
+    triggerGenerationInBackground(updated.id, app.log)
+
     return { ok: true, orderId: updated.id }
   })
 

@@ -51,3 +51,13 @@ The project uses a monorepo structure with `npm workspaces`, separating the fron
 - **Prisma ORM:** Database toolkit.
 - **Fastify:** Backend web framework.
 - **JWT:** For authentication.
+
+## Order Processing Architecture
+- **Event-driven** (not polling): Order generation triggers immediately when events happen
+- Xendit payment webhook → triggers `processOrderGeneration()` in background (fire-and-forget)
+- Kie.ai music callback → triggers generation completion + delivery
+- Admin retry button → triggers generation immediately
+- PostgreSQL advisory locks prevent concurrent processing of the same order
+- Key file: `apps/api/src/pipeline/triggerGeneration.ts`
+- Worker process (`apps/api/src/worker.ts`) kept as optional dev safety net, not needed in production
+- Production uses autoscale deployment (no always-on VM needed)

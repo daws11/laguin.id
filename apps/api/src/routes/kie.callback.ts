@@ -3,6 +3,7 @@ import crypto from 'node:crypto'
 
 import { prisma } from '../lib/prisma'
 import { addOrderEvent } from '../lib/events'
+import { triggerGenerationInBackground } from '../pipeline/triggerGeneration'
 
 function verifyKieWebhookSignature(params: {
   webhookHmacKey: string
@@ -102,6 +103,8 @@ export const kieCallbackRoutes: FastifyPluginAsync = async (app) => {
         type: 'music_generated',
         data: { taskId, source: 'callback' },
       })
+
+      triggerGenerationInBackground(order.id, app.log)
     }
 
     return reply.code(200).send({ status: 'received', taskId, orderId: order.id })
