@@ -117,11 +117,14 @@ app.get('/health', async () => {
   return { ok: true }
 })
 
-if (!hasWebDist) {
-  app.get('/', async () => {
-    return { ok: true, service: 'laguin-api' }
-  })
-}
+app.get('/', async (_req, reply) => {
+  if (hasWebDist) {
+    const indexPath = path.join(webDistRoot, 'index.html')
+    const html = fs.readFileSync(indexPath, 'utf-8')
+    return reply.header('Content-Type', 'text/html; charset=utf-8').header('Cache-Control', 'no-cache').send(html)
+  }
+  return { ok: true, service: 'laguin-api' }
+})
 
 await app.register(publicSettingsRoutes, { prefix: '/api' })
 await app.register(publicOrdersRoutes, { prefix: '/api' })
