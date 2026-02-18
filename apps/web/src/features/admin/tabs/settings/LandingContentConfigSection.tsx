@@ -1732,6 +1732,12 @@ export function LandingContentConfigSection({
                         <div className="space-y-2">
                             <label className="text-xs font-medium text-muted-foreground">Image URL</label>
                             <Input value={draft.configSteps.step4.checkoutImageUrl} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, checkoutImageUrl: e.target.value } } }))} />
+                            <Input
+                                type="file"
+                                accept="image/*"
+                                className="h-9 text-xs cursor-pointer"
+                                onChange={(e) => handleUpload(e, 'image', (path) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, checkoutImageUrl: path } } })))}
+                            />
                         </div>
                         <label className="flex items-center justify-between gap-2 rounded border p-3 bg-background cursor-pointer hover:bg-muted/40 transition-colors">
                             <span className="text-sm font-medium">Show image in checkout</span>
