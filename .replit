@@ -45,7 +45,7 @@ externalPort = 3000
 
 [deployment]
 deploymentTarget = "vm"
-run = ["bash", "-c", "cd /home/runner/workspace/apps/api && npx prisma db push --skip-generate && PORT=5000 npx tsx src/index.ts & npx tsx src/worker.ts & wait"]
+run = ["bash", "-c", "cd /home/runner/workspace/apps/api && npx prisma db push --skip-generate && PORT=5000 npx tsx src/index.ts & cd /home/runner/workspace/apps/api && npx tsx src/worker.ts & wait"]
 build = ["bash", "-c", "cd /home/runner/workspace && npm run build --workspace=shared && npm run build --workspace=web && cd apps/api && npx prisma generate"]
 
 [userenv]

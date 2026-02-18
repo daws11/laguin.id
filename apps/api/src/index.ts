@@ -117,6 +117,12 @@ app.get('/health', async () => {
   return { ok: true }
 })
 
+if (!hasWebDist) {
+  app.get('/', async () => {
+    return { ok: true, service: 'laguin-api' }
+  })
+}
+
 await app.register(publicSettingsRoutes, { prefix: '/api' })
 await app.register(publicOrdersRoutes, { prefix: '/api' })
 await app.register(orderDraftsRoutes, { prefix: '/api' })
