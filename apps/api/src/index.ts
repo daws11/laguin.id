@@ -79,6 +79,7 @@ if (hasWebDist) {
     prefix: '/',
     decorateReply: false,
     wildcard: false,
+    index: false,
     setHeaders(res, filePath) {
       if (/\/assets\//.test(filePath)) {
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
