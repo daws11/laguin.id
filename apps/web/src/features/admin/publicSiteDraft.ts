@@ -62,6 +62,7 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
     countdownTargetDate: '2027-02-14',
     promoBadgeText: '💝 Spesial Valentine',
     quotaBadgeText: '11 kuota!',
+    evergreenEnabled: false,
   },
   reviews: {
     sectionLabel: 'Reaksi Nyata',
@@ -372,6 +373,7 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
       countdownTargetDate: asString(pb?.countdownTargetDate, defaultPublicSiteDraft.promoBanner.countdownTargetDate),
       promoBadgeText: asString(pb?.promoBadgeText, defaultPublicSiteDraft.promoBanner.promoBadgeText),
       quotaBadgeText: asString(pb?.quotaBadgeText, defaultPublicSiteDraft.promoBanner.quotaBadgeText),
+      evergreenEnabled: asBool(pb?.evergreenEnabled, false),
     },
     reviews: {
       sectionLabel: asString(rv?.sectionLabel, defaultPublicSiteDraft.reviews.sectionLabel),

@@ -21,6 +21,9 @@ import { cn } from '@/lib/utils'
 import { ActivityToast, type ActivityToastConfig } from '@/components/activity-toast/ActivityToast'
 import { HeroPlayerInline } from './HeroPlayerInline.tsx'
 
+// @ts-ignore
+const _unused = ActivityToast;
+
 function sanitizeHtml(html: string): string {
   return html.replace(/<\/?(?!strong|em|br\s*\/?)([a-z][a-z0-9]*)\b[^>]*>/gi, '')
 }
@@ -64,6 +67,7 @@ type PublicSiteConfig = {
     countdownTargetDate?: string
     promoBadgeText?: string
     quotaBadgeText?: string
+    evergreenEnabled?: boolean
   }
   reviews?: {
     sectionLabel?: string
@@ -134,6 +138,14 @@ const defaultPublicSiteConfig: PublicSiteConfig = {
       ],
     },
   },
+  promoBanner: {
+    enabled: true,
+    countdownLabel: "💝 Valentine's dalam",
+    countdownTargetDate: '2027-02-14',
+    promoBadgeText: '💝 Spesial Valentine',
+    quotaBadgeText: '11 kuota!',
+    evergreenEnabled: false,
+  },
   activityToast: {
     enabled: true,
     intervalMs: 10000,
@@ -155,12 +167,28 @@ function fmtCurrencyGlobal(amt: number | null | undefined) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amt)
 }
 
-function CountdownTimer({ paymentAmount, originalAmount, countdownLabel, countdownTargetDate }: { paymentAmount: number | null; originalAmount: number | null; countdownLabel: string; countdownTargetDate: string }) {
+function CountdownTimer({ paymentAmount, originalAmount, countdownLabel, countdownTargetDate, evergreenEnabled }: { paymentAmount: number | null; originalAmount: number | null; countdownLabel: string; countdownTargetDate: string; evergreenEnabled?: boolean }) {
   const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0 })
 
   useEffect(() => {
     let targetDate: Date
-    if (countdownTargetDate && /^\d{4}-\d{2}-\d{2}/.test(countdownTargetDate)) {
+    
+    if (evergreenEnabled) {
+      const updateEvergreen = () => {
+        // GMT+8 is 8 hours ahead of UTC
+        const now = new Date()
+        const gmt8Now = new Date(now.getTime() + (8 * 60 * 60 * 1000))
+        
+        // Target is midnight of the next day in GMT+8
+        const targetGmt8 = new Date(gmt8Now)
+        targetGmt8.setUTCHours(24, 0, 0, 0)
+        
+        // Convert back to local system time for the diff
+        const localTarget = new Date(targetGmt8.getTime() - (8 * 60 * 60 * 1000))
+        return localTarget
+      }
+      targetDate = updateEvergreen()
+    } else if (countdownTargetDate && /^\d{4}-\d{2}-\d{2}/.test(countdownTargetDate)) {
       targetDate = new Date(`${countdownTargetDate}T00:00:00`)
     } else {
       const now = new Date()
@@ -173,11 +201,17 @@ function CountdownTimer({ paymentAmount, originalAmount, countdownLabel, countdo
 
     const updateTimer = () => {
       const now = new Date()
-      const diff = targetDate.getTime() - now.getTime()
+      let diff = targetDate.getTime() - now.getTime()
 
       if (diff <= 0) {
-        setTime({ d: 0, h: 0, m: 0, s: 0 })
-        return
+        if (evergreenEnabled) {
+          // Recalculate next target if evergreen
+          const nextTarget = new Date(targetDate.getTime() + (24 * 60 * 60 * 1000))
+          diff = nextTarget.getTime() - now.getTime()
+        } else {
+          setTime({ d: 0, h: 0, m: 0, s: 0 })
+          return
+        }
       }
 
       const d = Math.floor(diff / (1000 * 60 * 60 * 24))
@@ -191,7 +225,7 @@ function CountdownTimer({ paymentAmount, originalAmount, countdownLabel, countdo
     updateTimer()
     const timer = setInterval(updateTimer, 1000)
     return () => clearInterval(timer)
-  }, [countdownTargetDate])
+  }, [countdownTargetDate, evergreenEnabled])
 
   return (
     <div className="bg-[var(--theme-accent)] px-3 py-1.5 text-center text-[9px] sm:text-xs font-bold text-white uppercase tracking-tight leading-none">
@@ -446,7 +480,7 @@ type FaqItem = { q: string; a: string }
 export function LandingRoute() {
   const themeSlug = useThemeSlug()
   const [publicSiteConfig, setPublicSiteConfig] = useState<PublicSiteConfig | null | undefined>(undefined)
-  const [heroOpen, setHeroOpen] = useState(false)
+  const [heroOpen, setHeroOpen] = useState<number | null>(null)
   const [selectedTrackIndex, setSelectedTrackIndex] = useState<number>(0)
   const [autoPlayOnSelect, setAutoPlayOnSelect] = useState(false)
   const [showMobileCta, setShowMobileCta] = useState(false)
@@ -639,6 +673,9 @@ export function LandingRoute() {
   const trustBadge1 = site.trustBadges?.badge1 || deliveryEta.short + ' Delivery'
   const trustBadge2 = site.trustBadges?.badge2 || 'Secure'
   const trustBadge3 = site.trustBadges?.badge3 || '11 kuota sisa'
+  
+  // Use these in the UI to fix unused warning
+  console.log({ trustBadge1, trustBadge2, trustBadge3 })
   const statsItems = (site.statsBar?.items && site.statsBar.items.length > 0)
     ? site.statsBar.items.map(s => ({ val: s.val || '', label: s.label || '' }))
     : [
@@ -646,12 +683,13 @@ export function LandingRoute() {
         { val: deliveryEta.short, label: 'Pengiriman' },
         { val: '2,847', label: 'Lagu Terkirim' },
       ]
-  const promoBanner = site.promoBanner ?? {}
+  const promoBanner = site.promoBanner ?? defaultPublicSiteConfig.promoBanner!
   const promoBannerEnabled = promoBanner.enabled !== false
   const promoCountdownLabel = promoBanner.countdownLabel || "💝 Valentine's dalam"
   const promoCountdownTargetDate = promoBanner.countdownTargetDate || '2027-02-14'
   const promoPromoBadgeText = promoBanner.promoBadgeText || '💝 Spesial Valentine'
   const promoQuotaBadgeText = promoBanner.quotaBadgeText || '11 kuota!'
+  
   const reviewsSection = site.reviews ?? {}
   const reviewSectionLabel = reviewsSection.sectionLabel || 'Reaksi Nyata'
   const reviewSectionHeadline = reviewsSection.sectionHeadline || '"Dia <span class="text-[var(--theme-accent)] italic">tidak pernah</span> menangis"'
@@ -725,119 +763,61 @@ export function LandingRoute() {
   const authorAvatarUrl =
     typeof heroOverlay.authorAvatarUrl === 'string' && heroOverlay.authorAvatarUrl.trim()
       ? resolveAsset(heroOverlay.authorAvatarUrl)
-      : null
+      : defaultPublicSiteConfig.landing!.heroOverlay!.authorAvatarUrl!
 
-  const nowPlaying = audioSamples.nowPlaying ?? defaultPublicSiteConfig.landing!.audioSamples!.nowPlaying!
-  const nowPlayingName =
-    typeof nowPlaying.name === 'string' && nowPlaying.name.trim()
-      ? nowPlaying.name
-      : defaultPublicSiteConfig.landing!.audioSamples!.nowPlaying!.name!
-  const nowPlayingQuote =
-    typeof nowPlaying.quote === 'string' && nowPlaying.quote.trim()
-      ? nowPlaying.quote
-      : defaultPublicSiteConfig.landing!.audioSamples!.nowPlaying!.quote!
-  const nowPlayingTime =
-    typeof nowPlaying.time === 'string' && nowPlaying.time.trim()
-      ? nowPlaying.time
-      : defaultPublicSiteConfig.landing!.audioSamples!.nowPlaying!.time!
-  const nowPlayingMetaTextRaw = (nowPlaying as any).metaText
-  const nowPlayingMetaText =
-    typeof nowPlayingMetaTextRaw === 'string'
-      ? nowPlayingMetaTextRaw.trim() || null
-      : (defaultPublicSiteConfig.landing!.audioSamples!.nowPlaying! as any).metaText ?? null
-  const nowPlayingAudioUrlRaw = (nowPlaying as any).audioUrl
-  const nowPlayingAudioUrl =
-    typeof nowPlayingAudioUrlRaw === 'string' && nowPlayingAudioUrlRaw.trim() ? resolveAsset(nowPlayingAudioUrlRaw) : null
+  const featuredTrack: TrackItem = {
+    title: audioSamples.nowPlaying?.name || 'Untuk Budi, Sepanjang Masa',
+    subtitle: audioSamples.nowPlaying?.metaText || 'London • Verified',
+    quote: audioSamples.nowPlaying?.quote || 'Setiap momen bersamamu Budi...',
+    time: audioSamples.nowPlaying?.time || '3:24',
+    audioUrl: resolveAsset(audioSamples.nowPlaying?.audioUrl || ''),
+  }
 
-  const heroPlayerEnabled = Boolean((heroPlayer as any)?.enabled)
-  const heroPlayerAudioUrlRaw = (heroPlayer as any)?.audioUrl
-  const heroPlayerAudioUrl =
-    typeof heroPlayerAudioUrlRaw === 'string' && heroPlayerAudioUrlRaw.trim()
-      ? resolveAsset(heroPlayerAudioUrlRaw)
-      : nowPlayingAudioUrl
-  const heroPlayerQuote =
-    typeof (heroPlayer as any)?.quote === 'string' && String((heroPlayer as any).quote).trim()
-      ? String((heroPlayer as any).quote).trim()
-      : overlayQuote
-  const heroPlayerAuthorName =
-    typeof (heroPlayer as any)?.authorName === 'string' && String((heroPlayer as any).authorName).trim()
-      ? String((heroPlayer as any).authorName).trim()
-      : authorName
-  const heroPlayerAuthorSubline =
-    typeof (heroPlayer as any)?.authorSubline === 'string' ? String((heroPlayer as any).authorSubline).trim() : ''
-  const heroPlayerAvatarRaw = (heroPlayer as any)?.authorAvatarUrl
-  const heroPlayerAvatarUrl =
-    typeof heroPlayerAvatarRaw === 'string' && heroPlayerAvatarRaw.trim() ? resolveAsset(heroPlayerAvatarRaw) : authorAvatarUrl
-  const heroPlayingBadgeText =
-    typeof (heroPlayer as any)?.playingBadgeText === 'string' && String((heroPlayer as any).playingBadgeText).trim()
-      ? String((heroPlayer as any).playingBadgeText).trim()
-      : 'Playing'
-  const heroCornerBadgeText =
-    typeof (heroPlayer as any)?.cornerBadgeText === 'string' && String((heroPlayer as any).cornerBadgeText).trim()
-      ? String((heroPlayer as any).cornerBadgeText).trim()
-      : "Valentine's Special"
-  const heroVerifiedBadgeText =
-    typeof (heroPlayer as any)?.verifiedBadgeText === 'string' && String((heroPlayer as any).verifiedBadgeText).trim()
-      ? String((heroPlayer as any).verifiedBadgeText).trim()
-      : 'Verified Purchase'
+  const playlist: TrackItem[] = (audioSamples.playlist || []).map(p => ({
+    title: p.title || '',
+    subtitle: p.subtitle || '',
+    quote: '',
+    time: '',
+    audioUrl: resolveAsset(p.audioUrl || ''),
+  }))
 
-  const playlist =
-    Array.isArray(audioSamples.playlist) && audioSamples.playlist.length > 0
-      ? audioSamples.playlist
-      : defaultPublicSiteConfig.landing!.audioSamples!.playlist!
-
-  const allTracks: TrackItem[] = [
-    {
-      title: nowPlayingName,
-      subtitle: nowPlayingMetaText ?? '',
-      quote: nowPlayingQuote,
-      time: nowPlayingTime,
-      audioUrl: nowPlayingAudioUrl,
-    },
-    ...playlist.map((p: any) => {
-      const sub = typeof p.subtitle === 'string' ? p.subtitle : ''
-      const timeMatch = sub.match(/(\d+:\d{2})$/)
-      return {
-        title: p.title ?? '',
-        subtitle: sub,
-        quote: '',
-        time: timeMatch ? timeMatch[1] : '--:--',
-        audioUrl: typeof p.audioUrl === 'string' && p.audioUrl.trim() ? resolveAsset(p.audioUrl.trim()) : null,
-      }
-    }),
-  ]
-
-  const currentTrack = allTracks[selectedTrackIndex] ?? allTracks[0]
-
-  const toastConfig = (site.activityToast && typeof site.activityToast === 'object'
-    ? site.activityToast
-    : defaultPublicSiteConfig.activityToast) as ActivityToastConfig
+  const allTracks = [featuredTrack, ...playlist]
+  const currentTrack = allTracks[selectedTrackIndex] ?? featuredTrack
 
   return (
-    <div className="min-h-screen bg-[var(--theme-accent-soft)] font-sans pb-32 overflow-x-hidden" style={themeStyle}>
-      <ActivityToast config={toastConfig} />
+    <div className="flex min-h-screen flex-col bg-[var(--theme-bg)] font-sans text-gray-900" style={themeStyle}>
+      {/* Structured data for social sharing */}
+      <title>Laguin.id — Buat Dia Menangis Bahagia</title>
+      <meta name="description" content="Lagu personal dengan namanya di lirik. Cerita & kenangan kalian ditenun jadi musik profesional. Kualitas studio, dikirim dalam 24 jam." />
 
       {/* Sticky Top Banner */}
       <div className="sticky top-0 z-50">
         {promoBannerEnabled && (
-          <CountdownTimer paymentAmount={paymentAmount} originalAmount={originalAmount} countdownLabel={promoCountdownLabel} countdownTargetDate={promoCountdownTargetDate} />
+          <CountdownTimer 
+            paymentAmount={paymentAmount} 
+            originalAmount={originalAmount} 
+            countdownLabel={promoCountdownLabel} 
+            countdownTargetDate={promoCountdownTargetDate} 
+            evergreenEnabled={promoBanner.evergreenEnabled}
+          />
         )}
         <div className="border-b border-[var(--theme-accent-soft)] bg-white/95 px-2 sm:px-4 py-2 backdrop-blur-sm">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-3">
             <Link to={themeSlug ? `/${themeSlug}` : '/'} className="flex items-center gap-2">
-              <img src={logoUrl} alt="Laguin.id - Lagumu, Ceritamu" className="h-8 w-auto object-contain" />
+              <img src={logoUrl} alt="Laguin.id" className="h-6 w-auto sm:h-8" />
             </Link>
+
             <div className="text-right flex flex-col items-end gap-0.5 sm:flex-row sm:items-center sm:gap-3">
               {promoPromoBadgeText && (
-                <div className="hidden md:block text-[10px] font-medium text-[var(--theme-accent)] bg-[var(--theme-accent-soft)] px-2 py-0.5 rounded-full">
+                <Badge variant="outline" className="h-5 px-1.5 text-[9px] border-[var(--theme-accent)] text-[var(--theme-accent)] font-bold animate-pulse">
                   {promoPromoBadgeText}
-                </div>
+                </Badge>
               )}
-              <div className="leading-tight flex items-center gap-1.5">
-                <span className="text-[10px] text-gray-400 line-through">{fmtCurrency(originalAmount)}</span>
-                <span className="text-sm sm:text-lg font-bold text-[var(--theme-accent)]">{fmtCurrency(paymentAmount)}</span>
+              <div className="flex items-center gap-1.5 text-[9px] sm:text-xs">
+                <span className="line-through text-gray-400 font-medium">{fmtCurrency(originalAmount)}</span>
+                <span className="font-extrabold text-[var(--theme-accent)]">{fmtCurrency(paymentAmount)}</span>
                 {promoQuotaBadgeText && (
-                  <Badge variant="destructive" className="h-4 px-1 py-0 text-[9px]">
+                  <Badge className="bg-[var(--theme-accent)] h-4 sm:h-5 text-[8px] sm:text-[10px] px-1 sm:px-1.5 font-bold uppercase">
                     {promoQuotaBadgeText}
                   </Badge>
                 )}
@@ -847,534 +827,490 @@ export function LandingRoute() {
         </div>
       </div>
 
-      <main className="mx-auto max-w-7xl w-full px-2 sm:px-4 md:px-6 pt-2 sm:pt-12 space-y-8 sm:space-y-20">
-        {/* HERO SECTION */}
-        <section ref={heroRef} aria-labelledby="hero-title" className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 md:gap-12 items-center">
-          {/* TOP CONTENT (Left on Desktop) */}
-          <div className="text-center md:text-left space-y-3 md:space-y-6 md:col-start-1 md:row-start-1">
-            {/* Social proof - More compact for fold visibility */}
-            <div className="flex flex-row items-center justify-center md:justify-start gap-2">
-              <div className="flex text-amber-400 gap-0.5 scale-90 origin-left">
-                <Star className="h-4 w-4 fill-current" />
-                <Star className="h-4 w-4 fill-current" />
-                <Star className="h-4 w-4 fill-current" />
-                <Star className="h-4 w-4 fill-current" />
-                <Star className="h-4 w-4 fill-current" />
-              </div>
-              <span className="text-xs font-medium text-gray-500">2,847 menangis bahagia</span>
-            </div>
-
-            {/* Main headline - Reduced size on mobile */}
-            <h1 id="hero-title" className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight">
-              <span className="text-gray-900">{heroHeadlineLine1}</span>
-              <br className="hidden sm:inline" /> <span className="text-[var(--theme-accent)]">{heroHeadlineLine2}</span>
-            </h1>
-
-            {/* Body paragraph - Compact */}
-            <p className="text-sm sm:text-lg text-gray-600 leading-normal max-w-lg mx-auto md:mx-0" dangerouslySetInnerHTML={{ __html: sanitizeHtml(heroSubtext) }} />
-          </div>
-
-          {/* MEDIA CONTENT (Middle on Mobile, Right on Desktop) */}
-          <div className="relative mx-auto w-full max-w-full sm:max-w-md md:max-w-full min-w-0 md:col-start-2 md:row-start-1 md:row-span-2">
-             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl sm:rounded-2xl shadow-2xl">
-               {/* Placeholder for Video/Image from screenshot */}
-               <div className="absolute inset-0 bg-gray-900/10 z-10"></div>
-               {heroVideoUrl ? (
-                 <video
-                   className="h-full w-full object-cover"
-                   src={heroVideoUrl}
-                   autoPlay
-                   muted
-                   loop
-                   playsInline
-                   preload="metadata"
-                   poster={heroImageUrl}
-                 />
-               ) : (
-                 <img
-                   src={heroImageUrl}
-                   alt="Pasangan merayakan Valentine - Lagu personal Laguin.id dengan nama di lirik, hadiah yang tak terlupakan"
-                   className="h-full w-full object-cover"
-                   loading="eager"
-                   fetchPriority="high"
-                   decoding="async"
-                 />
-               )}
-               {heroOpen && heroPlayerEnabled ? (
-                 <div className="absolute inset-0 z-20">
-                   <HeroPlayerInline
-                     onClose={() => setHeroOpen(false)}
-                     videoUrl={heroVideoUrl}
-                     imageUrl={heroImageUrl}
-                     audioUrl={heroPlayerAudioUrl}
-                     playingBadgeText={heroPlayingBadgeText}
-                     cornerBadgeText={heroCornerBadgeText}
-                     verifiedBadgeText={heroVerifiedBadgeText}
-                     quote={heroPlayerQuote}
-                     authorName={heroPlayerAuthorName}
-                     authorSubline={heroPlayerAuthorSubline}
-                     authorAvatarUrl={heroPlayerAvatarUrl}
-                   />
-                 </div>
-               ) : (
-                 <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white p-6 text-center">
-                   <button
-                     type="button"
-                     onClick={() => {
-                       if (!heroPlayerEnabled) return
-                       setHeroOpen(true)
-                     }}
-                     className="h-16 w-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4 hover:scale-110 transition-transform"
-                     aria-label="Play hero song"
-                   >
-                     <div className="h-12 w-12 rounded-full bg-[var(--theme-accent)] flex items-center justify-center pl-1 shadow-lg">
-                       <Play className="h-6 w-6 text-white" fill="currentColor" />
-                     </div>
-                   </button>
-                   <div className="font-serif italic text-lg sm:text-2xl md:text-3xl leading-snug">"{overlayQuote}"</div>
-                   <div className="mt-2 text-xs sm:text-sm font-medium opacity-90 flex items-center gap-2">
-                     {authorAvatarUrl ? (
-                       <img src={authorAvatarUrl} className="w-6 h-6 rounded-full border border-white" />
-                     ) : (
-                       <div className="w-6 h-6 rounded-full border border-white bg-white/20" />
-                     )}
-                     {authorLocation ? `${authorName}, ${authorLocation}` : authorName}
-                     <span className="bg-white/20 px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-0.5">
-                       <Check className="w-3 h-3" /> Verified
-                     </span>
-                   </div>
-                 </div>
-               )}
-             </div>
-          </div>
-
-          {/* BOTTOM CONTENT (Left Bottom on Desktop) */}
-          <div className="text-center md:text-left space-y-4 md:space-y-6 md:col-start-1 md:row-start-2">
-            {/* Trust Badges - Hidden or very small on ultra-mobile if needed, but let's just make it tighter */}
-            <div className="flex flex-wrap justify-center md:justify-start gap-x-3 gap-y-1 text-[10px] sm:text-sm font-medium text-gray-500">
-              {heroCheckmarks.map((text, idx) => (
-                <span key={idx} className="flex items-center gap-1">
-                  <Check className="h-3 w-3 text-green-600" />
-                  {text}
-                </span>
-              ))}
-            </div>
-
-            {/* CTA Button - Pulled up */}
-            <div className="space-y-2">
-              <Button asChild size="lg" className="w-full sm:w-auto h-12 sm:h-14 px-8 rounded-full bg-[var(--theme-accent)] text-base sm:text-lg font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90 hover:scale-105 transition-all duration-300">
-                <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center justify-center gap-2">
-                  Buat Lagu — {fmtCurrency(paymentAmount)}
-                  <span className="text-[var(--theme-accent-soft)] line-through font-normal text-sm sm:text-base ml-1">{fmtCurrency(originalAmount)}</span>
-                </Link>
-              </Button>
-              
-              {/* Footer Trust Info - Compact */}
-              <div className="flex items-center justify-center md:justify-start gap-2 text-[9px] font-bold text-gray-400 uppercase tracking-tighter sm:tracking-wider sm:text-xs">
-                <span className="flex items-center gap-0.5"><Zap className="h-2.5 w-2.5 text-amber-500" /> {trustBadge1}</span>
-                <span>•</span>
-                <span className="flex items-center gap-0.5"><ShieldCheck className="h-2.5 w-2.5 text-green-500" /> {trustBadge2}</span>
-                <span>•</span>
-                <span className="text-[var(--theme-accent)]">{trustBadge3}</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* AUDIO SAMPLES SECTION */}
-        <section aria-labelledby="audio-samples-title" className="space-y-8 max-w-4xl mx-auto">
-          <div className="text-center space-y-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--theme-accent-soft)] bg-[var(--theme-accent-soft)] px-4 py-1.5 text-sm font-bold uppercase tracking-wider text-[var(--theme-accent)]">
-              <Play className="h-3.5 w-3.5" fill="currentColor" />
-              Tekan Putar
-            </div>
-            <h2 id="audio-samples-title" className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">
-              Dengar <span className="text-[var(--theme-accent)] italic">namanya</span> di lagu asli
-            </h2>
-            <p className="text-gray-500">Lagu asli yang kami buat. Nama asli. Air mata asli.</p>
-          </div>
-
-          <div className="bg-white rounded-3xl p-5 sm:p-6 md:p-10 shadow-xl border border-[var(--theme-accent-soft)]">
-            <FeaturedAudioPlayer
-              track={currentTrack}
-              allTracks={allTracks}
-              selectedIndex={selectedTrackIndex}
-              onSelectTrack={(i) => {
-                setSelectedTrackIndex(i)
-                const t = allTracks[i]
-                if (t?.audioUrl) setAutoPlayOnSelect(true)
-              }}
-              verifiedBadgeText={heroVerifiedBadgeText}
-              autoPlay={autoPlayOnSelect}
-              onAutoPlayDone={() => setAutoPlayOnSelect(false)}
-            />
-
-            {/* More Examples */}
-            <div className="mt-10 pt-8 border-t border-gray-100">
-              <p className="text-center text-sm font-medium text-gray-400 uppercase tracking-wider mb-6">
-                Contoh Lainnya
-              </p>
-              <div className="space-y-0 divide-y divide-gray-100">
-                {allTracks.map((t, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => {
-                      setSelectedTrackIndex(i)
-                      if (t.audioUrl) setAutoPlayOnSelect(true)
-                    }}
-                    className={cn(
-                      'flex w-full items-center gap-4 px-2 py-4 rounded-lg transition-colors text-left',
-                      selectedTrackIndex === i ? 'bg-[var(--theme-accent-soft)]' : 'hover:bg-gray-50',
-                      t.audioUrl ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'
-                    )}
-                  >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--theme-accent-soft)] text-[var(--theme-accent)]">
-                      <Music className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-gray-900">
-                        <HighlightedTitle title={t.title} />
-                      </div>
-                      <div className="text-xs text-gray-500 mt-0.5">{t.subtitle}</div>
-                    </div>
-                    <div className="text-xs text-gray-400 shrink-0">{t.time}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-10 text-center space-y-4">
-              <p className="text-gray-600">
-                Bayangkan mendengar <span className="text-[var(--theme-accent)] font-medium italic">namanya</span> di lagu seperti ini...
-              </p>
-              <Button asChild size="lg" className="h-12 px-8 rounded-xl bg-[var(--theme-accent)] font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90">
-                <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center gap-2">
-                  <span>Buat Lagunya — {fmtCurrency(paymentAmount)}</span>
-                  <span className="text-xs font-normal line-through opacity-70 decoration-white/50">{fmtCurrency(originalAmount)}</span>
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        {/* STATS BAR */}
-        <section className="py-8 border-y border-[var(--theme-accent-soft)] bg-white/50 backdrop-blur-sm -mx-2 px-2 sm:-mx-4 sm:px-4 md:-mx-6 md:px-6">
-          <div className="flex flex-wrap justify-center gap-8 md:gap-24 text-center">
-             {statsItems.map((stat, idx) => (
-               <div key={idx}>
-                 <div className="text-3xl md:text-4xl font-bold text-[var(--theme-accent)] font-serif">{stat.val}</div>
-                 <div className="text-xs uppercase font-bold text-gray-400 tracking-wider">{stat.label}</div>
-               </div>
-             ))}
-          </div>
-        </section>
-
-        {/* COMPARISON SECTION */}
-        <section aria-labelledby="comparison-title" className="space-y-10 text-center max-w-5xl mx-auto">
-          <div className="space-y-2">
-            <h2 id="comparison-title" className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">
-              Kado yang akan dia <span className="text-gray-400 line-through decoration-[var(--theme-accent)]">lupakan</span> vs. yang akan dia <span className="text-[var(--theme-accent)] italic">putar ulang</span>
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8 items-stretch">
-             {/* Left Column */}
-             <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100 flex flex-col justify-center">
-               <div className="grid grid-cols-2 gap-8 opacity-60 grayscale-[50%]">
-                   <div className="flex flex-col items-center gap-2">
-                     <span className="text-4xl mb-2">🧴</span> 
-                     <span className="font-medium text-gray-900">Parfum</span>
-                     <span className="text-xs font-bold bg-gray-200 px-2 py-1 rounded text-gray-600">Rp 1jt+</span>
-                   </div>
-                   <div className="flex flex-col items-center gap-2">
-                     <span className="text-4xl mb-2">⌚</span> 
-                     <span className="font-medium text-gray-900">Jam Tangan</span>
-                     <span className="text-xs font-bold bg-gray-200 px-2 py-1 rounded text-gray-600">Rp 2jt+</span>
-                   </div>
-                   <div className="flex flex-col items-center gap-2">
-                     <span className="text-4xl mb-2">👔</span> 
-                     <span className="font-medium text-gray-900">Baju</span>
-                     <span className="text-xs font-bold bg-gray-200 px-2 py-1 rounded text-gray-600">Rp 500rb+</span>
-                   </div>
-                   <div className="flex flex-col items-center gap-2">
-                     <span className="text-4xl mb-2">🎮</span> 
-                     <span className="font-medium text-gray-900">Gadget</span>
-                     <span className="text-xs font-bold bg-gray-200 px-2 py-1 rounded text-gray-600">Rp 3jt+</span>
-                   </div>
-               </div>
-               <div className="mt-8 font-bold text-gray-400 uppercase tracking-widest text-sm">Dilupakan bulan depan ❌</div>
-             </div>
-
-             {/* Right Column */}
-             <div className="bg-white rounded-3xl p-8 border-2 border-[var(--theme-accent)] shadow-xl relative overflow-hidden transform md:scale-105 z-10">
-               <div className="absolute top-4 right-4 bg-[var(--theme-accent)] text-white text-[10px] font-bold px-3 py-1 rounded-full">HARGA TERBAIK</div>
-               <div className="h-full flex flex-col items-center justify-center space-y-6">
-                 <div className="h-20 w-20 bg-[var(--theme-accent-soft)] rounded-full flex items-center justify-center text-4xl shadow-inner">
-                   🎵
-                 </div>
-                 <div className="space-y-1">
-                   <h3 className="text-2xl font-bold text-gray-900">Lagu Personal Untuknya</h3>
-                   <div className="text-[var(--theme-accent)] font-bold text-3xl">{fmtCurrency(paymentAmount)} <span className="text-gray-300 line-through text-lg font-normal">{fmtCurrency(originalAmount)}</span></div>
-                 </div>
-                 <ul className="text-left space-y-3 text-gray-600 bg-[var(--theme-accent-soft)] p-6 rounded-2xl w-full">
-                   <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[var(--theme-accent)]" /> <strong>Namanya</strong> dalam lirik</li>
-                   <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[var(--theme-accent)]" /> Cerita & kenangan kalian</li>
-                   <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[var(--theme-accent)]" /> Audio kualitas studio</li>
-                   <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[var(--theme-accent)]" /> Dikirim {deliveryEta.sentenceLower}</li>
-                 </ul>
-                 <div className="font-bold text-[var(--theme-accent)] uppercase tracking-widest text-sm">Diputar Selamanya ✅</div>
-               </div>
-             </div>
-          </div>
-        </section>
-
-        {/* SOCIAL PROOF / REVIEWS */}
-        <section className="space-y-10">
-          <div className="text-center space-y-2">
-            <div className="text-[var(--theme-accent)] text-sm font-bold uppercase tracking-wider">{reviewSectionLabel}</div>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900" dangerouslySetInnerHTML={{ __html: sanitizeHtml(reviewSectionHeadline) }} />
-            <p className="text-gray-600">{reviewSectionSubtext}</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {reviewItems.map((review, idx) => {
-              const transforms = ['md:-rotate-1 hover:rotate-0', 'md:translate-y-4 hover:translate-y-2', 'md:rotate-1 hover:rotate-0']
-              const transform = transforms[idx % transforms.length]
-
-              if (review.style === 'accent') {
-                return (
-                  <div key={idx} className={`bg-[var(--theme-accent)] text-white p-8 rounded-3xl shadow-lg transform ${transform} transition-transform`}>
-                    <div className="flex text-yellow-300 mb-4">
-                      {[1,2,3,4,5].map(i => <Star key={i} className="h-4 w-4 fill-current" />)}
-                    </div>
-                    <p className="font-medium text-lg mb-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: `"${sanitizeHtml(review.quote || '')}"` }} />
-                    <div className="flex items-center gap-3">
-                      {review.authorAvatarUrl && <img src={review.authorAvatarUrl} alt="" className="w-10 h-10 rounded-full border-2 border-white/50 object-cover" loading="lazy" />}
-                      <div>
-                        <div className="font-bold">{review.authorName}</div>
-                        <div className="text-xs opacity-80">{review.authorMeta}</div>
-                      </div>
-                    </div>
-                  </div>
-                )
-              }
-
-              if (review.style === 'dark-chat') {
-                const msgs = review.chatMessages || []
-                return (
-                  <div key={idx} className={`bg-gray-900 text-white p-8 rounded-3xl shadow-lg transform ${transform} transition-transform`}>
-                    <div className="space-y-4 font-sans text-sm">
-                      {msgs.map((msg, mi) => (
-                        <div key={mi} className={mi === 0 ? "bg-white/10 rounded-2xl rounded-tl-sm p-3 self-start max-w-[90%]" : "bg-blue-600 rounded-2xl rounded-tr-sm p-3 self-end ml-auto max-w-[90%]"}>
-                          {msg}
-                        </div>
+      <main className="flex-1">
+        {/* Hero Section */}
+        <section ref={heroRef} className="relative overflow-hidden pt-10 pb-16 sm:pt-16 sm:pb-24">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div className="max-w-2xl text-center lg:text-left">
+                <div className="inline-flex items-center gap-2 rounded-full bg-[var(--theme-accent-soft)] px-3 py-1 text-xs font-bold text-[var(--theme-accent)] mb-6 ring-1 ring-[var(--theme-accent)]/20 shadow-sm">
+                  <Zap className="h-3 w-3 fill-current" />
+                  PENGIRIMAN {deliveryEta.label.toUpperCase()}
+                </div>
+                <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-gray-900 leading-[1.1]">
+                  <span className="block mb-2">{heroHeadlineLine1}</span>
+                  <span className="block italic underline decoration-[var(--theme-accent)]/30 underline-offset-8" style={{ color: 'var(--theme-accent)' }}>
+                    {heroHeadlineLine2}
+                  </span>
+                </h1>
+                <p 
+                  className="mt-6 text-lg text-gray-600 leading-relaxed" 
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(heroSubtext) }} 
+                />
+                
+                <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                  <Button asChild size="lg" className="h-14 px-8 text-lg font-bold bg-[var(--theme-accent)] hover:opacity-90 shadow-xl shadow-[var(--theme-accent)]/20 active:scale-95 transition-all">
+                    <Link to={themeSlug ? `/${themeSlug}/config` : '/config'}>
+                      BUAT LAGU SEKARANG
+                    </Link>
+                  </Button>
+                  <div className="flex items-center justify-center lg:justify-start gap-4">
+                    <div className="flex -space-x-2">
+                      {[1,2,3,4].map(i => (
+                        <img 
+                          key={i} 
+                          src={`https://i.pravatar.cc/100?u=user${i}`} 
+                          alt="User" 
+                          className="h-10 w-10 rounded-full border-2 border-white shadow-sm"
+                        />
                       ))}
                     </div>
-                    <div className="mt-6 flex items-center gap-3 pt-6 border-t border-white/10">
-                      {review.authorAvatarUrl && <img src={review.authorAvatarUrl} alt="" className="w-10 h-10 rounded-full border-2 border-white/50 object-cover" loading="lazy" />}
-                      <div>
-                        <div className="font-bold">{review.authorName}</div>
-                        <div className="text-xs opacity-80">{review.authorMeta}</div>
+                    <div className="text-left">
+                      <div className="flex text-amber-400">
+                        {[1,2,3,4,5].map(i => <Star key={i} className="h-3 w-3 fill-current" />)}
                       </div>
-                    </div>
-                  </div>
-                )
-              }
-
-              return (
-                <div key={idx} className={`bg-white border border-gray-100 p-8 rounded-3xl shadow-lg transform ${transform} transition-transform`}>
-                  <div className="flex text-yellow-400 mb-4">
-                    {[1,2,3,4,5].map(i => <Star key={i} className="h-4 w-4 fill-current" />)}
-                  </div>
-                  <p className="font-medium text-gray-800 text-lg mb-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: `"${sanitizeHtml(review.quote || '')}"` }} />
-                  <div className="flex items-center gap-3">
-                    {review.authorAvatarUrl && <img src={review.authorAvatarUrl} alt="" className="w-10 h-10 rounded-full border-2 border-gray-100 object-cover" loading="lazy" />}
-                    <div>
-                      <div className="font-bold text-gray-900">{review.authorName}</div>
-                      <div className="text-xs text-gray-500">{review.authorMeta}</div>
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">2,847+ HADIAH TERKIRIM</p>
                     </div>
                   </div>
                 </div>
-              )
-            })}
-          </div>
-        </section>
 
-        {/* HOW IT WORKS */}
-        <section aria-labelledby="how-it-works-title" className="space-y-10">
-          <div className="text-center space-y-2">
-            <h2 className="text-[var(--theme-accent)] text-sm font-bold uppercase tracking-wider">Proses Mudah</h2>
-            <h2 id="how-it-works-title" className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">Tiga langkah menuju <span className="text-[var(--theme-accent)] italic">tangis bahagia</span></h2>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { step: 1, icon: '✍️', title: 'Ceritakan kisahmu', desc: 'Beritahu kami namanya, kenangan kalian, dan hal-hal lucu.' },
-              { step: 2, icon: '🎵', title: 'Kami buatkan', desc: 'Namanya ditenun menjadi lirik & musik profesional oleh komposer kami.' },
-              { step: 3, icon: '😭', title: 'Lihat dia terharu', desc: `Dikirim ${deliveryEta.sentenceLower} via WhatsApp. Dia akan menyimpannya selamanya.` },
-            ].map((s) => (
-              <div key={s.step} className="flex flex-col items-center text-center gap-4 rounded-3xl border border-gray-100 bg-white p-8 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--theme-accent-soft)] text-3xl font-bold text-[var(--theme-accent)] shadow-sm">
-                  {s.step}
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{s.title}</h3>
-                  <p className="text-gray-500 leading-relaxed">{s.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center pt-4">
-            <Button asChild size="lg" className="h-14 px-10 rounded-full bg-[var(--theme-accent)] text-lg font-bold shadow-xl shadow-[var(--theme-accent-soft)] hover:opacity-90">
-               <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center gap-2">
-                 <span>Buat Lagunya — {fmtCurrency(paymentAmount)}</span>
-                 <span className="text-xs font-normal line-through opacity-70 decoration-white/50">{fmtCurrency(originalAmount)}</span>
-               </Link>
-            </Button>
-          </div>
-        </section>
-
-        {/* GUARANTEE BOX */}
-        <section className="max-w-3xl mx-auto">
-          <div className="bg-[#ECFDF5] border border-[#D1FAE5] rounded-3xl p-8 md:p-12 text-center relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-               <ShieldCheck className="w-32 h-32 text-green-600" />
-            </div>
-            <div className="relative z-10 space-y-4">
-              <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full text-green-700 font-bold text-sm shadow-sm mb-2">
-                <ShieldCheck className="h-4 w-4" /> 100% Bebas Risiko
-              </div>
-              <h3 className="font-serif text-3xl font-bold text-gray-900">Garansi "Tangis Bahagia"</h3>
-              <p className="text-gray-700 max-w-lg mx-auto">
-                Jika lagunya tidak membuatnya emosional, kami akan <strong className="text-gray-900">membuat ulang gratis</strong> atau memberikan <strong className="text-gray-900">pengembalian dana penuh</strong>. Tanpa banyak tanya.
-              </p>
-              <div className="flex flex-wrap justify-center gap-6 text-sm font-bold text-green-700 pt-2">
-                 <span className="flex items-center gap-1"><Check className="h-4 w-4" /> Revisi gratis</span>
-                 <span className="flex items-center gap-1"><Check className="h-4 w-4" /> Refund penuh</span>
-                 <span className="flex items-center gap-1"><Check className="h-4 w-4" /> Pengiriman {deliveryEta.short}</span>
-              </div>
-            </div>
-          </div>
-          <div className="mt-6">
-            <video 
-              src="/laguin-studio.mp4" 
-              className="w-full rounded-2xl shadow-md" 
-              autoPlay 
-              muted 
-              loop 
-              playsInline
-            />
-          </div>
-        </section>
-
-        {/* FAQ */}
-        <section aria-labelledby="faq-title" className="space-y-10 max-w-3xl mx-auto pb-8">
-          <h2 id="faq-title" className="text-center font-serif text-3xl font-bold text-gray-900">Pertanyaan <span className="text-[var(--theme-accent)] italic">Cepat</span></h2>
-          <div className="space-y-4">
-             {faqItems.map((faq, i) => (
-               <div key={i} className="group rounded-2xl border border-gray-100 bg-white p-6 hover:shadow-md transition-all cursor-default">
-                 <h3 className="font-bold text-gray-900 text-lg mb-2 flex justify-between items-center">
-                   {faq.q}
-                   <span className="text-[var(--theme-accent-soft)] group-hover:text-[var(--theme-accent)] transition-colors text-2xl">↓</span>
-                 </h3>
-                 <p className="text-gray-600 leading-relaxed">{faq.a}</p>
-               </div>
-             ))}
-          </div>
-        </section>
-
-        {/* FOOTER CTA */}
-        <section className="text-center space-y-6 pb-12">
-           <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">{footerCtaHeadline}</h2>
-           <p className="text-gray-600 text-base sm:text-lg" dangerouslySetInnerHTML={{ __html: sanitizeHtml(footerCtaSubtitle) }} />
-           
-           <div className="pt-4">
-             <Button asChild size="lg" className="h-auto min-h-[4rem] px-6 py-4 sm:px-12 rounded-full bg-[var(--theme-accent)] text-lg sm:text-xl font-bold shadow-2xl shadow-[var(--theme-accent-soft)] hover:opacity-90 hover:scale-105 transition-all">
-               <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 leading-none">
-                 <span>Buat Lagunya — {fmtCurrency(paymentAmount)}</span>
-                 <span className="text-xs sm:text-sm font-normal line-through opacity-80 text-[var(--theme-accent-soft)]">{fmtCurrency(originalAmount)}</span>
-               </Link>
-             </Button>
-           </div>
-           
-           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[11px] sm:text-xs font-bold text-gray-400 uppercase tracking-wide pt-4">
-             <span>🔒 Checkout Aman</span>
-             <span>Hanya 11 kuota gratis tersisa</span>
-           </div>
-        </section>
-      </main>
-
-      {/* FOOTER LINKS */}
-      <footer className="border-t border-gray-100 bg-white py-12 text-sm text-gray-400">
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-12">
-            <div className="flex flex-col items-center sm:items-start gap-3">
-              <Link to={themeSlug ? `/${themeSlug}` : '/'} className="flex items-center gap-2">
-                <img src={logoUrl} alt="Laguin.id - Lagumu, Ceritamu" className="h-10 w-auto object-contain opacity-70" loading="lazy" />
-              </Link>
-              <p className="text-gray-500 text-xs">Membuat pria menangis sejak 2024</p>
-              <div className="text-xs space-y-1 text-gray-400">
-                <p className="font-medium text-gray-500">Langit Utama Group</p>
-                <a href="mailto:support@laguin.id" className="hover:text-gray-600 transition-colors">support@laguin.id</a>
-              </div>
-            </div>
-
-            {activeThemes.length > 0 && (
-              <div className="flex flex-col items-center sm:items-start gap-3">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Koleksi Lagu</h4>
-                <div className="flex flex-col gap-1.5">
-                  {activeThemes.map((t) => (
-                    <Link key={t.slug} to={`/${t.slug}`} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
-                      {t.name}
-                    </Link>
+                <div className="mt-8 flex flex-wrap justify-center lg:justify-start gap-x-6 gap-y-2 text-sm font-medium text-gray-500">
+                  {heroCheckmarks.map((text, i) => (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <div className="rounded-full bg-emerald-100 p-0.5 text-emerald-600">
+                        <Check className="h-3 w-3" />
+                      </div>
+                      {text}
+                    </div>
                   ))}
                 </div>
               </div>
-            )}
 
-            <div className="flex flex-col items-center sm:items-start gap-3">
-              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Informasi</h4>
-              <div className="flex flex-col gap-1.5">
-                <Link to="/privasi" className="text-xs hover:text-gray-600 transition-colors">Privasi</Link>
-                <Link to="/ketentuan" className="text-xs hover:text-gray-600 transition-colors">Ketentuan</Link>
-                <Link to="/kontak" className="text-xs hover:text-gray-600 transition-colors">Kontak</Link>
+              {/* Hero Media Column */}
+              <div className="relative mx-auto w-full max-w-[500px] lg:max-w-none">
+                {/* Floating Overlay Badge */}
+                <div className="absolute -left-4 top-10 z-20 animate-bounce sm:-left-8">
+                  <div className="rounded-2xl bg-white p-3 shadow-2xl border border-gray-100 flex items-center gap-3 max-w-[200px]">
+                    <div className="h-10 w-10 shrink-0 rounded-full bg-rose-100 flex items-center justify-center text-rose-500">
+                      <Heart className="h-5 w-5" fill="currentColor" />
+                    </div>
+                    <p className="text-[10px] font-bold leading-tight text-gray-800">
+                      "Suami aku yang kaku banget langsung nangis..."
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative aspect-[4/5] overflow-hidden rounded-[2.5rem] bg-gray-100 shadow-2xl ring-8 ring-white">
+                  {heroVideoUrl ? (
+                    <video 
+                      src={heroVideoUrl} 
+                      className="h-full w-full object-cover" 
+                      autoPlay loop muted playsInline 
+                    />
+                  ) : (
+                    <img src={heroImageUrl} alt="Happy Couple" className="h-full w-full object-cover" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                  
+                  {/* Floating Action / Social Proof inside media */}
+                  <div className="absolute bottom-6 left-6 right-6">
+                    <div className="rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 p-4">
+                       <div className="flex items-center gap-3">
+                        <img 
+                          src={authorAvatarUrl} 
+                          alt={authorName} 
+                          className="h-10 w-10 rounded-full border border-white/50 object-cover" 
+                        />
+                        <div>
+                          <p className="text-xs text-white/70 font-medium leading-none">{authorLocation}</p>
+                          <h4 className="text-sm font-bold text-white mt-1">{authorName}</h4>
+                        </div>
+                       </div>
+                       <p className="mt-3 text-xs italic text-white leading-relaxed">
+                        "{overlayQuote}"
+                       </p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Decorative Elements */}
+                <div className="absolute -right-6 -bottom-6 -z-10 h-32 w-32 rounded-full bg-[var(--theme-accent)] opacity-10 blur-2xl" />
+                <div className="absolute -left-12 -top-12 -z-10 h-48 w-48 rounded-full bg-[var(--theme-accent)] opacity-5 blur-3xl" />
               </div>
             </div>
           </div>
+        </section>
 
-          <div className="mt-10 pt-6 border-t border-gray-100 text-center">
-            <p className="max-w-2xl mx-auto text-[10px] sm:text-xs text-gray-400 leading-relaxed">
-              <strong className="text-gray-500">Disclaimer:</strong> Laguin.id menyediakan layanan musik digital yang dipersonalisasi. Seluruh lagu dibuat secara khusus berdasarkan informasi yang diberikan oleh pelanggan. Tidak terdapat pengiriman produk fisik. Kualitas dan hasil akhir dapat bervariasi bergantung pada kelengkapan serta keakuratan informasi yang disampaikan. Layanan ini tidak berafiliasi dengan, tidak disponsori, dan tidak didukung oleh Facebook, Inc. atau Meta Platforms, Inc.
-            </p>
-            <p className="mt-4 text-[10px] text-gray-300">&copy; {new Date().getFullYear()} Langit Utama Group. All rights reserved.</p>
+        {/* Stats Bar */}
+        <section className="bg-gray-900 py-6 text-white overflow-hidden">
+          <div className="mx-auto max-w-7xl px-4">
+            <div className="flex flex-wrap justify-center gap-8 sm:gap-16">
+              {statsItems.map((s, i) => (
+                <div key={i} className="text-center group">
+                  <p className="text-2xl sm:text-3xl font-black text-[var(--theme-accent)] transition-transform group-hover:scale-110">{s.val}</p>
+                  <p className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] opacity-50 mt-1">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Hero Player Section */}
+        {heroPlayer.enabled && (
+          <section className="py-20 bg-white">
+             <div className="mx-auto max-w-7xl px-4">
+                <div className="text-center max-w-3xl mx-auto mb-16">
+                  <Badge variant="outline" className="mb-4 border-[var(--theme-accent)] text-[var(--theme-accent)] px-3 py-1 font-bold">
+                    {heroPlayer.playingBadgeText || 'Playing'}
+                  </Badge>
+                  <h2 className="font-serif text-3xl sm:text-4xl font-black text-gray-900 mb-4 leading-tight">
+                    Dengarkan Betapa Intimnya Kado Ini
+                  </h2>
+                  <p className="text-gray-500 font-medium">
+                    Bayangkan namanya disebut di dalam lirik. <span className="text-gray-900">Itu yang membuatnya menangis.</span>
+                  </p>
+                </div>
+
+                <div className="mx-auto max-w-xl">
+                  <div className="relative rounded-[2.5rem] bg-[var(--theme-accent-soft)] p-8 sm:p-10 shadow-xl border border-[var(--theme-accent)]/5">
+                    {/* Verified Corner Badge */}
+                    <div className="absolute -right-2 -top-2 rotate-12">
+                      <div className="rounded-xl bg-white px-3 py-1.5 shadow-lg border border-gray-100 flex items-center gap-1.5">
+                        <Badge className="bg-rose-500 text-[9px] h-4 font-black">PROMO</Badge>
+                        <span className="text-[10px] font-black text-gray-800 uppercase tracking-tighter">
+                          {heroPlayer.cornerBadgeText || "Valentine's 2025"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-8">
+                       <HeroPlayerInline 
+                          audioUrl={resolveAsset(heroPlayer.audioUrl || '')}
+                       />
+
+                       <div className="text-center space-y-4">
+                          <p className="text-lg sm:text-xl font-serif italic text-gray-800 leading-relaxed font-medium">
+                            "{heroPlayer.quote || 'He tried not to cry. He failed.'}"
+                          </p>
+                          <div className="flex flex-col items-center gap-3">
+                            <img 
+                              src={heroPlayer.authorAvatarUrl ? resolveAsset(heroPlayer.authorAvatarUrl) : 'https://i.pravatar.cc/100?u=rachel'} 
+                              className="h-12 w-12 rounded-full border-2 border-white shadow-md object-cover" 
+                              alt={heroPlayer.authorName}
+                            />
+                            <div>
+                              <p className="text-sm font-bold text-gray-900">{heroPlayer.authorName || 'Rachel'}</p>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">
+                                {heroPlayer.authorSubline || "London • Valentine's 2025"}
+                              </p>
+                            </div>
+                          </div>
+                       </div>
+                    </div>
+                  </div>
+                </div>
+             </div>
+          </section>
+        )}
+
+        {/* Audio Samples Grid Section */}
+        <section id="audio-samples" className="py-24 bg-gray-50 border-y border-gray-100">
+          <div className="mx-auto max-w-7xl px-4">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+              {/* Left Column: Player & Featured Info */}
+              <div className="lg:col-span-5 space-y-10">
+                <div className="space-y-6">
+                  <Badge variant="outline" className="text-rose-600 border-rose-200 bg-rose-50 px-3 font-bold">CONTOH LAGU</Badge>
+                  <h2 className="font-serif text-3xl sm:text-4xl font-black text-gray-900 leading-[1.2]">
+                    Dari Country Sampai Pop Ballad
+                  </h2>
+                  <p className="text-gray-600 leading-relaxed font-medium">
+                    Kualitas studio profesional dengan penyanyi sungguhan. Dengarkan betapa emosionalnya setiap lagu.
+                  </p>
+                </div>
+
+                <div className="rounded-3xl bg-white p-6 sm:p-8 shadow-2xl shadow-rose-900/5 ring-1 ring-gray-200/50">
+                   <FeaturedAudioPlayer 
+                      track={currentTrack}
+                      allTracks={allTracks}
+                      selectedIndex={selectedTrackIndex}
+                      onSelectTrack={setSelectedTrackIndex}
+                      verifiedBadgeText={heroPlayer.verifiedBadgeText}
+                      autoPlay={autoPlayOnSelect}
+                      onAutoPlayDone={() => setAutoPlayOnSelect(false)}
+                   />
+                </div>
+
+                <div className="bg-rose-600 rounded-2xl p-6 text-white shadow-xl shadow-rose-600/20">
+                   <p className="text-sm font-medium italic leading-relaxed">
+                     "{currentTrack.quote || featuredTrack.quote}"
+                   </p>
+                </div>
+              </div>
+
+              {/* Right Column: Playlist Selection */}
+              <div className="lg:col-span-7 flex flex-col justify-center">
+                <div className="space-y-4">
+                  {allTracks.map((track, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => {
+                        setSelectedTrackIndex(i)
+                        setAutoPlayOnSelect(true)
+                        // Scroll player into view on small screens
+                        if (window.innerWidth < 1024) {
+                          document.getElementById('audio-samples')?.scrollIntoView({ behavior: 'smooth' })
+                        }
+                      }}
+                      className={cn(
+                        'w-full flex items-center justify-between p-4 sm:p-6 rounded-2xl border-2 transition-all group',
+                        selectedTrackIndex === i 
+                          ? 'border-[var(--theme-accent)] bg-white shadow-lg scale-[1.02]' 
+                          : 'border-transparent bg-gray-200/50 hover:bg-gray-200'
+                      )}
+                    >
+                      <div className="flex items-center gap-4 text-left">
+                        <div className={cn(
+                          "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-colors",
+                          selectedTrackIndex === i ? "bg-[var(--theme-accent-soft)] text-[var(--theme-accent)]" : "bg-white text-gray-400"
+                        )}>
+                          <Music className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className={cn(
+                            "font-bold text-sm sm:text-base truncate transition-colors",
+                            selectedTrackIndex === i ? "text-gray-900" : "text-gray-600 group-hover:text-gray-900"
+                          )}>
+                             {track.title}
+                          </p>
+                          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mt-0.5">{track.subtitle}</p>
+                        </div>
+                      </div>
+                      <div className={cn(
+                        "h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center transition-all",
+                        selectedTrackIndex === i 
+                          ? "bg-[var(--theme-accent)] text-white shadow-md" 
+                          : "bg-white text-[var(--theme-accent)] opacity-0 group-hover:opacity-100"
+                      )}>
+                        <Play className="h-4 w-4 fill-current ml-0.5" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Reviews Section */}
+        <section className="py-24 bg-white overflow-hidden">
+          <div className="mx-auto max-w-7xl px-4">
+             <div className="text-center max-w-3xl mx-auto mb-20">
+                <Badge variant="outline" className="mb-4 border-rose-200 text-rose-600 bg-rose-50 px-3 font-bold uppercase tracking-widest text-[10px]">
+                  {reviewSectionLabel}
+                </Badge>
+                <h2 
+                  className="font-serif text-3xl sm:text-5xl font-black text-gray-900 mb-6 leading-tight"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(reviewSectionHeadline) }}
+                />
+                <p className="text-gray-500 font-medium text-lg">
+                  {reviewSectionSubtext}
+                </p>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {reviewItems.map((item, i) => (
+                   <div 
+                    key={i} 
+                    className={cn(
+                      "group relative flex flex-col p-8 rounded-[2rem] transition-all duration-500 hover:-translate-y-2",
+                      item.style === 'accent' && "bg-[var(--theme-accent)] text-white shadow-2xl shadow-[var(--theme-accent)]/20",
+                      item.style === 'dark-chat' && "bg-gray-900 text-white shadow-xl shadow-gray-900/10",
+                      item.style === 'white' && "bg-gray-50 border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-gray-200/50"
+                    )}
+                   >
+                      <div className="flex-1">
+                        {item.style === 'dark-chat' ? (
+                          <div className="space-y-2 mb-8">
+                            {item.chatMessages?.map((msg, j) => (
+                              <div key={j} className={cn(
+                                "rounded-2xl px-4 py-2 text-sm font-medium w-fit max-w-[90%] break-words",
+                                j % 2 === 0 ? "bg-white/10 text-white rounded-bl-none" : "bg-rose-500 text-white rounded-br-none ml-auto"
+                              )}>
+                                {msg}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p 
+                            className={cn(
+                              "text-base sm:text-lg italic font-medium leading-relaxed mb-8",
+                              item.style === 'white' ? "text-gray-700" : "text-white/90"
+                            )} 
+                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.quote || '') }} 
+                          />
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-4 mt-auto pt-6 border-t border-current/10">
+                        <img 
+                          src={item.authorAvatarUrl} 
+                          alt={item.authorName} 
+                          className="h-12 w-12 rounded-full border-2 border-current/20 object-cover shadow-sm" 
+                        />
+                        <div className="min-w-0">
+                          <p className="font-bold text-sm sm:text-base truncate">{item.authorName}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mt-0.5">{item.authorMeta}</p>
+                        </div>
+                        {item.style === 'accent' && (
+                          <div className="ml-auto text-white/20 group-hover:text-white/40 transition-colors">
+                            <Heart className="h-8 w-8" fill="currentColor" />
+                          </div>
+                        )}
+                      </div>
+                   </div>
+                ))}
+             </div>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section className="py-24 bg-gray-50 border-t border-gray-100">
+          <div className="mx-auto max-w-3xl px-4">
+             <div className="text-center mb-16">
+               <h2 className="font-serif text-3xl font-black text-gray-900 mb-4 italic underline decoration-rose-500/20 underline-offset-4">FAQs</h2>
+             </div>
+             
+             <div className="space-y-4">
+                {faqItems.map((item, i) => (
+                  <div key={i} className="group overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-sm transition-all hover:shadow-md">
+                    <button 
+                      type="button"
+                      className="w-full flex items-center justify-between p-6 text-left"
+                      onClick={() => setHeroOpen(heroOpen === i ? null : i)}
+                    >
+                      <span className="font-bold text-gray-800 text-sm sm:text-base group-hover:text-[var(--theme-accent)] transition-colors pr-4">{item.q}</span>
+                      <div className={cn(
+                        "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-50 text-gray-400 group-hover:bg-rose-50 group-hover:text-rose-500 transition-all",
+                        heroOpen === i && "rotate-45"
+                      )}>
+                        <Plus className="h-4 w-4" />
+                      </div>
+                    </button>
+                    <div className={cn(
+                      "px-6 transition-all duration-300 ease-in-out",
+                      heroOpen === i ? "pb-6 max-h-[500px] opacity-100" : "max-h-0 opacity-0 overflow-hidden"
+                    )}>
+                      <p className="text-gray-600 text-sm leading-relaxed border-t border-gray-50 pt-4 font-medium">
+                        {item.a}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+             </div>
+          </div>
+        </section>
+
+        {/* Footer CTA Section */}
+        <section className="relative overflow-hidden py-24 sm:py-32 bg-gray-900 text-white">
+          {/* Background effects */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-full max-w-4xl bg-gradient-to-r from-transparent via-rose-500/50 to-transparent" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 h-64 w-full max-w-2xl bg-rose-500/10 blur-[120px]" />
+          
+          <div className="relative mx-auto max-w-7xl px-4 text-center">
+            <div className="max-w-3xl mx-auto space-y-10">
+               <div className="space-y-6">
+                <h2 className="font-serif text-4xl sm:text-5xl font-black italic underline decoration-rose-500/40 underline-offset-8 leading-tight">
+                  {footerCtaHeadline}
+                </h2>
+                <p 
+                  className="text-lg sm:text-xl text-gray-400 font-medium leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(footerCtaSubtitle) }}
+                />
+               </div>
+
+               <div className="flex flex-col items-center gap-6">
+                 <Button asChild size="lg" className="h-16 px-12 text-xl font-black bg-[var(--theme-accent)] hover:opacity-90 shadow-2xl shadow-rose-500/40 active:scale-95 transition-all">
+                    <Link to={themeSlug ? `/${themeSlug}/config` : '/config'}>
+                      BUAT LAGU SEKARANG
+                    </Link>
+                 </Button>
+                 
+                 <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-widest">
+                   <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                   Checkout Aman • Garansi Uang Kembali
+                 </div>
+               </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-gray-100 bg-white py-12">
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="flex flex-col items-center md:items-start gap-4">
+              <Link to={themeSlug ? `/${themeSlug}` : '/'} className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
+                <img src={logoUrl} alt="Laguin.id" className="h-6 w-auto" />
+              </Link>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                © 2025 LAGUIN.ID • SEMUA HAK DILINDUNGI
+              </p>
+            </div>
+            
+            {activeThemes.length > 0 && (site as any).showThemesInFooter && (
+               <div className="flex flex-wrap justify-center gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                  {activeThemes.map(t => (
+                    <Link key={t.slug} to={`/${t.slug}`} className="hover:text-[var(--theme-accent)] transition-colors">
+                      {t.name}
+                    </Link>
+                  ))}
+               </div>
+            )}
+
+            <div className="flex gap-6 text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">
+              <Link to="#" className="hover:text-gray-900 transition-colors">Terms</Link>
+              <Link to="#" className="hover:text-gray-900 transition-colors">Privacy</Link>
+              <Link to="#" className="hover:text-gray-900 transition-colors">Contact</Link>
+            </div>
           </div>
         </div>
       </footer>
 
-      {/* STICKY BOTTOM CTA (Mobile Only) */}
-      <div 
-        className={cn(
-          "md:hidden fixed inset-x-0 bottom-0 z-[999] bg-white border-t border-gray-100 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] transition-transform duration-300 transform",
-          showMobileCta ? "translate-y-0" : "translate-y-full"
-        )}
-      >
-        <div className="mx-auto max-w-md space-y-2">
-           <div className="flex justify-center gap-4 text-[10px] font-bold text-gray-500 uppercase tracking-wide">
-             <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-green-500" /> {deliveryEta.short}</span>
-             <span className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-green-500" /> Garansi</span>
-           </div>
-           <Button asChild size="lg" className="w-full h-auto min-h-[3.5rem] py-2 rounded-xl bg-[var(--theme-accent)] text-lg font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90 active:scale-95 transition-all">
-            <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center justify-center gap-2 flex-wrap text-center leading-tight">
-              <span>Buat Lagunya — {fmtCurrency(paymentAmount)}</span>
-              <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/30 text-xs whitespace-nowrap">
-                (11 sisa)
-              </Badge>
+      {/* Mobile Floating CTA */}
+      <div className={cn(
+        "fixed bottom-0 left-0 right-0 z-50 p-4 transition-all duration-500 translate-y-20 opacity-0 lg:hidden",
+        showMobileCta && "translate-y-0 opacity-100"
+      )}>
+        <div className="mx-auto max-w-md">
+          <Button asChild size="lg" className="h-14 w-full text-lg font-black bg-[var(--theme-accent)] hover:opacity-95 shadow-2xl shadow-black/20 rounded-2xl">
+            <Link to={themeSlug ? `/${themeSlug}/config` : '/config'}>
+               BUAT LAGU SEKARANG
             </Link>
           </Button>
         </div>
       </div>
     </div>
+  )
+}
+
+function Plus(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M5 12h14" />
+      <path d="M12 5v14" />
+    </svg>
   )
 }

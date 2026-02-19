@@ -724,13 +724,24 @@ export function LandingContentConfigSection({
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-muted-foreground">Target Date (YYYY-MM-DD)</label>
-                    <Input
-                      className="h-8 text-sm"
-                      type="date"
-                      value={draft.promoBanner.countdownTargetDate}
-                      onChange={(e) => setDraft(d => ({ ...d, promoBanner: { ...d.promoBanner, countdownTargetDate: e.target.value } }))}
-                    />
-                    <p className="text-[10px] text-muted-foreground">Tanggal target countdown. Format: 2027-02-14</p>
+                    <div className="flex gap-2">
+                      <Input
+                        className="h-8 text-sm flex-1"
+                        type="date"
+                        value={draft.promoBanner.countdownTargetDate}
+                        onChange={(e) => setDraft(d => ({ ...d, promoBanner: { ...d.promoBanner, countdownTargetDate: e.target.value } }))}
+                      />
+                      <label className="flex items-center gap-2 rounded border px-3 bg-background cursor-pointer hover:bg-muted/40 transition-colors whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          checked={draft.promoBanner.evergreenEnabled}
+                          onChange={(e) => setDraft(d => ({ ...d, promoBanner: { ...d.promoBanner, evergreenEnabled: e.target.checked } }))}
+                        />
+                        <span className="text-xs font-medium">Evergreen (Daily GMT+8)</span>
+                      </label>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">Format: 2027-02-14. Jika Evergreen aktif, reset setiap 24 jam.</p>
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-muted-foreground">Promo Badge Text</label>
