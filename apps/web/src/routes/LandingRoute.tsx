@@ -64,6 +64,8 @@ type PublicSiteConfig = {
     countdownTargetDate?: string
     promoBadgeText?: string
     quotaBadgeText?: string
+    evergreenEnabled?: boolean
+    evergreenCycleHours?: number
   }
   reviews?: {
     sectionLabel?: string
@@ -155,27 +157,60 @@ function fmtCurrencyGlobal(amt: number | null | undefined) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amt)
 }
 
-function CountdownTimer({ paymentAmount, originalAmount, countdownLabel, countdownTargetDate }: { paymentAmount: number | null; originalAmount: number | null; countdownLabel: string; countdownTargetDate: string }) {
+function getEvergreenTarget(cycleHours: number): Date {
+  const SGT_OFFSET = 8 * 60
+  const now = new Date()
+  const utcMs = now.getTime()
+  const sgtMs = utcMs + SGT_OFFSET * 60 * 1000
+  const sgtDate = new Date(sgtMs)
+
+  const cycleMs = cycleHours * 60 * 60 * 1000
+  const sgtMidnight = new Date(Date.UTC(sgtDate.getUTCFullYear(), sgtDate.getUTCMonth(), sgtDate.getUTCDate()))
+  const msSinceMidnight = sgtMs - sgtMidnight.getTime()
+  const currentCycleStart = Math.floor(msSinceMidnight / cycleMs) * cycleMs
+  const nextCycleEndSgt = sgtMidnight.getTime() + currentCycleStart + cycleMs
+
+  return new Date(nextCycleEndSgt - SGT_OFFSET * 60 * 1000)
+}
+
+function CountdownTimer({ paymentAmount, originalAmount, countdownLabel, countdownTargetDate, evergreenEnabled, evergreenCycleHours }: { paymentAmount: number | null; originalAmount: number | null; countdownLabel: string; countdownTargetDate: string; evergreenEnabled?: boolean; evergreenCycleHours?: number }) {
   const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0 })
 
   useEffect(() => {
-    let targetDate: Date
-    if (countdownTargetDate && /^\d{4}-\d{2}-\d{2}/.test(countdownTargetDate)) {
-      targetDate = new Date(`${countdownTargetDate}T00:00:00`)
-    } else {
+    const getTarget = (): Date => {
+      if (evergreenEnabled && evergreenCycleHours && evergreenCycleHours > 0) {
+        return getEvergreenTarget(evergreenCycleHours)
+      }
+
+      if (countdownTargetDate && /^\d{4}-\d{2}-\d{2}/.test(countdownTargetDate)) {
+        return new Date(`${countdownTargetDate}T00:00:00`)
+      }
+
       const now = new Date()
       let targetYear = now.getFullYear()
       if (now.getMonth() > 1 || (now.getMonth() === 1 && now.getDate() > 14)) {
         targetYear++
       }
-      targetDate = new Date(`${targetYear}-02-14T00:00:00`)
+      return new Date(`${targetYear}-02-14T00:00:00`)
     }
 
     const updateTimer = () => {
+      const targetDate = getTarget()
       const now = new Date()
       const diff = targetDate.getTime() - now.getTime()
 
       if (diff <= 0) {
+        if (evergreenEnabled && evergreenCycleHours && evergreenCycleHours > 0) {
+          const nextTarget = getEvergreenTarget(evergreenCycleHours)
+          const nextDiff = nextTarget.getTime() - now.getTime()
+          if (nextDiff > 0) {
+            const h = Math.floor(nextDiff / (1000 * 60 * 60))
+            const m = Math.floor((nextDiff % (1000 * 60 * 60)) / (1000 * 60))
+            const s = Math.floor((nextDiff % (1000 * 60)) / 1000)
+            setTime({ d: 0, h, m, s })
+            return
+          }
+        }
         setTime({ d: 0, h: 0, m: 0, s: 0 })
         return
       }
@@ -191,12 +226,14 @@ function CountdownTimer({ paymentAmount, originalAmount, countdownLabel, countdo
     updateTimer()
     const timer = setInterval(updateTimer, 1000)
     return () => clearInterval(timer)
-  }, [countdownTargetDate])
+  }, [countdownTargetDate, evergreenEnabled, evergreenCycleHours])
+
+  const showDays = !evergreenEnabled || (time.d > 0)
 
   return (
     <div className="bg-[var(--theme-accent)] px-3 py-1.5 text-center text-[9px] sm:text-xs font-bold text-white uppercase tracking-tight leading-none">
       <div className="flex items-center justify-center gap-1.5 flex-wrap">
-        <span>{countdownLabel} {time.d}h {time.h}j {time.m}m {time.s}d lagi</span>
+        <span>{countdownLabel} {showDays ? `${time.d}h ` : ''}{time.h}j {time.m}m {time.s}d lagi</span>
         <span className="opacity-50 text-[8px]">•</span>
         <span className="flex items-center gap-1">
           <span className="line-through opacity-70">{fmtCurrencyGlobal(originalAmount)}</span>
@@ -652,6 +689,8 @@ export function LandingRoute() {
   const promoCountdownTargetDate = promoBanner.countdownTargetDate || '2027-02-14'
   const promoPromoBadgeText = promoBanner.promoBadgeText || '💝 Spesial Valentine'
   const promoQuotaBadgeText = promoBanner.quotaBadgeText || '11 kuota!'
+  const promoEvergreenEnabled = promoBanner.evergreenEnabled ?? false
+  const promoEvergreenCycleHours = promoBanner.evergreenCycleHours ?? 24
   const reviewsSection = site.reviews ?? {}
   const reviewSectionLabel = reviewsSection.sectionLabel || 'Reaksi Nyata'
   const reviewSectionHeadline = reviewsSection.sectionHeadline || '"Dia <span class="text-[var(--theme-accent)] italic">tidak pernah</span> menangis"'
@@ -820,7 +859,7 @@ export function LandingRoute() {
       {/* Sticky Top Banner */}
       <div className="sticky top-0 z-50">
         {promoBannerEnabled && (
-          <CountdownTimer paymentAmount={paymentAmount} originalAmount={originalAmount} countdownLabel={promoCountdownLabel} countdownTargetDate={promoCountdownTargetDate} />
+          <CountdownTimer paymentAmount={paymentAmount} originalAmount={originalAmount} countdownLabel={promoCountdownLabel} countdownTargetDate={promoCountdownTargetDate} evergreenEnabled={promoEvergreenEnabled} evergreenCycleHours={promoEvergreenCycleHours} />
         )}
         <div className="border-b border-[var(--theme-accent-soft)] bg-white/95 px-2 sm:px-4 py-2 backdrop-blur-sm">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-3">

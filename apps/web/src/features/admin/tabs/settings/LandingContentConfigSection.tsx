@@ -722,16 +722,44 @@ export function LandingContentConfigSection({
                     />
                     <p className="text-[10px] text-muted-foreground">Teks sebelum countdown timer. Contoh: "💝 Valentine's dalam"</p>
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Target Date (YYYY-MM-DD)</label>
-                    <Input
-                      className="h-8 text-sm"
-                      type="date"
-                      value={draft.promoBanner.countdownTargetDate}
-                      onChange={(e) => setDraft(d => ({ ...d, promoBanner: { ...d.promoBanner, countdownTargetDate: e.target.value } }))}
-                    />
-                    <p className="text-[10px] text-muted-foreground">Tanggal target countdown. Format: 2027-02-14</p>
+                  <div className="space-y-2 rounded-lg border p-3 bg-muted/10">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={draft.promoBanner.evergreenEnabled}
+                        onChange={(e) => setDraft(d => ({ ...d, promoBanner: { ...d.promoBanner, evergreenEnabled: e.target.checked } }))}
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                      <span className="text-sm font-medium">Evergreen Timer</span>
+                    </label>
+                    <p className="text-[10px] text-muted-foreground">Timer yang reset otomatis setiap X jam berdasarkan waktu Singapore (GMT+8). Cocok untuk promo yang selalu aktif.</p>
+                    {draft.promoBanner.evergreenEnabled && (
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Cycle Hours (reset setiap X jam)</label>
+                        <Input
+                          className="h-8 text-sm"
+                          type="number"
+                          min={1}
+                          max={168}
+                          value={draft.promoBanner.evergreenCycleHours}
+                          onChange={(e) => setDraft(d => ({ ...d, promoBanner: { ...d.promoBanner, evergreenCycleHours: Math.max(1, Number(e.target.value) || 1) } }))}
+                        />
+                        <p className="text-[10px] text-muted-foreground">Contoh: 24 = reset setiap 24 jam, 6 = reset setiap 6 jam. Timezone: GMT+8 Singapore.</p>
+                      </div>
+                    )}
                   </div>
+                  {!draft.promoBanner.evergreenEnabled && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Target Date (YYYY-MM-DD)</label>
+                      <Input
+                        className="h-8 text-sm"
+                        type="date"
+                        value={draft.promoBanner.countdownTargetDate}
+                        onChange={(e) => setDraft(d => ({ ...d, promoBanner: { ...d.promoBanner, countdownTargetDate: e.target.value } }))}
+                      />
+                      <p className="text-[10px] text-muted-foreground">Tanggal target countdown. Format: 2027-02-14</p>
+                    </div>
+                  )}
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-muted-foreground">Promo Badge Text</label>
                     <Input

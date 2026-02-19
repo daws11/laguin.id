@@ -62,6 +62,8 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
     countdownTargetDate: '2027-02-14',
     promoBadgeText: '💝 Spesial Valentine',
     quotaBadgeText: '11 kuota!',
+    evergreenEnabled: false,
+    evergreenCycleHours: 24,
   },
   reviews: {
     sectionLabel: 'Reaksi Nyata',
@@ -372,6 +374,8 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
       countdownTargetDate: asString(pb?.countdownTargetDate, defaultPublicSiteDraft.promoBanner.countdownTargetDate),
       promoBadgeText: asString(pb?.promoBadgeText, defaultPublicSiteDraft.promoBanner.promoBadgeText),
       quotaBadgeText: asString(pb?.quotaBadgeText, defaultPublicSiteDraft.promoBanner.quotaBadgeText),
+      evergreenEnabled: typeof pb?.evergreenEnabled === 'boolean' ? pb.evergreenEnabled : defaultPublicSiteDraft.promoBanner.evergreenEnabled,
+      evergreenCycleHours: typeof pb?.evergreenCycleHours === 'number' ? pb.evergreenCycleHours : defaultPublicSiteDraft.promoBanner.evergreenCycleHours,
     },
     reviews: {
       sectionLabel: asString(rv?.sectionLabel, defaultPublicSiteDraft.reviews.sectionLabel),
@@ -644,6 +648,8 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
     countdownTargetDate: draft.promoBanner.countdownTargetDate.trim(),
     promoBadgeText: draft.promoBanner.promoBadgeText.trim(),
     quotaBadgeText: draft.promoBanner.quotaBadgeText.trim(),
+    evergreenEnabled: draft.promoBanner.evergreenEnabled,
+    evergreenCycleHours: draft.promoBanner.evergreenCycleHours,
   }
 
   const nextConfigSteps = {
