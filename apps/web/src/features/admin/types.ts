@@ -230,7 +230,6 @@ export type PublicSiteDraft = {
     countdownTargetDate: string
     promoBadgeText: string
     quotaBadgeText: string
-    evergreenEnabled: boolean
   }
   reviews: {
     sectionLabel: string
