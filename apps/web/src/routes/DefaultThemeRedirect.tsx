@@ -1,7 +1,16 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { ThemeProvider } from '@/features/theme/ThemeContext'
-import { LandingRoute } from './LandingRoute'
 import { apiGet } from '@/lib/http'
+
+const LandingRoute = lazy(() => import('./LandingRoute').then(m => ({ default: m.LandingRoute })))
+
+function LazyFallback() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[var(--theme-accent,#E11D48)]" />
+    </div>
+  )
+}
 
 export function DefaultThemeRedirect() {
   const [defaultTheme, setDefaultTheme] = useState<string | null>(null)
@@ -20,7 +29,9 @@ export function DefaultThemeRedirect() {
 
   return (
     <ThemeProvider themeSlug={defaultTheme}>
-      <LandingRoute />
+      <Suspense fallback={<LazyFallback />}>
+        <LandingRoute />
+      </Suspense>
     </ThemeProvider>
   )
 }

@@ -1,16 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Star,
   Play,
-  Pause,
   Check,
   ShieldCheck,
   Zap,
-  Music,
-  SkipBack,
-  SkipForward,
-  Heart,
 } from 'lucide-react'
 
 import { apiGet, apiPost } from '@/lib/http'
@@ -20,12 +15,22 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { ActivityToast, type ActivityToastConfig } from '@/components/activity-toast/ActivityToast'
 import { HeroPlayerInline } from './HeroPlayerInline.tsx'
+import { CountdownTimer } from '@/components/landing/CountdownTimer'
+import type { TrackItem } from '@/components/landing/AudioSamplesSection'
+
+const AudioSamplesSection = lazy(() => import('@/components/landing/AudioSamplesSection').then(m => ({ default: m.AudioSamplesSection })))
+const StatsBar = lazy(() => import('@/components/landing/StatsBar').then(m => ({ default: m.StatsBar })))
+const ComparisonSection = lazy(() => import('@/components/landing/ComparisonSection').then(m => ({ default: m.ComparisonSection })))
+const ReviewsSection = lazy(() => import('@/components/landing/ReviewsSection').then(m => ({ default: m.ReviewsSection })))
+const HowItWorksSection = lazy(() => import('@/components/landing/HowItWorksSection').then(m => ({ default: m.HowItWorksSection })))
+const GuaranteeSection = lazy(() => import('@/components/landing/GuaranteeSection').then(m => ({ default: m.GuaranteeSection })))
+const FaqSection = lazy(() => import('@/components/landing/FaqSection').then(m => ({ default: m.FaqSection })))
+const FooterCtaSection = lazy(() => import('@/components/landing/FooterCtaSection').then(m => ({ default: m.FooterCtaSection })))
+const LandingFooter = lazy(() => import('@/components/landing/LandingFooter').then(m => ({ default: m.LandingFooter })))
 
 function sanitizeHtml(html: string): string {
   return html.replace(/<\/?(?!strong|em|br\s*\/?)([a-z][a-z0-9]*)\b[^>]*>/gi, '')
 }
-
-// --- Components ---
 
 type PublicSiteConfig = {
   landing?: {
@@ -157,327 +162,6 @@ function fmtCurrencyGlobal(amt: number | null | undefined) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amt)
 }
 
-function getEvergreenTarget(cycleHours: number): Date {
-  const SGT_OFFSET = 8 * 60
-  const now = new Date()
-  const utcMs = now.getTime()
-  const sgtMs = utcMs + SGT_OFFSET * 60 * 1000
-  const sgtDate = new Date(sgtMs)
-
-  const cycleMs = cycleHours * 60 * 60 * 1000
-  const sgtMidnight = new Date(Date.UTC(sgtDate.getUTCFullYear(), sgtDate.getUTCMonth(), sgtDate.getUTCDate()))
-  const msSinceMidnight = sgtMs - sgtMidnight.getTime()
-  const currentCycleStart = Math.floor(msSinceMidnight / cycleMs) * cycleMs
-  const nextCycleEndSgt = sgtMidnight.getTime() + currentCycleStart + cycleMs
-
-  return new Date(nextCycleEndSgt - SGT_OFFSET * 60 * 1000)
-}
-
-function CountdownTimer({ paymentAmount, originalAmount, countdownLabel, countdownTargetDate, evergreenEnabled, evergreenCycleHours }: { paymentAmount: number | null; originalAmount: number | null; countdownLabel: string; countdownTargetDate: string; evergreenEnabled?: boolean; evergreenCycleHours?: number }) {
-  const [time, setTime] = useState({ d: 0, h: 0, m: 0, s: 0 })
-
-  useEffect(() => {
-    const getTarget = (): Date => {
-      if (evergreenEnabled && evergreenCycleHours && evergreenCycleHours > 0) {
-        return getEvergreenTarget(evergreenCycleHours)
-      }
-
-      if (countdownTargetDate && /^\d{4}-\d{2}-\d{2}/.test(countdownTargetDate)) {
-        return new Date(`${countdownTargetDate}T00:00:00`)
-      }
-
-      const now = new Date()
-      let targetYear = now.getFullYear()
-      if (now.getMonth() > 1 || (now.getMonth() === 1 && now.getDate() > 14)) {
-        targetYear++
-      }
-      return new Date(`${targetYear}-02-14T00:00:00`)
-    }
-
-    const updateTimer = () => {
-      const targetDate = getTarget()
-      const now = new Date()
-      const diff = targetDate.getTime() - now.getTime()
-
-      if (diff <= 0) {
-        if (evergreenEnabled && evergreenCycleHours && evergreenCycleHours > 0) {
-          const nextTarget = getEvergreenTarget(evergreenCycleHours)
-          const nextDiff = nextTarget.getTime() - now.getTime()
-          if (nextDiff > 0) {
-            const h = Math.floor(nextDiff / (1000 * 60 * 60))
-            const m = Math.floor((nextDiff % (1000 * 60 * 60)) / (1000 * 60))
-            const s = Math.floor((nextDiff % (1000 * 60)) / 1000)
-            setTime({ d: 0, h, m, s })
-            return
-          }
-        }
-        setTime({ d: 0, h: 0, m: 0, s: 0 })
-        return
-      }
-
-      const d = Math.floor(diff / (1000 * 60 * 60 * 24))
-      const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-      const s = Math.floor((diff % (1000 * 60)) / 1000)
-
-      setTime({ d, h, m, s })
-    }
-
-    updateTimer()
-    const timer = setInterval(updateTimer, 1000)
-    return () => clearInterval(timer)
-  }, [countdownTargetDate, evergreenEnabled, evergreenCycleHours])
-
-  const showDays = !evergreenEnabled || (time.d > 0)
-
-  return (
-    <div className="bg-[var(--theme-accent)] px-3 py-1.5 text-center text-[9px] sm:text-xs font-bold text-white uppercase tracking-tight leading-none">
-      <div className="flex items-center justify-center gap-1.5 flex-wrap">
-        <span>{countdownLabel} {showDays ? `${time.d}h ` : ''}{time.h}j {time.m}m {time.s}d lagi</span>
-        <span className="opacity-50 text-[8px]">•</span>
-        <span className="flex items-center gap-1">
-          <span className="line-through opacity-70">{fmtCurrencyGlobal(originalAmount)}</span>
-          <span>{fmtCurrencyGlobal(paymentAmount)} {paymentAmount === 0 ? '(100 pertama)' : ''}</span>
-        </span>
-      </div>
-    </div>
-  )
-}
-
-/** Extract name from title like "Untuk Budi, Sepanjang Masa" -> "Budi" for highlighting */
-function parseHighlightName(title: string): { before: string; name: string; after: string } | null {
-  const m = title.match(/^(Untuk|For|To)\s+(\w+)(.*)$/)
-  if (!m) return null
-  const prefix = m[1] + ' '
-  const name = m[2]
-  const after = m[3] || ''
-  return { before: prefix, name, after }
-}
-
-function HighlightedTitle({ title }: { title: string }) {
-  const parsed = parseHighlightName(title)
-  if (!parsed) return <span>{title}</span>
-  return (
-    <>
-      {parsed.before}
-      <span className="text-[var(--theme-accent)]">{parsed.name}</span>
-      {parsed.after}
-    </>
-  )
-}
-
-const LANDING_AUDIO_EVENT = 'landing-audio-playing'
-const SOURCE_HERO = 'hero'
-const SOURCE_SAMPLES = 'samples'
-
-type TrackItem = {
-  title: string
-  subtitle: string
-  quote: string
-  time: string
-  audioUrl: string | null
-}
-
-function FeaturedAudioPlayer({
-  track,
-  allTracks,
-  selectedIndex,
-  onSelectTrack,
-  verifiedBadgeText = 'Verified',
-  autoPlay,
-  onAutoPlayDone,
-}: {
-  track: TrackItem
-  allTracks: TrackItem[]
-  selectedIndex: number
-  onSelectTrack: (index: number) => void
-  verifiedBadgeText?: string
-  autoPlay?: boolean
-  onAutoPlayDone?: () => void
-}) {
-  const [playing, setPlaying] = useState(false)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const [posSec, setPosSec] = useState(0)
-  const [durSec, setDurSec] = useState<number | null>(null)
-  const currentIndex = selectedIndex ?? 0
-
-  useEffect(() => {
-    setPlaying(false)
-    setPosSec(0)
-    setDurSec(null)
-  }, [selectedIndex])
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.currentTime = 0
-    }
-  }, [track.audioUrl])
-
-  const progressPct = useMemo(() => {
-    const dur = durSec && durSec > 0 ? durSec : null
-    if (!dur) return 0
-    return Math.min(100, Math.max(0, (posSec / dur) * 100))
-  }, [durSec, posSec])
-
-  function fmt(sec: number) {
-    const s = Math.max(0, Math.floor(sec))
-    const mm = String(Math.floor(s / 60)).padStart(1, '0')
-    const ss = String(s % 60).padStart(2, '0')
-    return `${mm}:${ss}`
-  }
-
-  const hasAudio = Boolean(track.audioUrl)
-
-  useEffect(() => {
-    if (autoPlay && hasAudio && audioRef.current) {
-      audioRef.current.play().then(() => setPlaying(true)).catch(() => {})
-      onAutoPlayDone?.()
-    }
-  }, [autoPlay, hasAudio, onAutoPlayDone])
-
-  // Pause when hero player starts (only one audio at a time)
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent<{ source: string }>).detail
-      if (detail?.source === SOURCE_HERO) {
-        const a = audioRef.current
-        if (a) a.pause()
-        setPlaying(false)
-      }
-    }
-    window.addEventListener(LANDING_AUDIO_EVENT, handler)
-    return () => window.removeEventListener(LANDING_AUDIO_EVENT, handler)
-  }, [])
-
-  const dispatchPlaying = () => {
-    window.dispatchEvent(new CustomEvent(LANDING_AUDIO_EVENT, { detail: { source: SOURCE_SAMPLES } }))
-  }
-
-  const handlePlayPause = () => {
-    if (!hasAudio) return
-    const a = audioRef.current
-    if (!a) return
-    if (playing) {
-      a.pause()
-      setPlaying(false)
-    } else {
-      a.play().then(() => setPlaying(true)).catch(() => setPlaying(false))
-    }
-  }
-
-  const handlePrev = () => {
-    const prev = currentIndex - 1
-    if (prev >= 0) onSelectTrack(prev)
-  }
-
-  const handleNext = () => {
-    const next = currentIndex + 1
-    if (next < allTracks.length) onSelectTrack(next)
-  }
-
-  return (
-    <div className="space-y-5">
-      {/* Song info header */}
-      <div className="flex items-start gap-4">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[var(--theme-accent)] text-[var(--theme-accent-soft)]">
-          <Heart className="h-6 w-6" fill="currentColor" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-gray-900 text-lg">
-            <HighlightedTitle title={track.title} />
-          </h3>
-          <p className="text-sm text-gray-500 mt-0.5">{track.subtitle}</p>
-          <div className="flex items-center gap-2 mt-2">
-            <div className="flex text-amber-400">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Star key={i} className="h-3.5 w-3.5 fill-current" />
-              ))}
-            </div>
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
-              <Check className="h-3 w-3" />
-              {verifiedBadgeText}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="space-y-1">
-        <div className="h-1 w-full overflow-hidden rounded-full bg-gray-100">
-          <div
-            className="h-full bg-[var(--theme-accent)] transition-all duration-150"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-        <div className="flex justify-between text-xs text-gray-500">
-          <span>{fmt(posSec)}</span>
-          <span>{durSec ? fmt(durSec) : track.time}</span>
-        </div>
-      </div>
-
-      {/* Controls */}
-      <div className="flex items-center justify-center gap-6">
-        <button
-          type="button"
-          onClick={handlePrev}
-          disabled={currentIndex <= 0}
-          className="p-2 rounded-full text-gray-400 hover:text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          aria-label="Previous"
-        >
-          <SkipBack className="h-5 w-5" />
-        </button>
-        <button
-          type="button"
-          onClick={handlePlayPause}
-          disabled={!hasAudio}
-          className={cn(
-            'flex h-14 w-14 items-center justify-center rounded-full text-white transition-transform',
-            hasAudio ? 'bg-[var(--theme-accent)] hover:opacity-90 active:scale-95' : 'bg-gray-300 cursor-not-allowed'
-          )}
-          aria-label={playing ? 'Pause' : 'Play'}
-        >
-          {playing ? <Pause className="h-6 w-6 ml-0.5" fill="currentColor" /> : <Play className="h-6 w-6 ml-1" fill="currentColor" />}
-        </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={currentIndex >= allTracks.length - 1}
-          className="p-2 rounded-full text-gray-400 hover:text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          aria-label="Next"
-        >
-          <SkipForward className="h-5 w-5" />
-        </button>
-      </div>
-
-      {!hasAudio && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-800">
-          Upload lagu di Admin agar bisa diputar.
-        </div>
-      )}
-
-      {track.audioUrl && (
-        <audio
-          ref={(el) => { audioRef.current = el }}
-          src={track.audioUrl}
-          preload="metadata"
-          onTimeUpdate={(e) => setPosSec(e.currentTarget.currentTime || 0)}
-          onLoadedMetadata={(e) => {
-            const d = e.currentTarget.duration
-            setDurSec(Number.isFinite(d) && d > 0 ? d : null)
-          }}
-          onEnded={() => setPlaying(false)}
-          onPause={() => setPlaying(false)}
-          onPlay={() => { dispatchPlaying(); setPlaying(true) }}
-          className="hidden"
-        />
-      )}
-    </div>
-  )
-}
-
-// --- Main Page ---
-
 type FaqItem = { q: string; a: string }
 
 export function LandingRoute() {
@@ -543,18 +227,15 @@ export function LandingRoute() {
 
   useEffect(() => {
     const handleScroll = () => {
-      // Use a fixed threshold to ensure it shows reliably
-      // Hero section is usually > 500px, so 400px is a safe "scrolled past" point
       setShowMobileCta(window.scrollY > 400)
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
-    handleScroll() // Check initial state
+    handleScroll()
 
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // JSON-LD structured data for SEO (Organization, Service, FAQ)
   useEffect(() => {
     const organization = {
       '@context': 'https://schema.org',
@@ -846,11 +527,11 @@ export function LandingRoute() {
     }),
   ]
 
-  const currentTrack = allTracks[selectedTrackIndex] ?? allTracks[0]
-
   const toastConfig = (site.activityToast && typeof site.activityToast === 'object'
     ? site.activityToast
     : defaultPublicSiteConfig.activityToast) as ActivityToastConfig
+
+  const sectionFallback = null
 
   return (
     <div className="min-h-screen bg-[var(--theme-accent-soft)] font-sans pb-32 overflow-x-hidden" style={themeStyle}>
@@ -889,9 +570,7 @@ export function LandingRoute() {
       <main className="mx-auto max-w-7xl w-full px-2 sm:px-4 md:px-6 pt-2 sm:pt-12 space-y-8 sm:space-y-20">
         {/* HERO SECTION */}
         <section ref={heroRef} aria-labelledby="hero-title" className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 md:gap-12 items-center">
-          {/* TOP CONTENT (Left on Desktop) */}
           <div className="text-center md:text-left space-y-3 md:space-y-6 md:col-start-1 md:row-start-1">
-            {/* Social proof - More compact for fold visibility */}
             <div className="flex flex-row items-center justify-center md:justify-start gap-2">
               <div className="flex text-amber-400 gap-0.5 scale-90 origin-left">
                 <Star className="h-4 w-4 fill-current" />
@@ -903,20 +582,16 @@ export function LandingRoute() {
               <span className="text-xs font-medium text-gray-500">2,847 menangis bahagia</span>
             </div>
 
-            {/* Main headline - Reduced size on mobile */}
             <h1 id="hero-title" className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight">
               <span className="text-gray-900">{heroHeadlineLine1}</span>
               <br className="hidden sm:inline" /> <span className="text-[var(--theme-accent)]">{heroHeadlineLine2}</span>
             </h1>
 
-            {/* Body paragraph - Compact */}
             <p className="text-sm sm:text-lg text-gray-600 leading-normal max-w-lg mx-auto md:mx-0" dangerouslySetInnerHTML={{ __html: sanitizeHtml(heroSubtext) }} />
           </div>
 
-          {/* MEDIA CONTENT (Middle on Mobile, Right on Desktop) */}
           <div className="relative mx-auto w-full max-w-full sm:max-w-md md:max-w-full min-w-0 md:col-start-2 md:row-start-1 md:row-span-2">
              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl sm:rounded-2xl shadow-2xl">
-               {/* Placeholder for Video/Image from screenshot */}
                <div className="absolute inset-0 bg-gray-900/10 z-10"></div>
                {heroVideoUrl ? (
                  <video
@@ -987,9 +662,7 @@ export function LandingRoute() {
              </div>
           </div>
 
-          {/* BOTTOM CONTENT (Left Bottom on Desktop) */}
           <div className="text-center md:text-left space-y-4 md:space-y-6 md:col-start-1 md:row-start-2">
-            {/* Trust Badges - Hidden or very small on ultra-mobile if needed, but let's just make it tighter */}
             <div className="flex flex-wrap justify-center md:justify-start gap-x-3 gap-y-1 text-[10px] sm:text-sm font-medium text-gray-500">
               {heroCheckmarks.map((text, idx) => (
                 <span key={idx} className="flex items-center gap-1">
@@ -999,7 +672,6 @@ export function LandingRoute() {
               ))}
             </div>
 
-            {/* CTA Button - Pulled up */}
             <div className="space-y-2">
               <Button asChild size="lg" className="w-full sm:w-auto h-12 sm:h-14 px-8 rounded-full bg-[var(--theme-accent)] text-base sm:text-lg font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90 hover:scale-105 transition-all duration-300">
                 <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center justify-center gap-2">
@@ -1008,7 +680,6 @@ export function LandingRoute() {
                 </Link>
               </Button>
               
-              {/* Footer Trust Info - Compact */}
               <div className="flex items-center justify-center md:justify-start gap-2 text-[9px] font-bold text-gray-400 uppercase tracking-tighter sm:tracking-wider sm:text-xs">
                 <span className="flex items-center gap-0.5"><Zap className="h-2.5 w-2.5 text-amber-500" /> {trustBadge1}</span>
                 <span>•</span>
@@ -1020,377 +691,80 @@ export function LandingRoute() {
           </div>
         </section>
 
-        {/* AUDIO SAMPLES SECTION */}
-        <section aria-labelledby="audio-samples-title" className="space-y-8 max-w-4xl mx-auto">
-          <div className="text-center space-y-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--theme-accent-soft)] bg-[var(--theme-accent-soft)] px-4 py-1.5 text-sm font-bold uppercase tracking-wider text-[var(--theme-accent)]">
-              <Play className="h-3.5 w-3.5" fill="currentColor" />
-              Tekan Putar
-            </div>
-            <h2 id="audio-samples-title" className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">
-              Dengar <span className="text-[var(--theme-accent)] italic">namanya</span> di lagu asli
-            </h2>
-            <p className="text-gray-500">Lagu asli yang kami buat. Nama asli. Air mata asli.</p>
-          </div>
+        <Suspense fallback={sectionFallback}>
+          <AudioSamplesSection
+            allTracks={allTracks}
+            selectedTrackIndex={selectedTrackIndex}
+            setSelectedTrackIndex={setSelectedTrackIndex}
+            autoPlayOnSelect={autoPlayOnSelect}
+            setAutoPlayOnSelect={setAutoPlayOnSelect}
+            heroVerifiedBadgeText={heroVerifiedBadgeText}
+            fmtCurrency={fmtCurrency}
+            paymentAmount={paymentAmount}
+            originalAmount={originalAmount}
+            themeSlug={themeSlug}
+          />
+        </Suspense>
 
-          <div className="bg-white rounded-3xl p-5 sm:p-6 md:p-10 shadow-xl border border-[var(--theme-accent-soft)]">
-            <FeaturedAudioPlayer
-              track={currentTrack}
-              allTracks={allTracks}
-              selectedIndex={selectedTrackIndex}
-              onSelectTrack={(i) => {
-                setSelectedTrackIndex(i)
-                const t = allTracks[i]
-                if (t?.audioUrl) setAutoPlayOnSelect(true)
-              }}
-              verifiedBadgeText={heroVerifiedBadgeText}
-              autoPlay={autoPlayOnSelect}
-              onAutoPlayDone={() => setAutoPlayOnSelect(false)}
-            />
+        <Suspense fallback={sectionFallback}>
+          <StatsBar items={statsItems} />
+        </Suspense>
 
-            {/* More Examples */}
-            <div className="mt-10 pt-8 border-t border-gray-100">
-              <p className="text-center text-sm font-medium text-gray-400 uppercase tracking-wider mb-6">
-                Contoh Lainnya
-              </p>
-              <div className="space-y-0 divide-y divide-gray-100">
-                {allTracks.map((t, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => {
-                      setSelectedTrackIndex(i)
-                      if (t.audioUrl) setAutoPlayOnSelect(true)
-                    }}
-                    className={cn(
-                      'flex w-full items-center gap-4 px-2 py-4 rounded-lg transition-colors text-left',
-                      selectedTrackIndex === i ? 'bg-[var(--theme-accent-soft)]' : 'hover:bg-gray-50',
-                      t.audioUrl ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'
-                    )}
-                  >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--theme-accent-soft)] text-[var(--theme-accent)]">
-                      <Music className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-gray-900">
-                        <HighlightedTitle title={t.title} />
-                      </div>
-                      <div className="text-xs text-gray-500 mt-0.5">{t.subtitle}</div>
-                    </div>
-                    <div className="text-xs text-gray-400 shrink-0">{t.time}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
+        <Suspense fallback={sectionFallback}>
+          <ComparisonSection
+            fmtCurrency={fmtCurrency}
+            paymentAmount={paymentAmount}
+            originalAmount={originalAmount}
+            deliveryEtaSentence={deliveryEta.sentenceLower}
+          />
+        </Suspense>
 
-            <div className="mt-10 text-center space-y-4">
-              <p className="text-gray-600">
-                Bayangkan mendengar <span className="text-[var(--theme-accent)] font-medium italic">namanya</span> di lagu seperti ini...
-              </p>
-              <Button asChild size="lg" className="h-12 px-8 rounded-xl bg-[var(--theme-accent)] font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90">
-                <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center gap-2">
-                  <span>Buat Lagunya — {fmtCurrency(paymentAmount)}</span>
-                  <span className="text-xs font-normal line-through opacity-70 decoration-white/50">{fmtCurrency(originalAmount)}</span>
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </section>
+        <Suspense fallback={sectionFallback}>
+          <ReviewsSection
+            sectionLabel={reviewSectionLabel}
+            sectionHeadline={reviewSectionHeadline}
+            sectionSubtext={reviewSectionSubtext}
+            items={reviewItems}
+          />
+        </Suspense>
 
-        {/* STATS BAR */}
-        <section className="py-8 border-y border-[var(--theme-accent-soft)] bg-white/50 backdrop-blur-sm -mx-2 px-2 sm:-mx-4 sm:px-4 md:-mx-6 md:px-6">
-          <div className="flex flex-wrap justify-center gap-8 md:gap-24 text-center">
-             {statsItems.map((stat, idx) => (
-               <div key={idx}>
-                 <div className="text-3xl md:text-4xl font-bold text-[var(--theme-accent)] font-serif">{stat.val}</div>
-                 <div className="text-xs uppercase font-bold text-gray-400 tracking-wider">{stat.label}</div>
-               </div>
-             ))}
-          </div>
-        </section>
+        <Suspense fallback={sectionFallback}>
+          <HowItWorksSection
+            deliveryEtaSentence={deliveryEta.sentenceLower}
+            fmtCurrency={fmtCurrency}
+            paymentAmount={paymentAmount}
+            originalAmount={originalAmount}
+            themeSlug={themeSlug}
+          />
+        </Suspense>
 
-        {/* COMPARISON SECTION */}
-        <section aria-labelledby="comparison-title" className="space-y-10 text-center max-w-5xl mx-auto">
-          <div className="space-y-2">
-            <h2 id="comparison-title" className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">
-              Kado yang akan dia <span className="text-gray-400 line-through decoration-[var(--theme-accent)]">lupakan</span> vs. yang akan dia <span className="text-[var(--theme-accent)] italic">putar ulang</span>
-            </h2>
-          </div>
+        <Suspense fallback={sectionFallback}>
+          <GuaranteeSection deliveryEtaShort={deliveryEta.short} />
+        </Suspense>
 
-          <div className="grid md:grid-cols-2 gap-8 items-stretch">
-             {/* Left Column */}
-             <div className="bg-gray-50 rounded-3xl p-8 border border-gray-100 flex flex-col justify-center">
-               <div className="grid grid-cols-2 gap-8 opacity-60 grayscale-[50%]">
-                   <div className="flex flex-col items-center gap-2">
-                     <span className="text-4xl mb-2">🧴</span> 
-                     <span className="font-medium text-gray-900">Parfum</span>
-                     <span className="text-xs font-bold bg-gray-200 px-2 py-1 rounded text-gray-600">Rp 1jt+</span>
-                   </div>
-                   <div className="flex flex-col items-center gap-2">
-                     <span className="text-4xl mb-2">⌚</span> 
-                     <span className="font-medium text-gray-900">Jam Tangan</span>
-                     <span className="text-xs font-bold bg-gray-200 px-2 py-1 rounded text-gray-600">Rp 2jt+</span>
-                   </div>
-                   <div className="flex flex-col items-center gap-2">
-                     <span className="text-4xl mb-2">👔</span> 
-                     <span className="font-medium text-gray-900">Baju</span>
-                     <span className="text-xs font-bold bg-gray-200 px-2 py-1 rounded text-gray-600">Rp 500rb+</span>
-                   </div>
-                   <div className="flex flex-col items-center gap-2">
-                     <span className="text-4xl mb-2">🎮</span> 
-                     <span className="font-medium text-gray-900">Gadget</span>
-                     <span className="text-xs font-bold bg-gray-200 px-2 py-1 rounded text-gray-600">Rp 3jt+</span>
-                   </div>
-               </div>
-               <div className="mt-8 font-bold text-gray-400 uppercase tracking-widest text-sm">Dilupakan bulan depan ❌</div>
-             </div>
+        <Suspense fallback={sectionFallback}>
+          <FaqSection items={faqItems} />
+        </Suspense>
 
-             {/* Right Column */}
-             <div className="bg-white rounded-3xl p-8 border-2 border-[var(--theme-accent)] shadow-xl relative overflow-hidden transform md:scale-105 z-10">
-               <div className="absolute top-4 right-4 bg-[var(--theme-accent)] text-white text-[10px] font-bold px-3 py-1 rounded-full">HARGA TERBAIK</div>
-               <div className="h-full flex flex-col items-center justify-center space-y-6">
-                 <div className="h-20 w-20 bg-[var(--theme-accent-soft)] rounded-full flex items-center justify-center text-4xl shadow-inner">
-                   🎵
-                 </div>
-                 <div className="space-y-1">
-                   <h3 className="text-2xl font-bold text-gray-900">Lagu Personal Untuknya</h3>
-                   <div className="text-[var(--theme-accent)] font-bold text-3xl">{fmtCurrency(paymentAmount)} <span className="text-gray-300 line-through text-lg font-normal">{fmtCurrency(originalAmount)}</span></div>
-                 </div>
-                 <ul className="text-left space-y-3 text-gray-600 bg-[var(--theme-accent-soft)] p-6 rounded-2xl w-full">
-                   <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[var(--theme-accent)]" /> <strong>Namanya</strong> dalam lirik</li>
-                   <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[var(--theme-accent)]" /> Cerita & kenangan kalian</li>
-                   <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[var(--theme-accent)]" /> Audio kualitas studio</li>
-                   <li className="flex items-center gap-2"><Check className="h-5 w-5 text-[var(--theme-accent)]" /> Dikirim {deliveryEta.sentenceLower}</li>
-                 </ul>
-                 <div className="font-bold text-[var(--theme-accent)] uppercase tracking-widest text-sm">Diputar Selamanya ✅</div>
-               </div>
-             </div>
-          </div>
-        </section>
-
-        {/* SOCIAL PROOF / REVIEWS */}
-        <section className="space-y-10">
-          <div className="text-center space-y-2">
-            <div className="text-[var(--theme-accent)] text-sm font-bold uppercase tracking-wider">{reviewSectionLabel}</div>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900" dangerouslySetInnerHTML={{ __html: sanitizeHtml(reviewSectionHeadline) }} />
-            <p className="text-gray-600">{reviewSectionSubtext}</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {reviewItems.map((review, idx) => {
-              const transforms = ['md:-rotate-1 hover:rotate-0', 'md:translate-y-4 hover:translate-y-2', 'md:rotate-1 hover:rotate-0']
-              const transform = transforms[idx % transforms.length]
-
-              if (review.style === 'accent') {
-                return (
-                  <div key={idx} className={`bg-[var(--theme-accent)] text-white p-8 rounded-3xl shadow-lg transform ${transform} transition-transform`}>
-                    <div className="flex text-yellow-300 mb-4">
-                      {[1,2,3,4,5].map(i => <Star key={i} className="h-4 w-4 fill-current" />)}
-                    </div>
-                    <p className="font-medium text-lg mb-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: `"${sanitizeHtml(review.quote || '')}"` }} />
-                    <div className="flex items-center gap-3">
-                      {review.authorAvatarUrl && <img src={review.authorAvatarUrl} alt="" className="w-10 h-10 rounded-full border-2 border-white/50 object-cover" loading="lazy" />}
-                      <div>
-                        <div className="font-bold">{review.authorName}</div>
-                        <div className="text-xs opacity-80">{review.authorMeta}</div>
-                      </div>
-                    </div>
-                  </div>
-                )
-              }
-
-              if (review.style === 'dark-chat') {
-                const msgs = review.chatMessages || []
-                return (
-                  <div key={idx} className={`bg-gray-900 text-white p-8 rounded-3xl shadow-lg transform ${transform} transition-transform`}>
-                    <div className="space-y-4 font-sans text-sm">
-                      {msgs.map((msg, mi) => (
-                        <div key={mi} className={mi === 0 ? "bg-white/10 rounded-2xl rounded-tl-sm p-3 self-start max-w-[90%]" : "bg-blue-600 rounded-2xl rounded-tr-sm p-3 self-end ml-auto max-w-[90%]"}>
-                          {msg}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-6 flex items-center gap-3 pt-6 border-t border-white/10">
-                      {review.authorAvatarUrl && <img src={review.authorAvatarUrl} alt="" className="w-10 h-10 rounded-full border-2 border-white/50 object-cover" loading="lazy" />}
-                      <div>
-                        <div className="font-bold">{review.authorName}</div>
-                        <div className="text-xs opacity-80">{review.authorMeta}</div>
-                      </div>
-                    </div>
-                  </div>
-                )
-              }
-
-              return (
-                <div key={idx} className={`bg-white border border-gray-100 p-8 rounded-3xl shadow-lg transform ${transform} transition-transform`}>
-                  <div className="flex text-yellow-400 mb-4">
-                    {[1,2,3,4,5].map(i => <Star key={i} className="h-4 w-4 fill-current" />)}
-                  </div>
-                  <p className="font-medium text-gray-800 text-lg mb-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: `"${sanitizeHtml(review.quote || '')}"` }} />
-                  <div className="flex items-center gap-3">
-                    {review.authorAvatarUrl && <img src={review.authorAvatarUrl} alt="" className="w-10 h-10 rounded-full border-2 border-gray-100 object-cover" loading="lazy" />}
-                    <div>
-                      <div className="font-bold text-gray-900">{review.authorName}</div>
-                      <div className="text-xs text-gray-500">{review.authorMeta}</div>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </section>
-
-        {/* HOW IT WORKS */}
-        <section aria-labelledby="how-it-works-title" className="space-y-10">
-          <div className="text-center space-y-2">
-            <h2 className="text-[var(--theme-accent)] text-sm font-bold uppercase tracking-wider">Proses Mudah</h2>
-            <h2 id="how-it-works-title" className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">Tiga langkah menuju <span className="text-[var(--theme-accent)] italic">tangis bahagia</span></h2>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { step: 1, icon: '✍️', title: 'Ceritakan kisahmu', desc: 'Beritahu kami namanya, kenangan kalian, dan hal-hal lucu.' },
-              { step: 2, icon: '🎵', title: 'Kami buatkan', desc: 'Namanya ditenun menjadi lirik & musik profesional oleh komposer kami.' },
-              { step: 3, icon: '😭', title: 'Lihat dia terharu', desc: `Dikirim ${deliveryEta.sentenceLower} via WhatsApp. Dia akan menyimpannya selamanya.` },
-            ].map((s) => (
-              <div key={s.step} className="flex flex-col items-center text-center gap-4 rounded-3xl border border-gray-100 bg-white p-8 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--theme-accent-soft)] text-3xl font-bold text-[var(--theme-accent)] shadow-sm">
-                  {s.step}
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{s.title}</h3>
-                  <p className="text-gray-500 leading-relaxed">{s.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center pt-4">
-            <Button asChild size="lg" className="h-14 px-10 rounded-full bg-[var(--theme-accent)] text-lg font-bold shadow-xl shadow-[var(--theme-accent-soft)] hover:opacity-90">
-               <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center gap-2">
-                 <span>Buat Lagunya — {fmtCurrency(paymentAmount)}</span>
-                 <span className="text-xs font-normal line-through opacity-70 decoration-white/50">{fmtCurrency(originalAmount)}</span>
-               </Link>
-            </Button>
-          </div>
-        </section>
-
-        {/* GUARANTEE BOX */}
-        <section className="max-w-3xl mx-auto">
-          <div className="bg-[#ECFDF5] border border-[#D1FAE5] rounded-3xl p-8 md:p-12 text-center relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-               <ShieldCheck className="w-32 h-32 text-green-600" />
-            </div>
-            <div className="relative z-10 space-y-4">
-              <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full text-green-700 font-bold text-sm shadow-sm mb-2">
-                <ShieldCheck className="h-4 w-4" /> 100% Bebas Risiko
-              </div>
-              <h3 className="font-serif text-3xl font-bold text-gray-900">Garansi "Tangis Bahagia"</h3>
-              <p className="text-gray-700 max-w-lg mx-auto">
-                Jika lagunya tidak membuatnya emosional, kami akan <strong className="text-gray-900">membuat ulang gratis</strong> atau memberikan <strong className="text-gray-900">pengembalian dana penuh</strong>. Tanpa banyak tanya.
-              </p>
-              <div className="flex flex-wrap justify-center gap-6 text-sm font-bold text-green-700 pt-2">
-                 <span className="flex items-center gap-1"><Check className="h-4 w-4" /> Revisi gratis</span>
-                 <span className="flex items-center gap-1"><Check className="h-4 w-4" /> Refund penuh</span>
-                 <span className="flex items-center gap-1"><Check className="h-4 w-4" /> Pengiriman {deliveryEta.short}</span>
-              </div>
-            </div>
-          </div>
-          <div className="mt-6">
-            <video 
-              src="/laguin-studio.mp4" 
-              className="w-full rounded-2xl shadow-md" 
-              autoPlay 
-              muted 
-              loop 
-              playsInline
-            />
-          </div>
-        </section>
-
-        {/* FAQ */}
-        <section aria-labelledby="faq-title" className="space-y-10 max-w-3xl mx-auto pb-8">
-          <h2 id="faq-title" className="text-center font-serif text-3xl font-bold text-gray-900">Pertanyaan <span className="text-[var(--theme-accent)] italic">Cepat</span></h2>
-          <div className="space-y-4">
-             {faqItems.map((faq, i) => (
-               <div key={i} className="group rounded-2xl border border-gray-100 bg-white p-6 hover:shadow-md transition-all cursor-default">
-                 <h3 className="font-bold text-gray-900 text-lg mb-2 flex justify-between items-center">
-                   {faq.q}
-                   <span className="text-[var(--theme-accent-soft)] group-hover:text-[var(--theme-accent)] transition-colors text-2xl">↓</span>
-                 </h3>
-                 <p className="text-gray-600 leading-relaxed">{faq.a}</p>
-               </div>
-             ))}
-          </div>
-        </section>
-
-        {/* FOOTER CTA */}
-        <section className="text-center space-y-6 pb-12">
-           <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">{footerCtaHeadline}</h2>
-           <p className="text-gray-600 text-base sm:text-lg" dangerouslySetInnerHTML={{ __html: sanitizeHtml(footerCtaSubtitle) }} />
-           
-           <div className="pt-4">
-             <Button asChild size="lg" className="h-auto min-h-[4rem] px-6 py-4 sm:px-12 rounded-full bg-[var(--theme-accent)] text-lg sm:text-xl font-bold shadow-2xl shadow-[var(--theme-accent-soft)] hover:opacity-90 hover:scale-105 transition-all">
-               <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 leading-none">
-                 <span>Buat Lagunya — {fmtCurrency(paymentAmount)}</span>
-                 <span className="text-xs sm:text-sm font-normal line-through opacity-80 text-[var(--theme-accent-soft)]">{fmtCurrency(originalAmount)}</span>
-               </Link>
-             </Button>
-           </div>
-           
-           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[11px] sm:text-xs font-bold text-gray-400 uppercase tracking-wide pt-4">
-             <span>🔒 Checkout Aman</span>
-             <span>Hanya 11 kuota gratis tersisa</span>
-           </div>
-        </section>
+        <Suspense fallback={sectionFallback}>
+          <FooterCtaSection
+            headline={footerCtaHeadline}
+            subtitle={footerCtaSubtitle}
+            fmtCurrency={fmtCurrency}
+            paymentAmount={paymentAmount}
+            originalAmount={originalAmount}
+            themeSlug={themeSlug}
+          />
+        </Suspense>
       </main>
 
-      {/* FOOTER LINKS */}
-      <footer className="border-t border-gray-100 bg-white py-12 text-sm text-gray-400">
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-12">
-            <div className="flex flex-col items-center sm:items-start gap-3">
-              <Link to={themeSlug ? `/${themeSlug}` : '/'} className="flex items-center gap-2">
-                <img src={logoUrl} alt="Laguin.id - Lagumu, Ceritamu" className="h-10 w-auto object-contain opacity-70" loading="lazy" />
-              </Link>
-              <p className="text-gray-500 text-xs">Membuat pria menangis sejak 2024</p>
-              <div className="text-xs space-y-1 text-gray-400">
-                <p className="font-medium text-gray-500">Langit Utama Group</p>
-                <a href="mailto:support@laguin.id" className="hover:text-gray-600 transition-colors">support@laguin.id</a>
-              </div>
-            </div>
-
-            {activeThemes.length > 0 && (
-              <div className="flex flex-col items-center sm:items-start gap-3">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Koleksi Lagu</h4>
-                <div className="flex flex-col gap-1.5">
-                  {activeThemes.map((t) => (
-                    <Link key={t.slug} to={`/${t.slug}`} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
-                      {t.name}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-col items-center sm:items-start gap-3">
-              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Informasi</h4>
-              <div className="flex flex-col gap-1.5">
-                <Link to="/privasi" className="text-xs hover:text-gray-600 transition-colors">Privasi</Link>
-                <Link to="/ketentuan" className="text-xs hover:text-gray-600 transition-colors">Ketentuan</Link>
-                <Link to="/kontak" className="text-xs hover:text-gray-600 transition-colors">Kontak</Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-10 pt-6 border-t border-gray-100 text-center">
-            <p className="max-w-2xl mx-auto text-[10px] sm:text-xs text-gray-400 leading-relaxed">
-              <strong className="text-gray-500">Disclaimer:</strong> Laguin.id menyediakan layanan musik digital yang dipersonalisasi. Seluruh lagu dibuat secara khusus berdasarkan informasi yang diberikan oleh pelanggan. Tidak terdapat pengiriman produk fisik. Kualitas dan hasil akhir dapat bervariasi bergantung pada kelengkapan serta keakuratan informasi yang disampaikan. Layanan ini tidak berafiliasi dengan, tidak disponsori, dan tidak didukung oleh Facebook, Inc. atau Meta Platforms, Inc.
-            </p>
-            <p className="mt-4 text-[10px] text-gray-300">&copy; {new Date().getFullYear()} Langit Utama Group. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Suspense fallback={sectionFallback}>
+        <LandingFooter
+          logoUrl={logoUrl}
+          themeSlug={themeSlug}
+          activeThemes={activeThemes}
+        />
+      </Suspense>
 
       {/* STICKY BOTTOM CTA (Mobile Only) */}
       <div 
