@@ -283,6 +283,15 @@ export function LandingContentConfigSection({
                                 onChange={(e) => setDraft(d => ({ ...d, landing: { ...d.landing, heroOverlay: { ...d.landing.heroOverlay, authorAvatarUrl: e.target.value } } }))}
                                 placeholder="https://..."
                             />
+                            <Input
+                                type="file"
+                                accept="image/*"
+                                className="h-9 text-xs cursor-pointer"
+                                onChange={(e) => handleUpload(e, 'image', (path) => setDraft(d => ({ ...d, landing: { ...d.landing, heroOverlay: { ...d.landing.heroOverlay, authorAvatarUrl: path } } })))}
+                            />
+                            {draft.landing.heroOverlay.authorAvatarUrl.trim() && (
+                                <img src={resolveApiUrl(draft.landing.heroOverlay.authorAvatarUrl.trim())} alt="Avatar preview" className="h-10 w-10 rounded-full object-cover mt-1" />
+                            )}
                         </div>
                     </div>
                  </div>
@@ -364,6 +373,24 @@ export function LandingContentConfigSection({
                                     onChange={(e) => setDraft(d => ({ ...d, landing: { ...d.landing, heroPlayer: { ...d.landing.heroPlayer, authorSubline: e.target.value } } }))}
                                 />
                             </div>
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium">Author Avatar URL</label>
+                            <Input
+                                value={draft.landing.heroPlayer.authorAvatarUrl}
+                                onChange={(e) => setDraft(d => ({ ...d, landing: { ...d.landing, heroPlayer: { ...d.landing.heroPlayer, authorAvatarUrl: e.target.value } } }))}
+                                placeholder="https://..."
+                            />
+                            <Input
+                                type="file"
+                                accept="image/*"
+                                className="h-9 text-xs cursor-pointer"
+                                onChange={(e) => handleUpload(e, 'image', (path) => setDraft(d => ({ ...d, landing: { ...d.landing, heroPlayer: { ...d.landing.heroPlayer, authorAvatarUrl: path } } })))}
+                            />
+                            {draft.landing.heroPlayer.authorAvatarUrl.trim() && (
+                                <img src={resolveApiUrl(draft.landing.heroPlayer.authorAvatarUrl.trim())} alt="Avatar preview" className="h-10 w-10 rounded-full object-cover mt-1" />
+                            )}
                         </div>
                     </div>
                 </div>
@@ -1168,6 +1195,19 @@ export function LandingContentConfigSection({
                             return { ...d, reviews: { ...d.reviews, items } }
                           })}
                         />
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          className="h-8 text-xs cursor-pointer"
+                          onChange={(e) => handleUpload(e, 'image', (path) => setDraft(d => {
+                            const items = [...d.reviews.items]
+                            items[idx] = { ...items[idx], authorAvatarUrl: path }
+                            return { ...d, reviews: { ...d.reviews, items } }
+                          }))}
+                        />
+                        {item.authorAvatarUrl?.trim() && (
+                          <img src={resolveApiUrl(item.authorAvatarUrl.trim())} alt="Avatar preview" className="h-10 w-10 rounded-full object-cover mt-1" />
+                        )}
                       </div>
                     </div>
                   ))}
@@ -2013,6 +2053,15 @@ export function LandingContentConfigSection({
                         <div className="space-y-1">
                             <label className="text-xs font-medium text-muted-foreground">Video URL</label>
                             <Input value={draft.guaranteeSection.videoUrl} onChange={(e) => setDraft(d => ({ ...d, guaranteeSection: { ...d.guaranteeSection, videoUrl: e.target.value } }))} />
+                            <Input
+                                type="file"
+                                accept="video/*"
+                                className="h-9 text-xs cursor-pointer"
+                                onChange={(e) => handleUpload(e, 'video', (path) => setDraft(d => ({ ...d, guaranteeSection: { ...d.guaranteeSection, videoUrl: path } })))}
+                            />
+                            {draft.guaranteeSection.videoUrl.trim() && (
+                                <video src={resolveApiUrl(draft.guaranteeSection.videoUrl.trim())} className="w-full max-w-xs rounded mt-1" controls muted />
+                            )}
                         </div>
                     </div>
 
