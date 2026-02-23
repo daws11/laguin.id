@@ -260,6 +260,7 @@ export type MiscTextConfig = {
 
 export type PublicSiteDraft = {
   logoUrl: string
+  faviconUrl: string
   colors: ThemeColors
   landing: {
     heroHeadline: {

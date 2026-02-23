@@ -8,6 +8,7 @@ export const defaultThemeColors = {
 
 export const defaultPublicSiteDraft: PublicSiteDraft = {
   logoUrl: '/logo.webp',
+  faviconUrl: '/favicon.svg',
   colors: { ...defaultThemeColors },
   landing: {
     heroHeadline: {
@@ -386,6 +387,7 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
 
   return {
     logoUrl: asString(cfg?.logoUrl, defaultPublicSiteDraft.logoUrl),
+    faviconUrl: asString(cfg?.faviconUrl, defaultPublicSiteDraft.faviconUrl),
     colors: {
       accentColor: asString(colors?.accentColor, defaultThemeColors.accentColor),
       bgColor1: asString(colors?.bgColor1, defaultThemeColors.bgColor1),

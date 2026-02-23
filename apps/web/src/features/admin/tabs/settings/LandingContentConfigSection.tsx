@@ -50,7 +50,7 @@ export function LandingContentConfigSection({
 
   const menuItems = [
     { id: 'colors', label: 'Colors', icon: Palette, group: 'Appearance' },
-    { id: 'logo', label: 'Logo', icon: ImagePlus, group: 'Appearance' },
+    { id: 'logo', label: 'Logo & Favicon', icon: ImagePlus, group: 'Appearance' },
     { id: 'promo-banner', label: 'Promo Banner', icon: Megaphone, group: 'Landing Page' },
     { id: 'hero-text', label: 'Hero Text', icon: Type, group: 'Landing Page' },
     { id: 'landing-media', label: 'Hero Media', icon: ImageIcon, group: 'Landing Page' },
@@ -723,6 +723,45 @@ export function LandingContentConfigSection({
                                         className="h-10 w-auto object-contain"
                                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                                     />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="border-t pt-4 space-y-3">
+                        <div className="pb-2">
+                            <h3 className="text-base font-semibold">Favicon</h3>
+                            <p className="text-xs text-muted-foreground mt-1">The small icon shown in browser tabs. Recommended: SVG, PNG, or ICO format, 32x32 or 64x64 pixels.</p>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Favicon URL</label>
+                            <Input
+                                className="text-sm"
+                                value={draft.faviconUrl}
+                                onChange={(e) => setDraft(d => ({ ...d, faviconUrl: e.target.value }))}
+                                placeholder="/favicon.svg"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Upload Favicon</label>
+                            <Input
+                                type="file"
+                                accept="image/svg+xml,image/png,image/x-icon,image/vnd.microsoft.icon"
+                                className="text-sm cursor-pointer"
+                                onChange={(e) => handleUpload(e, 'image', (path) => setDraft(d => ({ ...d, faviconUrl: path })))}
+                            />
+                        </div>
+                        {draft.faviconUrl && (
+                            <div className="rounded-lg border p-4 bg-muted/20">
+                                <p className="text-xs font-medium mb-2">Preview</p>
+                                <div className="bg-white rounded p-3 inline-flex items-center gap-3">
+                                    <img
+                                        src={resolveApiUrl(draft.faviconUrl)}
+                                        alt="Favicon preview"
+                                        className="h-8 w-8 object-contain"
+                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                    />
+                                    <span className="text-xs text-muted-foreground">32×32 preview</span>
                                 </div>
                             </div>
                         )}
