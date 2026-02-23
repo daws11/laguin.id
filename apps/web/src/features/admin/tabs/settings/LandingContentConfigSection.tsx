@@ -60,6 +60,13 @@ export function LandingContentConfigSection({
     { id: 'reviews', label: 'Reviews', icon: MessageSquare, group: 'Landing Page' },
     { id: 'music', label: 'Music Playlist', icon: Music, group: 'Content' },
     { id: 'toast', label: 'Activity Toast', icon: MessageSquare, group: 'Content' },
+    { id: 'audio-samples-section', label: 'Audio Section Text', icon: Music, group: 'Landing Page' },
+    { id: 'comparison-section', label: 'Comparison Section', icon: ShieldCheck, group: 'Landing Page' },
+    { id: 'how-it-works', label: 'How It Works', icon: Zap, group: 'Landing Page' },
+    { id: 'guarantee-section', label: 'Guarantee Section', icon: ShieldCheck, group: 'Landing Page' },
+    { id: 'faq-section', label: 'FAQ Section', icon: MessageSquare, group: 'Landing Page' },
+    { id: 'footer-section', label: 'Footer', icon: LayoutTemplate, group: 'Landing Page' },
+    { id: 'misc-text', label: 'Misc Text', icon: Type, group: 'Landing Page' },
     { id: 'creation-delivery', label: t.creationDelivery ?? 'Creation & Delivery', icon: Zap, group: 'System' },
     { id: 'config-step0', label: 'Step 0: Announcement', icon: Megaphone, group: 'Config Steps' },
     { id: 'config-step1', label: 'Step 1: Recipient', icon: Heart, group: 'Config Steps' },
@@ -1801,6 +1808,339 @@ export function LandingContentConfigSection({
                                 onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, showPriceInButton: e.target.checked } } }))}
                             />
                         </label>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'audio-samples-section' && (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="pb-2 border-b">
+                        <h3 className="text-base font-semibold">Audio Section Text</h3>
+                        <p className="text-xs text-muted-foreground">Configure the audio samples section headings and labels.</p>
+                    </div>
+                    <div className="space-y-3">
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Section Badge</label>
+                            <Input value={draft.audioSamplesSection.badge} onChange={(e) => setDraft(d => ({ ...d, audioSamplesSection: { ...d.audioSamplesSection, badge: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Section Headline (HTML allowed)</label>
+                            <Input value={draft.audioSamplesSection.headline} onChange={(e) => setDraft(d => ({ ...d, audioSamplesSection: { ...d.audioSamplesSection, headline: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Section Subtext</label>
+                            <Input value={draft.audioSamplesSection.subtext} onChange={(e) => setDraft(d => ({ ...d, audioSamplesSection: { ...d.audioSamplesSection, subtext: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">'Other samples' Label</label>
+                            <Input value={draft.audioSamplesSection.otherLabel} onChange={(e) => setDraft(d => ({ ...d, audioSamplesSection: { ...d.audioSamplesSection, otherLabel: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">CTA Line (HTML allowed)</label>
+                            <Input value={draft.audioSamplesSection.ctaLine} onChange={(e) => setDraft(d => ({ ...d, audioSamplesSection: { ...d.audioSamplesSection, ctaLine: e.target.value } }))} />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'comparison-section' && (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="pb-2 border-b">
+                        <h3 className="text-base font-semibold">Comparison Section</h3>
+                        <p className="text-xs text-muted-foreground">Configure the comparison section content.</p>
+                    </div>
+                    <div className="space-y-3">
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Section Headline (HTML)</label>
+                            <Input value={draft.comparisonSection.headline} onChange={(e) => setDraft(d => ({ ...d, comparisonSection: { ...d.comparisonSection, headline: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">'Forgotten' Label</label>
+                            <Input value={draft.comparisonSection.forgottenLabel} onChange={(e) => setDraft(d => ({ ...d, comparisonSection: { ...d.comparisonSection, forgottenLabel: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">'Forever' Label</label>
+                            <Input value={draft.comparisonSection.foreverLabel} onChange={(e) => setDraft(d => ({ ...d, comparisonSection: { ...d.comparisonSection, foreverLabel: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Best Price Badge Text</label>
+                            <Input value={draft.comparisonSection.bestPriceBadge} onChange={(e) => setDraft(d => ({ ...d, comparisonSection: { ...d.comparisonSection, bestPriceBadge: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Product Title</label>
+                            <Input value={draft.comparisonSection.productTitle} onChange={(e) => setDraft(d => ({ ...d, comparisonSection: { ...d.comparisonSection, productTitle: e.target.value } }))} />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2 border-t pt-4">
+                        <label className="text-xs font-medium text-muted-foreground">Gift Items</label>
+                        {draft.comparisonSection.giftItems.map((item, i) => (
+                            <div key={i} className="flex gap-2 items-center">
+                                <Input className="w-16 shrink-0" placeholder="Icon" value={item.icon} onChange={(e) => {
+                                    const arr = [...draft.comparisonSection.giftItems]
+                                    arr[i] = { ...arr[i], icon: e.target.value }
+                                    setDraft(d => ({ ...d, comparisonSection: { ...d.comparisonSection, giftItems: arr } }))
+                                }} />
+                                <Input className="flex-1" placeholder="Name" value={item.name} onChange={(e) => {
+                                    const arr = [...draft.comparisonSection.giftItems]
+                                    arr[i] = { ...arr[i], name: e.target.value }
+                                    setDraft(d => ({ ...d, comparisonSection: { ...d.comparisonSection, giftItems: arr } }))
+                                }} />
+                                <Input className="w-24 shrink-0" placeholder="Price" value={item.price} onChange={(e) => {
+                                    const arr = [...draft.comparisonSection.giftItems]
+                                    arr[i] = { ...arr[i], price: e.target.value }
+                                    setDraft(d => ({ ...d, comparisonSection: { ...d.comparisonSection, giftItems: arr } }))
+                                }} />
+                                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => {
+                                    const arr = draft.comparisonSection.giftItems.filter((_, j) => j !== i)
+                                    setDraft(d => ({ ...d, comparisonSection: { ...d.comparisonSection, giftItems: arr } }))
+                                }}><Trash2 className="h-3 w-3" /></Button>
+                            </div>
+                        ))}
+                        <Button type="button" variant="outline" size="sm" onClick={() => {
+                            setDraft(d => ({ ...d, comparisonSection: { ...d.comparisonSection, giftItems: [...d.comparisonSection.giftItems, { icon: '🎁', name: '', price: '' }] } }))
+                        }}><Plus className="h-3 w-3 mr-1" /> Add Gift</Button>
+                    </div>
+
+                    <div className="space-y-2 border-t pt-4">
+                        <label className="text-xs font-medium text-muted-foreground">Checklist Items</label>
+                        {draft.comparisonSection.checklistItems.map((item, i) => (
+                            <div key={i} className="flex gap-2 items-center">
+                                <Input className="flex-1" placeholder="Checklist item (HTML allowed)" value={item.text} onChange={(e) => {
+                                    const arr = [...draft.comparisonSection.checklistItems]
+                                    arr[i] = { text: e.target.value }
+                                    setDraft(d => ({ ...d, comparisonSection: { ...d.comparisonSection, checklistItems: arr } }))
+                                }} />
+                                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => {
+                                    const arr = draft.comparisonSection.checklistItems.filter((_, j) => j !== i)
+                                    setDraft(d => ({ ...d, comparisonSection: { ...d.comparisonSection, checklistItems: arr } }))
+                                }}><Trash2 className="h-3 w-3" /></Button>
+                            </div>
+                        ))}
+                        <Button type="button" variant="outline" size="sm" onClick={() => {
+                            setDraft(d => ({ ...d, comparisonSection: { ...d.comparisonSection, checklistItems: [...d.comparisonSection.checklistItems, { text: '' }] } }))
+                        }}><Plus className="h-3 w-3 mr-1" /> Add Checklist Item</Button>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'how-it-works' && (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="pb-2 border-b">
+                        <h3 className="text-base font-semibold">How It Works</h3>
+                        <p className="text-xs text-muted-foreground">Configure the "How It Works" section on the landing page.</p>
+                    </div>
+                    <div className="space-y-3">
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Section Label</label>
+                            <Input value={draft.howItWorksSection.label} onChange={(e) => setDraft(d => ({ ...d, howItWorksSection: { ...d.howItWorksSection, label: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Section Headline (HTML)</label>
+                            <Input value={draft.howItWorksSection.headline} onChange={(e) => setDraft(d => ({ ...d, howItWorksSection: { ...d.howItWorksSection, headline: e.target.value } }))} />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2 border-t pt-4">
+                        <label className="text-xs font-medium text-muted-foreground">Steps</label>
+                        {draft.howItWorksSection.steps.map((step, i) => (
+                            <div key={i} className="border rounded-lg p-3 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-muted-foreground">Step {i + 1}</span>
+                                    <div className="flex gap-1">
+                                        <Button size="icon" variant="ghost" className="h-6 w-6" disabled={i === 0} onClick={() => setDraft(d => ({ ...d, howItWorksSection: { ...d.howItWorksSection, steps: moveItem(d.howItWorksSection.steps, i, i - 1) } }))}>↑</Button>
+                                        <Button size="icon" variant="ghost" className="h-6 w-6" disabled={i === draft.howItWorksSection.steps.length - 1} onClick={() => setDraft(d => ({ ...d, howItWorksSection: { ...d.howItWorksSection, steps: moveItem(d.howItWorksSection.steps, i, i + 1) } }))}>↓</Button>
+                                        <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive hover:text-destructive" onClick={() => {
+                                            const arr = draft.howItWorksSection.steps.filter((_, j) => j !== i)
+                                            setDraft(d => ({ ...d, howItWorksSection: { ...d.howItWorksSection, steps: arr } }))
+                                        }}><Trash2 className="h-3 w-3" /></Button>
+                                    </div>
+                                </div>
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-medium text-muted-foreground">Icon</label>
+                                        <Input value={step.icon} onChange={(e) => {
+                                            const arr = [...draft.howItWorksSection.steps]
+                                            arr[i] = { ...arr[i], icon: e.target.value }
+                                            setDraft(d => ({ ...d, howItWorksSection: { ...d.howItWorksSection, steps: arr } }))
+                                        }} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-medium text-muted-foreground">Title</label>
+                                        <Input value={step.title} onChange={(e) => {
+                                            const arr = [...draft.howItWorksSection.steps]
+                                            arr[i] = { ...arr[i], title: e.target.value }
+                                            setDraft(d => ({ ...d, howItWorksSection: { ...d.howItWorksSection, steps: arr } }))
+                                        }} />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-medium text-muted-foreground">Description</label>
+                                    <Textarea className="min-h-[50px]" value={step.desc} onChange={(e) => {
+                                        const arr = [...draft.howItWorksSection.steps]
+                                        arr[i] = { ...arr[i], desc: e.target.value }
+                                        setDraft(d => ({ ...d, howItWorksSection: { ...d.howItWorksSection, steps: arr } }))
+                                    }} />
+                                </div>
+                            </div>
+                        ))}
+                        <Button type="button" variant="outline" size="sm" onClick={() => {
+                            setDraft(d => ({ ...d, howItWorksSection: { ...d.howItWorksSection, steps: [...d.howItWorksSection.steps, { icon: '🎵', title: '', desc: '' }] } }))
+                        }}><Plus className="h-3 w-3 mr-1" /> Add Step</Button>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'guarantee-section' && (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="pb-2 border-b">
+                        <h3 className="text-base font-semibold">Guarantee Section</h3>
+                        <p className="text-xs text-muted-foreground">Configure the guarantee section content.</p>
+                    </div>
+                    <div className="space-y-3">
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Badge Text</label>
+                            <Input value={draft.guaranteeSection.badge} onChange={(e) => setDraft(d => ({ ...d, guaranteeSection: { ...d.guaranteeSection, badge: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Headline</label>
+                            <Input value={draft.guaranteeSection.headline} onChange={(e) => setDraft(d => ({ ...d, guaranteeSection: { ...d.guaranteeSection, headline: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Description (HTML allowed)</label>
+                            <Textarea className="min-h-[80px]" value={draft.guaranteeSection.description} onChange={(e) => setDraft(d => ({ ...d, guaranteeSection: { ...d.guaranteeSection, description: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Video URL</label>
+                            <Input value={draft.guaranteeSection.videoUrl} onChange={(e) => setDraft(d => ({ ...d, guaranteeSection: { ...d.guaranteeSection, videoUrl: e.target.value } }))} />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2 border-t pt-4">
+                        <label className="text-xs font-medium text-muted-foreground">Badges</label>
+                        {draft.guaranteeSection.badges.map((badge, i) => (
+                            <div key={i} className="flex gap-2 items-center">
+                                <Input className="flex-1" value={badge} onChange={(e) => {
+                                    const arr = [...draft.guaranteeSection.badges]
+                                    arr[i] = e.target.value
+                                    setDraft(d => ({ ...d, guaranteeSection: { ...d.guaranteeSection, badges: arr } }))
+                                }} />
+                                <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => {
+                                    const arr = draft.guaranteeSection.badges.filter((_, j) => j !== i)
+                                    setDraft(d => ({ ...d, guaranteeSection: { ...d.guaranteeSection, badges: arr } }))
+                                }}><Trash2 className="h-3 w-3" /></Button>
+                            </div>
+                        ))}
+                        <Button type="button" variant="outline" size="sm" onClick={() => {
+                            setDraft(d => ({ ...d, guaranteeSection: { ...d.guaranteeSection, badges: [...d.guaranteeSection.badges, ''] } }))
+                        }}><Plus className="h-3 w-3 mr-1" /> Add Badge</Button>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'faq-section' && (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="pb-2 border-b">
+                        <h3 className="text-base font-semibold">FAQ Section</h3>
+                        <p className="text-xs text-muted-foreground">Configure the FAQ section on the landing page.</p>
+                    </div>
+                    <div className="space-y-3">
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Section Headline (HTML)</label>
+                            <Input value={draft.faqSection.headline} onChange={(e) => setDraft(d => ({ ...d, faqSection: { ...d.faqSection, headline: e.target.value } }))} />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2 border-t pt-4">
+                        <label className="text-xs font-medium text-muted-foreground">FAQ Items</label>
+                        {draft.faqSection.items.map((item, i) => (
+                            <div key={i} className="border rounded-lg p-3 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-muted-foreground">FAQ {i + 1}</span>
+                                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => {
+                                        const arr = draft.faqSection.items.filter((_, j) => j !== i)
+                                        setDraft(d => ({ ...d, faqSection: { ...d.faqSection, items: arr } }))
+                                    }}><Trash2 className="h-3 w-3" /></Button>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-medium text-muted-foreground">Question</label>
+                                    <Input value={item.q} onChange={(e) => {
+                                        const arr = [...draft.faqSection.items]
+                                        arr[i] = { ...arr[i], q: e.target.value }
+                                        setDraft(d => ({ ...d, faqSection: { ...d.faqSection, items: arr } }))
+                                    }} />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-medium text-muted-foreground">Answer</label>
+                                    <Textarea className="min-h-[60px]" value={item.a} onChange={(e) => {
+                                        const arr = [...draft.faqSection.items]
+                                        arr[i] = { ...arr[i], a: e.target.value }
+                                        setDraft(d => ({ ...d, faqSection: { ...d.faqSection, items: arr } }))
+                                    }} />
+                                </div>
+                            </div>
+                        ))}
+                        <Button type="button" variant="outline" size="sm" onClick={() => {
+                            setDraft(d => ({ ...d, faqSection: { ...d.faqSection, items: [...d.faqSection.items, { q: '', a: '' }] } }))
+                        }}><Plus className="h-3 w-3 mr-1" /> Add FAQ Item</Button>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'footer-section' && (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="pb-2 border-b">
+                        <h3 className="text-base font-semibold">Footer</h3>
+                        <p className="text-xs text-muted-foreground">Configure the footer content.</p>
+                    </div>
+                    <div className="space-y-3">
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Tagline</label>
+                            <Input value={draft.footer.tagline} onChange={(e) => setDraft(d => ({ ...d, footer: { ...d.footer, tagline: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Company Name</label>
+                            <Input value={draft.footer.companyName} onChange={(e) => setDraft(d => ({ ...d, footer: { ...d.footer, companyName: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Email</label>
+                            <Input value={draft.footer.email} onChange={(e) => setDraft(d => ({ ...d, footer: { ...d.footer, email: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Disclaimer</label>
+                            <Textarea className="min-h-[80px]" value={draft.footer.disclaimer} onChange={(e) => setDraft(d => ({ ...d, footer: { ...d.footer, disclaimer: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Copyright Line</label>
+                            <Input value={draft.footer.copyrightLine} onChange={(e) => setDraft(d => ({ ...d, footer: { ...d.footer, copyrightLine: e.target.value } }))} />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'misc-text' && (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="pb-2 border-b">
+                        <h3 className="text-base font-semibold">Misc Text</h3>
+                        <p className="text-xs text-muted-foreground">Miscellaneous text strings used across the landing page.</p>
+                    </div>
+                    <div className="space-y-3">
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Hero Star Line</label>
+                            <Input value={draft.miscText.heroStarLine} onChange={(e) => setDraft(d => ({ ...d, miscText: { ...d.miscText, heroStarLine: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Mobile CTA Button Text</label>
+                            <Input value={draft.miscText.ctaButtonText} onChange={(e) => setDraft(d => ({ ...d, miscText: { ...d.miscText, ctaButtonText: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Hero CTA Button Text</label>
+                            <Input value={draft.miscText.heroCtaButtonText} onChange={(e) => setDraft(d => ({ ...d, miscText: { ...d.miscText, heroCtaButtonText: e.target.value } }))} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Mobile CTA Quota Badge</label>
+                            <Input value={draft.miscText.mobileCtaQuotaBadge} onChange={(e) => setDraft(d => ({ ...d, miscText: { ...d.miscText, mobileCtaQuotaBadge: e.target.value } }))} />
+                        </div>
                     </div>
                 </div>
             )}

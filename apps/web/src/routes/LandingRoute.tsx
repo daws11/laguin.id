@@ -805,6 +805,7 @@ export function LandingRoute() {
             sectionLabel={howItWorksSec?.label}
             sectionHeadline={howItWorksSec?.headline}
             steps={howItWorksSec?.steps as any}
+            ctaButtonText={miscText?.ctaButtonText}
           />
         </Suspense>
 
@@ -836,6 +837,7 @@ export function LandingRoute() {
             themeSlug={themeSlug}
             securityBadge={footerCtaSecurityBadge}
             quotaLine={footerCtaQuotaLine}
+            ctaButtonText={miscText?.ctaButtonText}
           />
         </Suspense>
       </main>

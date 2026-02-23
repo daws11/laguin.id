@@ -16,6 +16,7 @@ type Props = {
   sectionLabel?: string
   sectionHeadline?: string
   steps?: StepItem[]
+  ctaButtonText?: string
 }
 
 export function HowItWorksSection({
@@ -27,6 +28,7 @@ export function HowItWorksSection({
   sectionLabel = 'Proses Mudah',
   sectionHeadline = 'Tiga langkah menuju <span class="text-[var(--theme-accent)] italic">tangis bahagia</span>',
   steps,
+  ctaButtonText = 'Buat Lagunya',
 }: Props) {
   const defaultSteps: StepItem[] = [
     { icon: '✍️', title: 'Ceritakan kisahmu', desc: 'Beritahu kami namanya, kenangan kalian, dan hal-hal lucu.' },
@@ -60,7 +62,7 @@ export function HowItWorksSection({
       <div className="text-center pt-4">
         <Button asChild size="lg" className="h-14 px-10 rounded-full bg-[var(--theme-accent)] text-lg font-bold shadow-xl shadow-[var(--theme-accent-soft)] hover:opacity-90">
           <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center gap-2">
-            <span>Buat Lagunya — {fmtCurrency(paymentAmount)}</span>
+            <span>{ctaButtonText} — {fmtCurrency(paymentAmount)}</span>
             <span className="text-xs font-normal line-through opacity-70 decoration-white/50">{fmtCurrency(originalAmount)}</span>
           </Link>
         </Button>
