@@ -29,6 +29,8 @@ The project uses a monorepo structure with `npm workspaces`, separating the fron
 
 **Multi-Theme System Details:**
 - Each theme can be configured with specific content for the landing page (hero text, reviews, promo banner), and a step-by-step song configuration process (ConfigStep0, ConfigStep1, ConfigStep3).
+- All landing page sections are fully editable via admin: audio samples section, comparison section, how-it-works steps, guarantee section, FAQ items, footer text, misc labels (CTA buttons, star line, quota badge).
+- Landing page components accept text as props with sensible defaults; config stored in publicSiteConfig JSON blob.
 - An AI theme content generator is integrated to automatically populate text fields based on prompts using OpenRouter.
 - Admin interface includes a comprehensive theme editor for visual configuration of all theme-specific settings.
 
