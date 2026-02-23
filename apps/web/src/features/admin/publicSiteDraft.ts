@@ -18,6 +18,8 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
     footerCta: {
       headline: 'Jangan biarkan Valentine berlalu',
       subtitle: 'Beri dia hadiah yang tak akan pernah dia lupakan. Gabung <strong>2,847 wanita</strong> yang membuat pasangannya menangis terharu.',
+      securityBadge: '🔒 Checkout Aman',
+      quotaLine: 'Hanya 11 kuota gratis tersisa',
     },
     heroMedia: {
       mode: 'image',
@@ -131,6 +133,70 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
     deliveryDelayUnit: 'hours' as 'hours' | 'days',
     paymentAmount: 497000,
     originalAmount: 497000,
+  },
+  audioSamplesSection: {
+    badge: 'Tekan Putar',
+    headline: 'Dengar <span class="text-[var(--theme-accent)] italic">namanya</span> di lagu asli',
+    subtext: 'Lagu asli yang kami buat. Nama asli. Air mata asli.',
+    otherLabel: 'Contoh Lainnya',
+    ctaLine: 'Bayangkan mendengar <span class="text-[var(--theme-accent)] font-medium italic">namanya</span> di lagu seperti ini...',
+  },
+  comparisonSection: {
+    headline: 'Kado yang akan dia <span class="text-gray-400 line-through decoration-[var(--theme-accent)]">lupakan</span> vs. yang akan dia <span class="text-[var(--theme-accent)] italic">putar ulang</span>',
+    giftItems: [
+      { icon: '🧴', name: 'Parfum', price: 'Rp 1jt+' },
+      { icon: '⌚', name: 'Jam Tangan', price: 'Rp 2jt+' },
+      { icon: '👔', name: 'Baju', price: 'Rp 500rb+' },
+      { icon: '🎮', name: 'Gadget', price: 'Rp 3jt+' },
+    ],
+    forgottenLabel: 'Dilupakan bulan depan ❌',
+    foreverLabel: 'Diputar Selamanya ✅',
+    bestPriceBadge: 'HARGA TERBAIK',
+    productTitle: 'Lagu Personal Untuknya',
+    checklistItems: [
+      { text: '<strong>Namanya</strong> dalam lirik' },
+      { text: 'Cerita & kenangan kalian' },
+      { text: 'Audio kualitas studio' },
+    ],
+  },
+  howItWorksSection: {
+    label: 'Proses Mudah',
+    headline: 'Tiga langkah menuju <span class="text-[var(--theme-accent)] italic">tangis bahagia</span>',
+    steps: [
+      { icon: '✍️', title: 'Ceritakan kisahmu', desc: 'Beritahu kami namanya, kenangan kalian, dan hal-hal lucu.' },
+      { icon: '🎵', title: 'Kami buatkan', desc: 'Namanya ditenun menjadi lirik & musik profesional oleh komposer kami.' },
+      { icon: '😭', title: 'Lihat dia terharu', desc: 'Dia akan menyimpannya selamanya.' },
+    ],
+  },
+  guaranteeSection: {
+    badge: '100% Bebas Risiko',
+    headline: 'Garansi "Tangis Bahagia"',
+    description: 'Jika lagunya tidak membuatnya emosional, kami akan <strong class="text-gray-900">membuat ulang gratis</strong> atau memberikan <strong class="text-gray-900">pengembalian dana penuh</strong>. Tanpa banyak tanya.',
+    badges: ['Revisi gratis', 'Refund penuh'],
+    videoUrl: '/laguin-studio.mp4',
+  },
+  faqSection: {
+    headline: 'Pertanyaan <span class="text-[var(--theme-accent)] italic">Cepat</span>',
+    items: [
+      { q: 'Dia bukan tipe yang emosional...', a: "Itu yang MEREKA SEMUA katakan! 98% menangis — mantan militer, ayah yang kaku, pacar 'aku gak main perasaan'. Semakin tangguh mereka, semakin dalam jatuhnya. 😉" },
+      { q: 'Bagaimana dia menerima lagunya?', a: 'Kamu menerima link download via email. Putar untuknya secara langsung, kirim via WhatsApp, atau jadikan kejutan! Ini file MP3 yang bisa diputar di mana saja.' },
+      { q: 'Berapa lama prosesnya?', a: 'Kamu akan dapat notifikasi email saat sudah siap.' },
+      { q: 'Kalau aku gak suka gimana?', a: 'Revisi gratis tanpa batas sampai kamu suka. Masih gak puas? Refund penuh, tanpa tanya-tanya. 💕' },
+      { q: 'Benarkah GRATIS?', a: 'Ya! Spesial untuk 100 orang pertama. Tanpa biaya tersembunyi. Satu kesempatan, hadiah tak terlupakan.' },
+    ],
+  },
+  footer: {
+    tagline: 'Membuat pria menangis sejak 2024',
+    companyName: 'Langit Utama Group',
+    email: 'support@laguin.id',
+    disclaimer: 'Laguin.id menyediakan layanan musik digital yang dipersonalisasi. Seluruh lagu dibuat secara khusus berdasarkan informasi yang diberikan oleh pelanggan. Tidak terdapat pengiriman produk fisik. Kualitas dan hasil akhir dapat bervariasi bergantung pada kelengkapan serta keakuratan informasi yang disampaikan. Layanan ini tidak berafiliasi dengan, tidak disponsori, dan tidak didukung oleh Facebook, Inc. atau Meta Platforms, Inc.',
+    copyrightLine: 'Langit Utama Group. All rights reserved.',
+  },
+  miscText: {
+    heroStarLine: '2,847 menangis bahagia',
+    ctaButtonText: 'Buat Lagunya',
+    heroCtaButtonText: 'Buat Lagu',
+    mobileCtaQuotaBadge: '(11 sisa)',
   },
   configSteps: {
     step0: {
@@ -334,6 +400,8 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
       footerCta: {
         headline: asString(footerCta?.headline, defaultPublicSiteDraft.landing.footerCta.headline),
         subtitle: asString(footerCta?.subtitle, defaultPublicSiteDraft.landing.footerCta.subtitle),
+        securityBadge: asString(footerCta?.securityBadge, defaultPublicSiteDraft.landing.footerCta.securityBadge),
+        quotaLine: asString(footerCta?.quotaLine, defaultPublicSiteDraft.landing.footerCta.quotaLine),
       },
       heroMedia: {
         mode,
@@ -416,6 +484,111 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
       originalAmount: asNumber(cd?.originalAmount, defaultPublicSiteDraft.creationDelivery.originalAmount),
     },
     configSteps: buildConfigSteps(cfg?.configSteps),
+    audioSamplesSection: buildAudioSamplesSection(cfg?.audioSamplesSection),
+    comparisonSection: buildComparisonSection(cfg?.comparisonSection),
+    howItWorksSection: buildHowItWorksSection(cfg?.howItWorksSection),
+    guaranteeSection: buildGuaranteeSection(cfg?.guaranteeSection),
+    faqSection: buildFaqSection(cfg?.faqSection),
+    footer: buildFooter(cfg?.footer),
+    miscText: buildMiscText(cfg?.miscText),
+  }
+}
+
+function buildAudioSamplesSection(raw: any) {
+  const s = raw && typeof raw === 'object' ? raw : {}
+  const d = defaultPublicSiteDraft.audioSamplesSection
+  return {
+    badge: asString(s?.badge, d.badge),
+    headline: asString(s?.headline, d.headline),
+    subtext: asString(s?.subtext, d.subtext),
+    otherLabel: asString(s?.otherLabel, d.otherLabel),
+    ctaLine: asString(s?.ctaLine, d.ctaLine),
+  }
+}
+
+function buildComparisonSection(raw: any) {
+  const s = raw && typeof raw === 'object' ? raw : {}
+  const d = defaultPublicSiteDraft.comparisonSection
+  const giftItems = safeArr(s?.giftItems, (x: any) => ({
+    icon: asString(x?.icon, '🎁'),
+    name: asString(x?.name, ''),
+    price: asString(x?.price, ''),
+  })).filter((x: any) => x.name)
+  const checklistItems = safeArr(s?.checklistItems, (x: any) => ({
+    text: asString(x?.text, ''),
+  })).filter((x: any) => x.text)
+  return {
+    headline: asString(s?.headline, d.headline),
+    giftItems: giftItems.length ? giftItems : d.giftItems,
+    forgottenLabel: asString(s?.forgottenLabel, d.forgottenLabel),
+    foreverLabel: asString(s?.foreverLabel, d.foreverLabel),
+    bestPriceBadge: asString(s?.bestPriceBadge, d.bestPriceBadge),
+    productTitle: asString(s?.productTitle, d.productTitle),
+    checklistItems: checklistItems.length ? checklistItems : d.checklistItems,
+  }
+}
+
+function buildHowItWorksSection(raw: any) {
+  const s = raw && typeof raw === 'object' ? raw : {}
+  const d = defaultPublicSiteDraft.howItWorksSection
+  const steps = safeArr(s?.steps, (x: any) => ({
+    icon: asString(x?.icon, '📌'),
+    title: asString(x?.title, ''),
+    desc: asString(x?.desc, ''),
+  })).filter((x: any) => x.title)
+  return {
+    label: asString(s?.label, d.label),
+    headline: asString(s?.headline, d.headline),
+    steps: steps.length ? steps : d.steps,
+  }
+}
+
+function buildGuaranteeSection(raw: any) {
+  const s = raw && typeof raw === 'object' ? raw : {}
+  const d = defaultPublicSiteDraft.guaranteeSection
+  const badges = safeArr(s?.badges, (x: any) => typeof x === 'string' ? x : '').filter((x: string) => x.trim())
+  return {
+    badge: asString(s?.badge, d.badge),
+    headline: asString(s?.headline, d.headline),
+    description: asString(s?.description, d.description),
+    badges: badges.length ? badges : d.badges,
+    videoUrl: asString(s?.videoUrl, d.videoUrl),
+  }
+}
+
+function buildFaqSection(raw: any) {
+  const s = raw && typeof raw === 'object' ? raw : {}
+  const d = defaultPublicSiteDraft.faqSection
+  const items = safeArr(s?.items, (x: any) => ({
+    q: asString(x?.q, ''),
+    a: asString(x?.a, ''),
+  })).filter((x: any) => x.q)
+  return {
+    headline: asString(s?.headline, d.headline),
+    items: items.length ? items : d.items,
+  }
+}
+
+function buildFooter(raw: any) {
+  const s = raw && typeof raw === 'object' ? raw : {}
+  const d = defaultPublicSiteDraft.footer
+  return {
+    tagline: asString(s?.tagline, d.tagline),
+    companyName: asString(s?.companyName, d.companyName),
+    email: asString(s?.email, d.email),
+    disclaimer: asString(s?.disclaimer, d.disclaimer),
+    copyrightLine: asString(s?.copyrightLine, d.copyrightLine),
+  }
+}
+
+function buildMiscText(raw: any) {
+  const s = raw && typeof raw === 'object' ? raw : {}
+  const d = defaultPublicSiteDraft.miscText
+  return {
+    heroStarLine: asString(s?.heroStarLine, d.heroStarLine),
+    ctaButtonText: asString(s?.ctaButtonText, d.ctaButtonText),
+    heroCtaButtonText: asString(s?.heroCtaButtonText, d.heroCtaButtonText),
+    mobileCtaQuotaBadge: asString(s?.mobileCtaQuotaBadge, d.mobileCtaQuotaBadge),
   }
 }
 

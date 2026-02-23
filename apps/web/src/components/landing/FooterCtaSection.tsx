@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 
 function sanitizeHtml(html: string): string {
-  return html.replace(/<\/?(?!strong|em|br\s*\/?)([a-z][a-z0-9]*)\b[^>]*>/gi, '')
+  return html.replace(/<\/?(?!strong|em|br\s*\/?)(?!span\b)([a-z][a-z0-9]*)\b[^>]*>/gi, '')
 }
 
 type Props = {
@@ -12,9 +12,20 @@ type Props = {
   paymentAmount: number | null
   originalAmount: number | null
   themeSlug: string | null
+  securityBadge?: string
+  quotaLine?: string
 }
 
-export function FooterCtaSection({ headline, subtitle, fmtCurrency, paymentAmount, originalAmount, themeSlug }: Props) {
+export function FooterCtaSection({
+  headline,
+  subtitle,
+  fmtCurrency,
+  paymentAmount,
+  originalAmount,
+  themeSlug,
+  securityBadge = '🔒 Checkout Aman',
+  quotaLine = 'Hanya 11 kuota gratis tersisa',
+}: Props) {
   return (
     <section className="text-center space-y-6 pb-12">
       <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">{headline}</h2>
@@ -30,8 +41,8 @@ export function FooterCtaSection({ headline, subtitle, fmtCurrency, paymentAmoun
       </div>
 
       <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-[11px] sm:text-xs font-bold text-gray-400 uppercase tracking-wide pt-4">
-        <span>🔒 Checkout Aman</span>
-        <span>Hanya 11 kuota gratis tersisa</span>
+        <span>{securityBadge}</span>
+        <span>{quotaLine}</span>
       </div>
     </section>
   )

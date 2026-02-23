@@ -178,6 +178,86 @@ export type ConfigSteps = {
   step4: ConfigStep4
 }
 
+export type ComparisonGiftItem = {
+  icon: string
+  name: string
+  price: string
+}
+
+export type ComparisonChecklistItem = {
+  text: string
+}
+
+export type ComparisonSectionConfig = {
+  headline: string
+  giftItems: ComparisonGiftItem[]
+  forgottenLabel: string
+  foreverLabel: string
+  bestPriceBadge: string
+  productTitle: string
+  checklistItems: ComparisonChecklistItem[]
+}
+
+export type HowItWorksLandingStep = {
+  icon: string
+  title: string
+  desc: string
+}
+
+export type HowItWorksSectionConfig = {
+  label: string
+  headline: string
+  steps: HowItWorksLandingStep[]
+}
+
+export type GuaranteeSectionConfig = {
+  badge: string
+  headline: string
+  description: string
+  badges: string[]
+  videoUrl: string
+}
+
+export type FaqItemConfig = {
+  q: string
+  a: string
+}
+
+export type FaqSectionConfig = {
+  headline: string
+  items: FaqItemConfig[]
+}
+
+export type AudioSamplesSectionConfig = {
+  badge: string
+  headline: string
+  subtext: string
+  otherLabel: string
+  ctaLine: string
+}
+
+export type FooterConfig = {
+  tagline: string
+  companyName: string
+  email: string
+  disclaimer: string
+  copyrightLine: string
+}
+
+export type FooterCtaConfig = {
+  headline: string
+  subtitle: string
+  securityBadge: string
+  quotaLine: string
+}
+
+export type MiscTextConfig = {
+  heroStarLine: string
+  ctaButtonText: string
+  heroCtaButtonText: string
+  mobileCtaQuotaBadge: string
+}
+
 export type PublicSiteDraft = {
   logoUrl: string
   colors: ThemeColors
@@ -187,10 +267,7 @@ export type PublicSiteDraft = {
       line2: string
     }
     heroSubtext: string
-    footerCta: {
-      headline: string
-      subtitle: string
-    }
+    footerCta: FooterCtaConfig
     heroMedia: {
       mode: 'image' | 'video'
       imageUrl: string
@@ -266,6 +343,13 @@ export type PublicSiteDraft = {
     originalAmount: number
   }
   configSteps: ConfigSteps
+  audioSamplesSection: AudioSamplesSectionConfig
+  comparisonSection: ComparisonSectionConfig
+  howItWorksSection: HowItWorksSectionConfig
+  guaranteeSection: GuaranteeSectionConfig
+  faqSection: FaqSectionConfig
+  footer: FooterConfig
+  miscText: MiscTextConfig
 }
 
 export type CustomerListItem = {

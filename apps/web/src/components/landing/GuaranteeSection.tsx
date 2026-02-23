@@ -1,11 +1,27 @@
 import { useEffect, useRef, useState } from 'react'
 import { ShieldCheck, Check } from 'lucide-react'
 
-type Props = {
-  deliveryEtaShort: string
+function sanitizeHtml(html: string): string {
+  return html.replace(/<\/?(?!strong|em|br\s*\/?)(?!span\b)([a-z][a-z0-9]*)\b[^>]*>/gi, '')
 }
 
-export function GuaranteeSection({ deliveryEtaShort }: Props) {
+type Props = {
+  deliveryEtaShort: string
+  badgeText?: string
+  headline?: string
+  description?: string
+  badges?: string[]
+  videoUrl?: string
+}
+
+export function GuaranteeSection({
+  deliveryEtaShort,
+  badgeText = '100% Bebas Risiko',
+  headline = 'Garansi "Tangis Bahagia"',
+  description = 'Jika lagunya tidak membuatnya emosional, kami akan <strong class="text-gray-900">membuat ulang gratis</strong> atau memberikan <strong class="text-gray-900">pengembalian dana penuh</strong>. Tanpa banyak tanya.',
+  badges = ['Revisi gratis', 'Refund penuh'],
+  videoUrl = '/laguin-studio.mp4',
+}: Props) {
   const videoRef = useRef<HTMLDivElement>(null)
   const [videoVisible, setVideoVisible] = useState(false)
 
@@ -33,15 +49,14 @@ export function GuaranteeSection({ deliveryEtaShort }: Props) {
         </div>
         <div className="relative z-10 space-y-4">
           <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full text-green-700 font-bold text-sm shadow-sm mb-2">
-            <ShieldCheck className="h-4 w-4" /> 100% Bebas Risiko
+            <ShieldCheck className="h-4 w-4" /> {badgeText}
           </div>
-          <h3 className="font-serif text-3xl font-bold text-gray-900">Garansi "Tangis Bahagia"</h3>
-          <p className="text-gray-700 max-w-lg mx-auto">
-            Jika lagunya tidak membuatnya emosional, kami akan <strong className="text-gray-900">membuat ulang gratis</strong> atau memberikan <strong className="text-gray-900">pengembalian dana penuh</strong>. Tanpa banyak tanya.
-          </p>
+          <h3 className="font-serif text-3xl font-bold text-gray-900">{headline}</h3>
+          <p className="text-gray-700 max-w-lg mx-auto" dangerouslySetInnerHTML={{ __html: sanitizeHtml(description) }} />
           <div className="flex flex-wrap justify-center gap-6 text-sm font-bold text-green-700 pt-2">
-            <span className="flex items-center gap-1"><Check className="h-4 w-4" /> Revisi gratis</span>
-            <span className="flex items-center gap-1"><Check className="h-4 w-4" /> Refund penuh</span>
+            {badges.map((badge, i) => (
+              <span key={i} className="flex items-center gap-1"><Check className="h-4 w-4" /> {badge}</span>
+            ))}
             <span className="flex items-center gap-1"><Check className="h-4 w-4" /> Pengiriman {deliveryEtaShort}</span>
           </div>
         </div>
@@ -49,7 +64,7 @@ export function GuaranteeSection({ deliveryEtaShort }: Props) {
       <div className="mt-6" ref={videoRef}>
         {videoVisible && (
           <video
-            src="/laguin-studio.mp4"
+            src={videoUrl}
             className="w-full rounded-2xl shadow-md"
             autoPlay
             muted

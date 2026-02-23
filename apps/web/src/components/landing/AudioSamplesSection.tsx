@@ -228,6 +228,10 @@ function FeaturedAudioPlayer({
   )
 }
 
+function sanitizeHtml(html: string): string {
+  return html.replace(/<\/?(?!strong|em|br\s*\/?)(?!span\b)([a-z][a-z0-9]*)\b[^>]*>/gi, '')
+}
+
 type Props = {
   allTracks: TrackItem[]
   selectedTrackIndex: number
@@ -239,6 +243,11 @@ type Props = {
   paymentAmount: number | null
   originalAmount: number | null
   themeSlug: string | null
+  sectionBadge?: string
+  sectionHeadline?: string
+  sectionSubtext?: string
+  otherLabel?: string
+  ctaLine?: string
 }
 
 export function AudioSamplesSection({
@@ -252,6 +261,11 @@ export function AudioSamplesSection({
   paymentAmount,
   originalAmount,
   themeSlug,
+  sectionBadge = 'Tekan Putar',
+  sectionHeadline = 'Dengar <span class="text-[var(--theme-accent)] italic">namanya</span> di lagu asli',
+  sectionSubtext = 'Lagu asli yang kami buat. Nama asli. Air mata asli.',
+  otherLabel = 'Contoh Lainnya',
+  ctaLine = 'Bayangkan mendengar <span class="text-[var(--theme-accent)] font-medium italic">namanya</span> di lagu seperti ini...',
 }: Props) {
   const currentTrack = allTracks[selectedTrackIndex] ?? allTracks[0]
 
@@ -260,12 +274,10 @@ export function AudioSamplesSection({
       <div className="text-center space-y-3">
         <div className="inline-flex items-center gap-2 rounded-full border border-[var(--theme-accent-soft)] bg-[var(--theme-accent-soft)] px-4 py-1.5 text-sm font-bold uppercase tracking-wider text-[var(--theme-accent)]">
           <Play className="h-3.5 w-3.5" fill="currentColor" />
-          Tekan Putar
+          {sectionBadge}
         </div>
-        <h2 id="audio-samples-title" className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">
-          Dengar <span className="text-[var(--theme-accent)] italic">namanya</span> di lagu asli
-        </h2>
-        <p className="text-gray-500">Lagu asli yang kami buat. Nama asli. Air mata asli.</p>
+        <h2 id="audio-samples-title" className="font-serif text-3xl sm:text-4xl font-bold text-gray-900" dangerouslySetInnerHTML={{ __html: sanitizeHtml(sectionHeadline) }} />
+        <p className="text-gray-500">{sectionSubtext}</p>
       </div>
 
       <div className="bg-white rounded-3xl p-5 sm:p-6 md:p-10 shadow-xl border border-[var(--theme-accent-soft)]">
@@ -285,7 +297,7 @@ export function AudioSamplesSection({
 
         <div className="mt-10 pt-8 border-t border-gray-100">
           <p className="text-center text-sm font-medium text-gray-400 uppercase tracking-wider mb-6">
-            Contoh Lainnya
+            {otherLabel}
           </p>
           <div className="space-y-0 divide-y divide-gray-100">
             {allTracks.map((t, i) => (
@@ -318,9 +330,7 @@ export function AudioSamplesSection({
         </div>
 
         <div className="mt-10 text-center space-y-4">
-          <p className="text-gray-600">
-            Bayangkan mendengar <span className="text-[var(--theme-accent)] font-medium italic">namanya</span> di lagu seperti ini...
-          </p>
+          <p className="text-gray-600" dangerouslySetInnerHTML={{ __html: sanitizeHtml(ctaLine) }} />
           <Button asChild size="lg" className="h-12 px-8 rounded-xl bg-[var(--theme-accent)] font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90">
             <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center gap-2">
               <span>Buat Lagunya — {fmtCurrency(paymentAmount)}</span>

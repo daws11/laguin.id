@@ -36,7 +36,7 @@ type PublicSiteConfig = {
   landing?: {
     heroHeadline?: { line1?: string; line2?: string }
     heroSubtext?: string
-    footerCta?: { headline?: string; subtitle?: string }
+    footerCta?: { headline?: string; subtitle?: string; securityBadge?: string; quotaLine?: string }
     heroMedia?: { imageUrl?: string; videoUrl?: string | null }
     heroOverlay?: {
       quote?: string
@@ -87,6 +87,51 @@ type PublicSiteConfig = {
   }
   activityToast?: ActivityToastConfig
   colors?: { accentColor?: string; bgColor1?: string; bgColor2?: string }
+  audioSamplesSection?: {
+    badge?: string
+    headline?: string
+    subtext?: string
+    otherLabel?: string
+    ctaLine?: string
+  }
+  comparisonSection?: {
+    headline?: string
+    giftItems?: Array<{ icon?: string; name?: string; price?: string }>
+    forgottenLabel?: string
+    foreverLabel?: string
+    bestPriceBadge?: string
+    productTitle?: string
+    checklistItems?: Array<{ text?: string }>
+  }
+  howItWorksSection?: {
+    label?: string
+    headline?: string
+    steps?: Array<{ icon?: string; title?: string; desc?: string }>
+  }
+  guaranteeSection?: {
+    badge?: string
+    headline?: string
+    description?: string
+    badges?: string[]
+    videoUrl?: string
+  }
+  faqSection?: {
+    headline?: string
+    items?: Array<{ q?: string; a?: string }>
+  }
+  footer?: {
+    tagline?: string
+    companyName?: string
+    email?: string
+    disclaimer?: string
+    copyrightLine?: string
+  }
+  miscText?: {
+    heroStarLine?: string
+    ctaButtonText?: string
+    heroCtaButtonText?: string
+    mobileCtaQuotaBadge?: string
+  }
 }
 
 type PublicSettingsResponse = {
@@ -422,6 +467,16 @@ export function LandingRoute() {
     typeof landing.footerCta?.subtitle === 'string' && landing.footerCta.subtitle.trim()
       ? landing.footerCta.subtitle
       : defaultPublicSiteConfig.landing!.footerCta!.subtitle!
+  const footerCtaSecurityBadge = landing.footerCta?.securityBadge
+  const footerCtaQuotaLine = landing.footerCta?.quotaLine
+
+  const audioSamplesSec = site.audioSamplesSection
+  const comparisonSec = site.comparisonSection
+  const howItWorksSec = site.howItWorksSection
+  const guaranteeSec = site.guaranteeSection
+  const faqSec = site.faqSection
+  const footerSec = site.footer
+  const miscText = site.miscText
 
   const heroImageUrl =
     typeof heroMedia.imageUrl === 'string' && heroMedia.imageUrl.trim()
@@ -579,7 +634,7 @@ export function LandingRoute() {
                 <Star className="h-4 w-4 fill-current" />
                 <Star className="h-4 w-4 fill-current" />
               </div>
-              <span className="text-xs font-medium text-gray-500">2,847 menangis bahagia</span>
+              <span className="text-xs font-medium text-gray-500">{miscText?.heroStarLine || '2,847 menangis bahagia'}</span>
             </div>
 
             <h1 id="hero-title" className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight">
@@ -675,7 +730,7 @@ export function LandingRoute() {
             <div className="space-y-2">
               <Button asChild size="lg" className="w-full sm:w-auto h-12 sm:h-14 px-8 rounded-full bg-[var(--theme-accent)] text-base sm:text-lg font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90 hover:scale-105 transition-all duration-300">
                 <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center justify-center gap-2">
-                  Buat Lagu — {fmtCurrency(paymentAmount)}
+                  {miscText?.heroCtaButtonText || 'Buat Lagu'} — {fmtCurrency(paymentAmount)}
                   <span className="text-[var(--theme-accent-soft)] line-through font-normal text-sm sm:text-base ml-1">{fmtCurrency(originalAmount)}</span>
                 </Link>
               </Button>
@@ -703,6 +758,11 @@ export function LandingRoute() {
             paymentAmount={paymentAmount}
             originalAmount={originalAmount}
             themeSlug={themeSlug}
+            sectionBadge={audioSamplesSec?.badge}
+            sectionHeadline={audioSamplesSec?.headline}
+            sectionSubtext={audioSamplesSec?.subtext}
+            otherLabel={audioSamplesSec?.otherLabel}
+            ctaLine={audioSamplesSec?.ctaLine}
           />
         </Suspense>
 
@@ -716,6 +776,13 @@ export function LandingRoute() {
             paymentAmount={paymentAmount}
             originalAmount={originalAmount}
             deliveryEtaSentence={deliveryEta.sentenceLower}
+            headline={comparisonSec?.headline}
+            giftItems={comparisonSec?.giftItems as any}
+            forgottenLabel={comparisonSec?.forgottenLabel}
+            foreverLabel={comparisonSec?.foreverLabel}
+            bestPriceBadge={comparisonSec?.bestPriceBadge}
+            productTitle={comparisonSec?.productTitle}
+            checklistItems={comparisonSec?.checklistItems as any}
           />
         </Suspense>
 
@@ -735,15 +802,28 @@ export function LandingRoute() {
             paymentAmount={paymentAmount}
             originalAmount={originalAmount}
             themeSlug={themeSlug}
+            sectionLabel={howItWorksSec?.label}
+            sectionHeadline={howItWorksSec?.headline}
+            steps={howItWorksSec?.steps as any}
           />
         </Suspense>
 
         <Suspense fallback={sectionFallback}>
-          <GuaranteeSection deliveryEtaShort={deliveryEta.short} />
+          <GuaranteeSection
+            deliveryEtaShort={deliveryEta.short}
+            badgeText={guaranteeSec?.badge}
+            headline={guaranteeSec?.headline}
+            description={guaranteeSec?.description}
+            badges={guaranteeSec?.badges}
+            videoUrl={guaranteeSec?.videoUrl}
+          />
         </Suspense>
 
         <Suspense fallback={sectionFallback}>
-          <FaqSection items={faqItems} />
+          <FaqSection
+            items={faqItems}
+            sectionHeadline={faqSec?.headline}
+          />
         </Suspense>
 
         <Suspense fallback={sectionFallback}>
@@ -754,6 +834,8 @@ export function LandingRoute() {
             paymentAmount={paymentAmount}
             originalAmount={originalAmount}
             themeSlug={themeSlug}
+            securityBadge={footerCtaSecurityBadge}
+            quotaLine={footerCtaQuotaLine}
           />
         </Suspense>
       </main>
@@ -763,6 +845,11 @@ export function LandingRoute() {
           logoUrl={logoUrl}
           themeSlug={themeSlug}
           activeThemes={activeThemes}
+          tagline={footerSec?.tagline}
+          companyName={footerSec?.companyName}
+          email={footerSec?.email}
+          disclaimer={footerSec?.disclaimer}
+          copyrightLine={footerSec?.copyrightLine}
         />
       </Suspense>
 
@@ -780,9 +867,9 @@ export function LandingRoute() {
            </div>
            <Button asChild size="lg" className="w-full h-auto min-h-[3.5rem] py-2 rounded-xl bg-[var(--theme-accent)] text-lg font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90 active:scale-95 transition-all">
             <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center justify-center gap-2 flex-wrap text-center leading-tight">
-              <span>Buat Lagunya — {fmtCurrency(paymentAmount)}</span>
+              <span>{miscText?.ctaButtonText || 'Buat Lagunya'} — {fmtCurrency(paymentAmount)}</span>
               <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/30 text-xs whitespace-nowrap">
-                (11 sisa)
+                {miscText?.mobileCtaQuotaBadge || '(11 sisa)'}
               </Badge>
             </Link>
           </Button>
