@@ -886,6 +886,73 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
     },
   }
 
-  return { logoUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, heroCheckmarks: nextHeroCheckmarks, trustBadges: nextTrustBadges, statsBar: nextStatsBar, reviews: nextReviews, promoBanner: nextPromoBanner, configSteps: nextConfigSteps }
+  const faviconUrl = draft.faviconUrl.trim() || defaultPublicSiteDraft.faviconUrl
+
+  const nextAudioSamplesSection = {
+    badge: draft.audioSamplesSection.badge.trim(),
+    headline: draft.audioSamplesSection.headline.trim(),
+    subtext: draft.audioSamplesSection.subtext.trim(),
+    otherLabel: draft.audioSamplesSection.otherLabel.trim(),
+    ctaLine: draft.audioSamplesSection.ctaLine.trim(),
+  }
+
+  const nextComparisonSection = {
+    headline: draft.comparisonSection.headline.trim(),
+    forgottenLabel: draft.comparisonSection.forgottenLabel.trim(),
+    foreverLabel: draft.comparisonSection.foreverLabel.trim(),
+    bestPriceBadge: draft.comparisonSection.bestPriceBadge.trim(),
+    productTitle: draft.comparisonSection.productTitle.trim(),
+    giftItems: draft.comparisonSection.giftItems.map((x) => ({
+      icon: x.icon.trim(),
+      name: x.name.trim(),
+      price: x.price.trim(),
+    })),
+    checklistItems: draft.comparisonSection.checklistItems.map((x) => ({
+      text: x.text.trim(),
+    })),
+  }
+
+  const nextHowItWorksSection = {
+    label: draft.howItWorksSection.label.trim(),
+    headline: draft.howItWorksSection.headline.trim(),
+    steps: draft.howItWorksSection.steps.map((s) => ({
+      icon: s.icon.trim(),
+      title: s.title.trim(),
+      desc: s.desc.trim(),
+    })),
+  }
+
+  const nextGuaranteeSection = {
+    badge: draft.guaranteeSection.badge.trim(),
+    headline: draft.guaranteeSection.headline.trim(),
+    description: draft.guaranteeSection.description.trim(),
+    badges: draft.guaranteeSection.badges.map((b) => b.trim()).filter((b) => b),
+    videoUrl: draft.guaranteeSection.videoUrl.trim(),
+  }
+
+  const nextFaqSection = {
+    headline: draft.faqSection.headline.trim(),
+    items: draft.faqSection.items.map((x) => ({
+      q: x.q.trim(),
+      a: x.a.trim(),
+    })),
+  }
+
+  const nextFooter = {
+    tagline: draft.footer.tagline.trim(),
+    companyName: draft.footer.companyName.trim(),
+    email: draft.footer.email.trim(),
+    disclaimer: draft.footer.disclaimer.trim(),
+    copyrightLine: draft.footer.copyrightLine.trim(),
+  }
+
+  const nextMiscText = {
+    heroStarLine: draft.miscText.heroStarLine.trim(),
+    ctaButtonText: draft.miscText.ctaButtonText.trim(),
+    heroCtaButtonText: draft.miscText.heroCtaButtonText.trim(),
+    mobileCtaQuotaBadge: draft.miscText.mobileCtaQuotaBadge.trim(),
+  }
+
+  return { logoUrl, faviconUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, heroCheckmarks: nextHeroCheckmarks, trustBadges: nextTrustBadges, statsBar: nextStatsBar, reviews: nextReviews, promoBanner: nextPromoBanner, configSteps: nextConfigSteps, audioSamplesSection: nextAudioSamplesSection, comparisonSection: nextComparisonSection, howItWorksSection: nextHowItWorksSection, guaranteeSection: nextGuaranteeSection, faqSection: nextFaqSection, footer: nextFooter, miscText: nextMiscText }
 }
 
