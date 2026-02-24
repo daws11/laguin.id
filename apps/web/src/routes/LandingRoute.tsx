@@ -373,6 +373,21 @@ export function LandingRoute() {
     return apiBase + s
   }
 
+  const faviconUrl = typeof (publicSiteConfig as any)?.faviconUrl === 'string' && (publicSiteConfig as any).faviconUrl.trim()
+    ? resolveAsset((publicSiteConfig as any).faviconUrl)
+    : '/favicon.svg'
+
+  useEffect(() => {
+    const link = document.querySelector("link[rel='icon']") as HTMLLinkElement | null
+    if (link && faviconUrl) {
+      link.href = faviconUrl
+    }
+    const appleLink = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement | null
+    if (appleLink && faviconUrl) {
+      appleLink.href = faviconUrl
+    }
+  }, [faviconUrl])
+
   if (publicSiteConfig === undefined) {
     return <div className="min-h-screen" />
   }
@@ -389,21 +404,6 @@ export function LandingRoute() {
   const logoUrl = typeof (publicSiteConfig as any)?.logoUrl === 'string' && (publicSiteConfig as any).logoUrl.trim()
     ? resolveAsset((publicSiteConfig as any).logoUrl)
     : '/logo.webp'
-
-  const faviconUrl = typeof (publicSiteConfig as any)?.faviconUrl === 'string' && (publicSiteConfig as any).faviconUrl.trim()
-    ? resolveAsset((publicSiteConfig as any).faviconUrl)
-    : '/favicon.svg'
-
-  useEffect(() => {
-    const link = document.querySelector("link[rel='icon']") as HTMLLinkElement | null
-    if (link && faviconUrl) {
-      link.href = faviconUrl
-    }
-    const appleLink = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement | null
-    if (appleLink && faviconUrl) {
-      appleLink.href = faviconUrl
-    }
-  }, [faviconUrl])
 
   const landing = site.landing ?? defaultPublicSiteConfig.landing!
   const heroMedia = landing.heroMedia ?? defaultPublicSiteConfig.landing!.heroMedia!
