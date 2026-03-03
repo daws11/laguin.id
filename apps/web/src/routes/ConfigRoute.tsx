@@ -217,7 +217,7 @@ export function ConfigRoute() {
       id: str(x?.id, ''),
       label: str(x?.label, ''),
       desc: str(x?.desc, ''),
-      icon: str(x?.icon, '🎵'),
+      icon: typeof x?.icon === 'string' ? x.icon.trim() : '',
       badge: x?.badge ? str(x.badge, '') : undefined,
     })).filter((x: any) => x.id && x.label)
 
@@ -1188,17 +1188,16 @@ export function ConfigRoute() {
                 <p className="text-xs text-gray-500">{configSteps.step2.subtitle}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="flex flex-wrap gap-2">
                 {configSteps.step2.vibeChips.map((g) => (
                   <VibeCard
                     key={g.id}
                     label={g.label}
                     description={g.desc}
-                    icon={<span className="text-xl">{g.icon}</span>}
+                    icon={g.icon}
                     badge={g.badge}
                     selected={genre === g.id}
                     onClick={() => setValue('musicPreferences.genre', g.id)}
-                    className={genre === g.id ? "bg-[var(--theme-accent)] border-[var(--theme-accent)] text-white ring-2 ring-[var(--theme-accent-soft)] shadow-md p-3" : "bg-white shadow-sm p-3"}
                   />
                 ))}
               </div>
