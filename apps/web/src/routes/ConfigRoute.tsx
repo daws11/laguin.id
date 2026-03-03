@@ -32,7 +32,10 @@ import {
   Loader2,
   Check,
   Megaphone,
-  ChevronDown
+  ChevronDown,
+  Play,
+  ChevronRight,
+  BadgeCheck
 } from 'lucide-react'
 
 type PersistedConfigDraft = {
@@ -61,7 +64,7 @@ export function ConfigRoute() {
   const [instantEnabled, setInstantEnabled] = useState<boolean | null>(null)
   const [deliveryDelayHours, setDeliveryDelayHours] = useState<number | null>(null)
   const [manualConfirmationEnabled, setManualConfirmationEnabled] = useState(false)
-  const [isOrderSummaryOpen, setIsOrderSummaryOpen] = useState(false)
+  const [faqOpenIndex, setFaqOpenIndex] = useState<number | null>(null)
 
   // Countdown timer logic to match LandingRoute
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, mins: 0 })
@@ -351,6 +354,49 @@ export function ConfigRoute() {
       orderSummary: pv.orderSummary !== false,
       checkoutButton: pv.checkoutButton !== false,
     }
+  }, [publicSiteConfig])
+
+  const checkoutExtraData = useMemo(() => {
+    const cfg = publicSiteConfig && typeof publicSiteConfig === 'object' ? (publicSiteConfig as any) : {}
+
+    const faqRaw = cfg?.faqSection
+    const faqItems: Array<{ q: string; a: string }> = []
+    if (faqRaw?.items && Array.isArray(faqRaw.items)) {
+      for (const it of faqRaw.items) {
+        if (it?.q && it?.a) faqItems.push({ q: String(it.q), a: String(it.a) })
+      }
+    }
+    if (!faqItems.length) {
+      faqItems.push(
+        { q: "Dia bukan tipe yang emosional...", a: "Itu yang MEREKA SEMUA katakan! 98% menangis. Semakin tangguh mereka, semakin dalam jatuhnya. 😉" },
+        { q: "Bagaimana dia menerima lagunya?", a: "Kamu menerima link download via email. Putar untuknya secara langsung, kirim via WhatsApp, atau jadikan kejutan!" },
+        { q: "Kalau aku gak suka gimana?", a: "Revisi gratis tanpa batas sampai kamu suka. Masih gak puas? Refund penuh, tanpa tanya-tanya. 💕" },
+      )
+    }
+
+    const gSec = cfg?.guaranteeSection
+    const guarantee = {
+      badge: typeof gSec?.badge === 'string' && gSec.badge.trim() ? gSec.badge : '100% PUAS',
+      headline: typeof gSec?.headline === 'string' && gSec.headline.trim() ? gSec.headline : 'Garansi Kepuasan',
+      description: typeof gSec?.description === 'string' && gSec.description.trim() ? gSec.description : 'Revisi gratis tanpa batas. Tidak puas? Uang kembali 100%, tanpa tanya-tanya.',
+    }
+
+    const landing = cfg?.landing && typeof cfg.landing === 'object' ? cfg.landing : {}
+    const as_ = landing?.audioSamples && typeof landing.audioSamples === 'object' ? landing.audioSamples : {}
+    const playlist: Array<{ title: string; subtitle: string; audioUrl: string }> = []
+    if (Array.isArray(as_?.playlist)) {
+      for (const t of as_.playlist) {
+        if (t?.title) {
+          playlist.push({
+            title: String(t.title),
+            subtitle: typeof t.subtitle === 'string' ? t.subtitle : '',
+            audioUrl: typeof t.audioUrl === 'string' ? t.audioUrl : '',
+          })
+        }
+      }
+    }
+
+    return { faqItems, guarantee, playlist }
   }, [publicSiteConfig])
 
   useEffect(() => {
@@ -1314,8 +1360,10 @@ export function ConfigRoute() {
 
           {/* STEP 4: REVIEW / CHECKOUT */}
           {step === 4 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2">
-              <div className="text-center space-y-1">
+            <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2 pb-4">
+
+              {/* 1. Headline + subtitle + delivery badge */}
+              <div className="text-center space-y-2">
                 <PartyPopper className="mx-auto h-6 w-6 text-yellow-500" />
                 <h1 className="text-2xl font-serif font-bold text-gray-900">{configSteps.step4.headline}</h1>
                 <p className="text-sm text-gray-500">
@@ -1323,242 +1371,331 @@ export function ConfigRoute() {
                     ? configSteps.step4.manualSubtitle
                     : configSteps.step4.subtitleTemplate.replace('{recipient}', currentRecipient)}
                 </p>
+                <div className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-semibold px-3 py-1 rounded-full border border-green-200">
+                  <Zap className="h-3 w-3" />
+                  {deliveryEta.label}
+                </div>
               </div>
 
+              {/* 2. Contact inputs (WhatsApp + Email + OTP) — all conditional logic preserved */}
               <div className="space-y-4">
-                 {/* Compact Order Summary Accordion */}
-                 <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
-                    <button 
-                      type="button"
-                      onClick={() => setIsOrderSummaryOpen(!isOrderSummaryOpen)}
-                      className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        {configSteps.step4.orderSummaryEmoji && <span className="text-base">{configSteps.step4.orderSummaryEmoji}</span>}
-                        <div className="flex flex-col items-start">
-                          <span className="text-xs font-bold text-gray-700">{configSteps.step4.orderSummaryLabel}</span>
-                          <span className="text-[10px] text-gray-500">{genre}, {language || 'Indonesian'}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {funnelPriceVisibility.orderSummary && <span className="text-xs font-bold text-[var(--theme-accent)]">{fmtCurrency(paymentAmount)}</span>}
-                        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOrderSummaryOpen ? 'rotate-180' : ''}`} />
-                      </div>
-                    </button>
-                    
-                    {isOrderSummaryOpen && (
-                      <div className="p-4 text-xs space-y-2 border-t border-gray-100 animate-in slide-in-from-top-1">
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Untuk</span>
-                          <span className="font-bold text-gray-900">{recipientName}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Gaya & Suara</span>
-                          <span className="font-bold text-gray-900">{genre} ({form.getValues('musicPreferences.voiceStyle')})</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Bahasa</span>
-                          <span className="font-bold text-gray-900">{language || 'Indonesian'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Estimasi</span>
-                          <span className="font-bold text-green-600 flex items-center gap-1"><Zap className="h-3 w-3" /> {deliveryEta.short}</span>
-                        </div>
-                        <Separator className="my-2" />
-                        <div className="bg-[var(--theme-accent-soft)] p-2 rounded text-[var(--theme-accent)] italic">
-                          "{storyText.length > 50 ? storyText.slice(0, 50) + '...' : storyText}"
-                        </div>
-                      </div>
-                    )}
-                 </div>
-
-                 {whatsappEnabled && (
-                 <div className="space-y-1">
-                   <div ref={whatsappSectionRef} />
-                   <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{configSteps.step4.whatsappLabel}</label>
-                   <Controller
-                     name="whatsappNumber"
-                     control={form.control}
-                     render={({ field }) => {
-                       const digits = String(field.value ?? '').replace(/\D/g, '')
-                       const local = digits.startsWith('62') ? digits.slice(2) : digits
-                       return (
-                         <div className="relative">
-                           <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm font-semibold text-gray-500">
-                             +62
-                           </div>
-                           <Input
-                             value={local}
-                             onChange={(e) => {
-                               setError(null)
-                               form.clearErrors('whatsappNumber')
+                {whatsappEnabled && (
+                  <div className="space-y-1">
+                    <div ref={whatsappSectionRef} />
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{configSteps.step4.whatsappLabel}</label>
+                    <Controller
+                      name="whatsappNumber"
+                      control={form.control}
+                      render={({ field }) => {
+                        const digits = String(field.value ?? '').replace(/\D/g, '')
+                        const local = digits.startsWith('62') ? digits.slice(2) : digits
+                        return (
+                          <div className="relative">
+                            <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm font-semibold text-gray-500">
+                              +62
+                            </div>
+                            <Input
+                              value={local}
+                              onChange={(e) => {
+                                setError(null)
+                                form.clearErrors('whatsappNumber')
                                 const raw = e.target.value.replace(/\D/g, '')
                                 let normalizedLocal = raw.replace(/^0+/, '')
                                 if (normalizedLocal.startsWith('62')) normalizedLocal = normalizedLocal.slice(2)
                                 field.onChange(`62${normalizedLocal}`)
-                             }}
-                             placeholder={configSteps.step4.whatsappPlaceholder}
-                             inputMode="numeric"
-                             pattern="[0-9]*"
-                             type="tel"
-                             className="h-12 rounded-xl border-gray-300 shadow-sm focus-visible:ring-[var(--theme-accent)] pl-12 bg-white"
-                           />
-                         </div>
-                       )
-                     }}
-                   />
-                    {errors.whatsappNumber && <p className="text-xs text-[var(--theme-accent)]">{errors.whatsappNumber.message}</p>}
-                 </div>
-                 )}
-
-                 {!manualConfirmationEnabled && emailOtpEnabled ? (
-                   <>
-                     <div className="space-y-1">
-                       <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{configSteps.step4.emailLabel}</label>
-                       <div className="relative">
-                         <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
-                           <Mail className="h-4 w-4" />
-                         </div>
-                         <Input
-                           {...register('email')}
-                           placeholder={configSteps.step4.emailPlaceholder}
-                           type="email"
-                           disabled={emailVerified}
-                           className={`h-12 rounded-xl border-gray-300 shadow-sm focus-visible:ring-[var(--theme-accent)] pl-10 ${emailVerified ? 'bg-gray-50 cursor-not-allowed' : ''}`}
-                         />
-                       </div>
-                       {errors.email && <p className="text-xs text-[var(--theme-accent)]">{errors.email.message}</p>}
-                     </div>
-
-                     {emailOtpEnabled ? (
-                       <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm space-y-3">
-                         <div className="flex items-center justify-between gap-3">
-                           <div className="text-xs font-bold text-gray-900 uppercase tracking-wider">Verifikasi Email</div>
-                           {emailVerified ? (
-                             <div className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded-full">
-                               <Check className="h-3 w-3" /> OK
-                             </div>
-                           ) : null}
-                         </div>
-
-                         {emailVerified ? (
-                           <div className="text-xs text-green-800 flex items-center gap-2">
-                             <div className="h-6 w-6 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                               <Check className="h-3.5 w-3.5 text-green-600" />
-                             </div>
-                             <div>
-                               Email <span className="font-bold">{email}</span> terverifikasi.
-                             </div>
-                           </div>
-                         ) : (
-                           <>
-                             <div className="flex gap-2">
-                               <Button
-                                 type="button"
-                                 variant="outline"
-                                 size="sm"
-                                 className="h-10 rounded-lg border-gray-200 w-full text-xs"
-                                 onClick={() => void sendEmailOtp()}
-                                 disabled={
-                                   otpSending ||
-                                   otpVerifying ||
-                                   !email ||
-                                   Boolean(errors.email) ||
-                                   resendCooldownSec > 0 ||
-                                   hasEnteredOtp
-                                 }
-                               >
-                                 {otpSending ? (
-                                   <span className="flex items-center gap-2">
-                                     <Loader2 className="h-3 w-3 animate-spin" /> Mengirim...
-                                   </span>
-                                 ) : hasEnteredOtp ? (
-                                   'Cek kode di emailmu'
-                                 ) : resendCooldownSec > 0 ? (
-                                   `Kirim ulang (${resendCooldownSec}s)`
-                                 ) : (
-                                   'Kirim Kode Verifikasi'
-                                 )}
-                               </Button>
-                             </div>
-
-                             {emailVerificationId && !emailVerified ? (
-                               <div className="space-y-2 pt-1">
-                                 <div className="flex gap-2 justify-center">
-                                   {[0, 1, 2, 3].map((i) => (
-                                     <Input
-                                       key={i}
-                                       ref={(el) => {
-                                         otpRefs.current[i] = el
-                                       }}
-                                       value={otpDigits[i] ?? ''}
-                                       onChange={(e) => handleOtpChange(i, e.target.value)}
-                                       onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                                       onPaste={i === 0 ? handleOtpPaste : undefined}
-                                       inputMode="numeric"
-                                       pattern="[0-9]*"
-                                       type="tel"
-                                       maxLength={1}
-                                       className="h-10 w-10 text-center text-lg font-bold rounded-lg border-gray-300 shadow-sm focus-visible:ring-[var(--theme-accent)]"
-                                     />
-                                   ))}
-                                 </div>
-                                 <Button
-                                   type="button"
-                                   size="sm"
-                                   className="h-9 w-full rounded-lg bg-gray-900 text-white hover:bg-gray-800 text-xs"
-                                   onClick={() => void verifyEmailOtp()}
-                                   disabled={otpVerifying || otpDigits.some((d) => !d)}
-                                 >
-                                   {otpVerifying ? 'Memverifikasi...' : 'Verifikasi Kode'}
-                                 </Button>
-                               </div>
-                             ) : null}
-
-                             {otpError && typeof otpError === 'string' ? (
-                               <p className="text-[10px] text-[var(--theme-accent)] text-center">{otpError}</p>
-                             ) : null}
-                           </>
-                         )}
-                       </div>
-                     ) : null}
-                   </>
-                 ) : null}
-
-                {/* Agreement UI temporarily disabled (keep announcement step). */}
-
-                {configSteps.step4.showCheckoutImage && (
-                  <div className="rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm">
-                    <img
-                      src={configSteps.step4.checkoutImageUrl}
-                      alt="Proses produksi lagu di studio"
-                      className="h-auto w-full object-cover"
-                      loading="lazy"
+                              }}
+                              placeholder={configSteps.step4.whatsappPlaceholder}
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              type="tel"
+                              className="h-12 rounded-xl border-gray-300 shadow-sm focus-visible:ring-[var(--theme-accent)] pl-12 bg-white"
+                            />
+                          </div>
+                        )
+                      }}
                     />
+                    {errors.whatsappNumber && <p className="text-xs text-[var(--theme-accent)]">{errors.whatsappNumber.message}</p>}
                   </div>
                 )}
 
-                 <div className="rounded-xl bg-green-50 p-3 border border-green-100 space-y-2">
-                  <div className="text-[10px] font-bold text-green-800 uppercase tracking-wider">{configSteps.step4.nextStepsTitle}</div>
-                   <div className="space-y-1.5 text-xs text-green-900">
-                     {(manualConfirmationEnabled ? configSteps.step4.manualNextSteps : configSteps.step4.nextSteps).map((s, i) => (
-                       <div key={i} className="flex gap-2 items-start">
-                         <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-green-200 text-[9px] font-bold text-green-700 mt-0.5">{i + 1}</div>
-                         <span className="leading-tight" dangerouslySetInnerHTML={{ __html: s.text.replace('{delivery}', `<span class="font-bold">${deliveryEta.sentenceLower}</span>`) }} />
-                       </div>
-                     ))}
-                   </div>
-                 </div>
+                {!manualConfirmationEnabled && emailOtpEnabled ? (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{configSteps.step4.emailLabel}</label>
+                      <div className="relative">
+                        <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
+                          <Mail className="h-4 w-4" />
+                        </div>
+                        <Input
+                          {...register('email')}
+                          placeholder={configSteps.step4.emailPlaceholder}
+                          type="email"
+                          disabled={emailVerified}
+                          className={`h-12 rounded-xl border-gray-300 shadow-sm focus-visible:ring-[var(--theme-accent)] pl-10 ${emailVerified ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                        />
+                      </div>
+                      {errors.email && <p className="text-xs text-[var(--theme-accent)]">{errors.email.message}</p>}
+                    </div>
 
-                 <div className="flex justify-center gap-4 text-[10px] text-gray-400">
-                   {configSteps.step4.securityBadges.map((badge, i) => (
-                     <div key={i} className="flex items-center gap-1">
-                       {i === 0 ? <ShieldCheck className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-                       {badge.replace('{delivery}', deliveryEta.short)}
-                     </div>
-                   ))}
-                 </div>
+                    {emailOtpEnabled ? (
+                      <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-xs font-bold text-gray-900 uppercase tracking-wider">Verifikasi Email</div>
+                          {emailVerified ? (
+                            <div className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded-full">
+                              <Check className="h-3 w-3" /> OK
+                            </div>
+                          ) : null}
+                        </div>
+
+                        {emailVerified ? (
+                          <div className="text-xs text-green-800 flex items-center gap-2">
+                            <div className="h-6 w-6 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                              <Check className="h-3.5 w-3.5 text-green-600" />
+                            </div>
+                            <div>
+                              Email <span className="font-bold">{email}</span> terverifikasi.
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-10 rounded-lg border-gray-200 w-full text-xs"
+                                onClick={() => void sendEmailOtp()}
+                                disabled={
+                                  otpSending ||
+                                  otpVerifying ||
+                                  !email ||
+                                  Boolean(errors.email) ||
+                                  resendCooldownSec > 0 ||
+                                  hasEnteredOtp
+                                }
+                              >
+                                {otpSending ? (
+                                  <span className="flex items-center gap-2">
+                                    <Loader2 className="h-3 w-3 animate-spin" /> Mengirim...
+                                  </span>
+                                ) : hasEnteredOtp ? (
+                                  'Cek kode di emailmu'
+                                ) : resendCooldownSec > 0 ? (
+                                  `Kirim ulang (${resendCooldownSec}s)`
+                                ) : (
+                                  'Kirim Kode Verifikasi'
+                                )}
+                              </Button>
+                            </div>
+
+                            {emailVerificationId && !emailVerified ? (
+                              <div className="space-y-2 pt-1">
+                                <div className="flex gap-2 justify-center">
+                                  {[0, 1, 2, 3].map((i) => (
+                                    <Input
+                                      key={i}
+                                      ref={(el) => {
+                                        otpRefs.current[i] = el
+                                      }}
+                                      value={otpDigits[i] ?? ''}
+                                      onChange={(e) => handleOtpChange(i, e.target.value)}
+                                      onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                                      onPaste={i === 0 ? handleOtpPaste : undefined}
+                                      inputMode="numeric"
+                                      pattern="[0-9]*"
+                                      type="tel"
+                                      maxLength={1}
+                                      className="h-10 w-10 text-center text-lg font-bold rounded-lg border-gray-300 shadow-sm focus-visible:ring-[var(--theme-accent)]"
+                                    />
+                                  ))}
+                                </div>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  className="h-9 w-full rounded-lg bg-gray-900 text-white hover:bg-gray-800 text-xs"
+                                  onClick={() => void verifyEmailOtp()}
+                                  disabled={otpVerifying || otpDigits.some((d) => !d)}
+                                >
+                                  {otpVerifying ? 'Memverifikasi...' : 'Verifikasi Kode'}
+                                </Button>
+                              </div>
+                            ) : null}
+
+                            {otpError && typeof otpError === 'string' ? (
+                              <p className="text-[10px] text-[var(--theme-accent)] text-center">{otpError}</p>
+                            ) : null}
+                          </>
+                        )}
+                      </div>
+                    ) : null}
+                  </>
+                ) : null}
+
+                {/* Agreement UI temporarily disabled (keep announcement step). */}
+
+                {/* Trust badges after contact inputs */}
+                <div className="flex justify-center gap-4 text-[10px] text-gray-400">
+                  {configSteps.step4.securityBadges.map((badge, i) => (
+                    <div key={i} className="flex items-center gap-1">
+                      {i === 0 ? <ShieldCheck className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                      {badge.replace('{delivery}', deliveryEta.short)}
+                    </div>
+                  ))}
+                </div>
               </div>
+
+              {/* 3. Order Summary — always visible, no accordion */}
+              <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                <div className="flex items-center justify-between p-3 bg-gray-50 border-b border-gray-100">
+                  <div className="flex items-center gap-2">
+                    {configSteps.step4.orderSummaryEmoji && <span className="text-base">{configSteps.step4.orderSummaryEmoji}</span>}
+                    <span className="text-xs font-bold text-gray-700">{configSteps.step4.orderSummaryLabel}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="text-[10px] font-semibold text-[var(--theme-accent)] hover:underline flex items-center gap-0.5"
+                  >
+                    Ubah <ChevronRight className="h-3 w-3" />
+                  </button>
+                </div>
+                <div className="p-4 text-xs space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Untuk</span>
+                    <span className="font-bold text-gray-900">{recipientName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Gaya & Suara</span>
+                    <span className="font-bold text-gray-900">{genre} ({form.getValues('musicPreferences.voiceStyle')})</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Bahasa</span>
+                    <span className="font-bold text-gray-900">{language || 'Indonesian'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Estimasi</span>
+                    <span className="font-bold text-green-600 flex items-center gap-1"><Zap className="h-3 w-3" /> {deliveryEta.short}</span>
+                  </div>
+                  <Separator className="my-2" />
+                  <div className="bg-[var(--theme-accent-soft)] p-2 rounded text-[var(--theme-accent)] italic text-[11px]">
+                    &ldquo;{storyText.length > 60 ? storyText.slice(0, 60) + '...' : storyText}&rdquo;
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Price line with discount */}
+              {funnelPriceVisibility.orderSummary && (
+                <div className="flex items-center justify-between bg-[var(--theme-accent-soft)] rounded-xl px-4 py-3">
+                  <span className="text-xs font-semibold text-gray-700">Total</span>
+                  <div className="flex items-center gap-2">
+                    {originalAmount > paymentAmount && (
+                      <span className="text-xs text-gray-400 line-through">{fmtCurrency(originalAmount)}</span>
+                    )}
+                    <span className="text-base font-bold text-[var(--theme-accent)]">{fmtCurrency(paymentAmount)}</span>
+                    {originalAmount > paymentAmount && (
+                      <span className="text-[9px] font-bold bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">HEMAT {Math.round((1 - paymentAmount / originalAmount) * 100)}%</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 5. Mini sample songs playlist */}
+              {checkoutExtraData.playlist.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Contoh Lagu yang Dibuat</div>
+                  <div className="space-y-2">
+                    {checkoutExtraData.playlist.slice(0, 3).map((track, i) => (
+                      <div key={i} className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-3 shadow-sm">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--theme-accent-soft)] text-[var(--theme-accent)]">
+                          <Play className="h-3.5 w-3.5 ml-0.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-bold text-gray-900 truncate">{track.title}</div>
+                          {track.subtitle && <div className="text-[10px] text-gray-400 truncate">{track.subtitle}</div>}
+                        </div>
+                        <Music className="h-3.5 w-3.5 text-gray-300 shrink-0" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 6. Guarantee box */}
+              <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-center space-y-2">
+                <div className="inline-flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                  <BadgeCheck className="h-3 w-3" /> {checkoutExtraData.guarantee.badge}
+                </div>
+                <div className="text-sm font-bold text-green-900">{checkoutExtraData.guarantee.headline}</div>
+                <p className="text-xs text-green-800 leading-relaxed">{checkoutExtraData.guarantee.description}</p>
+              </div>
+
+              {/* 7. Second CTA + What You'll Get checklist */}
+              <div className="space-y-3">
+                <Button
+                  type="button"
+                  className="h-12 w-full rounded-xl bg-[var(--theme-accent)] text-sm font-bold text-white shadow-lg shadow-[var(--theme-accent-soft)] hover:bg-[var(--theme-accent)] active:scale-95 transition-all"
+                  onClick={(e) => { e.preventDefault(); const submitBtn = (e.target as HTMLElement).closest('form')?.querySelector<HTMLButtonElement>('button[type="submit"]'); submitBtn?.click(); }}
+                  disabled={
+                    loading ||
+                    (!manualConfirmationEnabled && emailOtpEnabled && !emailVerified)
+                  }
+                >
+                  {loading ? 'Memproses...' : (manualConfirmationEnabled ? configSteps.step4.manualCheckoutButtonText : `${configSteps.step4.checkoutButtonText}${funnelPriceVisibility.checkoutButton ? ` — ${fmtCurrency(paymentAmount)}` : ''}`)}
+                </Button>
+
+                <div className="rounded-xl bg-gray-50 p-3 border border-gray-100 space-y-2">
+                  <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{configSteps.step4.nextStepsTitle}</div>
+                  <div className="space-y-1.5 text-xs text-gray-700">
+                    {(manualConfirmationEnabled ? configSteps.step4.manualNextSteps : configSteps.step4.nextSteps).map((s, i) => (
+                      <div key={i} className="flex gap-2 items-start">
+                        <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[var(--theme-accent-soft)] text-[9px] font-bold text-[var(--theme-accent)] mt-0.5">
+                          <Check className="h-2.5 w-2.5" />
+                        </div>
+                        <span className="leading-tight" dangerouslySetInnerHTML={{ __html: s.text.replace('{delivery}', `<span class="font-bold">${deliveryEta.sentenceLower}</span>`) }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* 8. FAQ accordion */}
+              {checkoutExtraData.faqItems.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Pertanyaan Umum</div>
+                  <div className="space-y-1.5">
+                    {checkoutExtraData.faqItems.map((item, i) => (
+                      <div key={i} className="border border-gray-100 rounded-xl overflow-hidden bg-white">
+                        <button
+                          type="button"
+                          onClick={() => setFaqOpenIndex(faqOpenIndex === i ? null : i)}
+                          className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50 transition-colors"
+                        >
+                          <span className="text-xs font-semibold text-gray-800 pr-2">{item.q}</span>
+                          <ChevronDown className={`h-3.5 w-3.5 text-gray-400 shrink-0 transition-transform ${faqOpenIndex === i ? 'rotate-180' : ''}`} />
+                        </button>
+                        {faqOpenIndex === i && (
+                          <div className="px-3 pb-3 text-xs text-gray-600 leading-relaxed animate-in fade-in slide-in-from-top-1 duration-200">
+                            {item.a}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 9. Back button */}
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="text-xs text-gray-400 hover:text-gray-600 transition-colors inline-flex items-center gap-1"
+                >
+                  <ChevronLeft className="h-3 w-3" /> Kembali ke langkah sebelumnya
+                </button>
+              </div>
+
             </div>
           )}
 
