@@ -407,6 +407,27 @@ export function LandingRoute() {
     }
   }, [faviconUrl])
 
+  const heroRelChips = useMemo(() => {
+    const cs = (publicSiteConfig as any)?.configSteps
+    const s1 = cs?.step1 && typeof cs.step1 === 'object' ? cs.step1 : {}
+    const chips: Array<{ label: string; icon: string; value: string }> = []
+    if (Array.isArray(s1?.relationshipChips)) {
+      for (const c of s1.relationshipChips) {
+        if (c?.label) chips.push({ label: String(c.label), icon: typeof c.icon === 'string' ? c.icon.trim() : '', value: String(c.value || c.label) })
+      }
+    }
+    if (!chips.length) {
+      chips.push(
+        { label: 'Pasangan', icon: '💕', value: 'Pasangan' },
+        { label: 'Suami', icon: '💍', value: 'Suami' },
+        { label: 'Pacar', icon: '❤️', value: 'Pacar' },
+        { label: 'Tunangan', icon: '💎', value: 'Tunangan' },
+        { label: 'Istri', icon: '👰', value: 'Istri' },
+      )
+    }
+    return chips
+  }, [publicSiteConfig])
+
   if (publicSiteConfig === undefined) {
     return <div className="min-h-screen" />
   }
@@ -763,12 +784,16 @@ export function LandingRoute() {
           </div>
 
           <div className="text-center md:text-left space-y-4 md:space-y-6 md:col-start-1 md:row-start-2">
-            <div className="flex flex-wrap justify-center md:justify-start gap-x-3 gap-y-1 text-[10px] sm:text-sm font-medium text-gray-500">
-              {heroCheckmarks.map((text, idx) => (
-                <span key={idx} className="flex items-center gap-1">
-                  <Check className="h-3 w-3 text-green-600" />
-                  {text}
-                </span>
+            <div className="flex flex-wrap justify-center md:justify-start gap-2">
+              {heroRelChips.map((chip, idx) => (
+                <Link
+                  key={idx}
+                  to={`${themeSlug ? `/${themeSlug}` : ''}/config?rel=${encodeURIComponent(chip.value)}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-xs sm:text-sm font-medium text-gray-700 hover:border-[var(--theme-accent)] hover:text-[var(--theme-accent)] hover:bg-[var(--theme-accent-soft)] transition-all shadow-sm"
+                >
+                  {chip.icon && <span>{chip.icon}</span>}
+                  {chip.label}
+                </Link>
               ))}
             </div>
 

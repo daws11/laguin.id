@@ -634,8 +634,14 @@ export function ConfigRoute() {
         emailVerificationId: DEFAULT_ORDER_INPUT.emailVerificationId,
       }
 
-      setStep(initialStep)
-      setRelationship(nextRelationship)
+      const relParam = searchParams.get('rel')
+      if (relParam) {
+        setStep(1)
+        setRelationship(relParam)
+      } else {
+        setStep(initialStep)
+        setRelationship(nextRelationship)
+      }
       setEmailVerificationId(nextEmailVerificationId)
       if (nextDraftKey) {
         draftKeyRef.current = nextDraftKey
