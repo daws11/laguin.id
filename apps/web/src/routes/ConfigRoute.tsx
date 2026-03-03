@@ -1605,24 +1605,27 @@ export function ConfigRoute() {
                   <div className="bg-[var(--theme-accent-soft)] p-2 rounded text-[var(--theme-accent)] italic text-[11px]">
                     &ldquo;{storyText.length > 60 ? storyText.slice(0, 60) + '...' : storyText}&rdquo;
                   </div>
+                  {funnelPriceVisibility.orderSummary && (
+                    <>
+                      <Separator className="my-2" />
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-bold text-gray-900">
+                          Lagu Personal <span className="text-xs font-normal text-gray-400">({relationship})</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {originalAmount > paymentAmount && (
+                            <span className="text-[9px] font-bold bg-[var(--theme-accent)] text-white px-1.5 py-0.5 rounded-full">HEMAT {Math.round((1 - paymentAmount / originalAmount) * 100)}%</span>
+                          )}
+                          {originalAmount > paymentAmount && (
+                            <span className="text-xs text-gray-400 line-through">{fmtCurrency(originalAmount)}</span>
+                          )}
+                          <span className="text-base font-bold text-[var(--theme-accent)]">{fmtCurrency(paymentAmount)}</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
-
-              {/* 4. Price line with discount */}
-              {funnelPriceVisibility.orderSummary && (
-                <div className="flex items-center justify-between bg-[var(--theme-accent-soft)] rounded-xl px-4 py-3">
-                  <span className="text-xs font-semibold text-gray-700">Total</span>
-                  <div className="flex items-center gap-2">
-                    {originalAmount > paymentAmount && (
-                      <span className="text-xs text-gray-400 line-through">{fmtCurrency(originalAmount)}</span>
-                    )}
-                    <span className="text-base font-bold text-[var(--theme-accent)]">{fmtCurrency(paymentAmount)}</span>
-                    {originalAmount > paymentAmount && (
-                      <span className="text-[9px] font-bold bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">HEMAT {Math.round((1 - paymentAmount / originalAmount) * 100)}%</span>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {/* 5. Mini sample songs playlist */}
               {checkoutExtraData.playlist.length > 0 && (
