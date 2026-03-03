@@ -1657,7 +1657,7 @@ export function ConfigRoute() {
                   <BadgeCheck className="h-3 w-3" /> {checkoutExtraData.guarantee.badge}
                 </div>
                 <div className="text-sm font-bold text-green-900">{checkoutExtraData.guarantee.headline}</div>
-                <p className="text-xs text-green-800 leading-relaxed">{checkoutExtraData.guarantee.description}</p>
+                <p className="text-xs text-green-800 leading-relaxed" dangerouslySetInnerHTML={{ __html: checkoutExtraData.guarantee.description }} />
               </div>
 
               {/* 7. Second CTA + What You'll Get checklist */}
