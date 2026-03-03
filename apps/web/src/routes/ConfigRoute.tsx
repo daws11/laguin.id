@@ -387,6 +387,14 @@ export function ConfigRoute() {
     const landing = cfg?.landing && typeof cfg.landing === 'object' ? cfg.landing : {}
     const as_ = landing?.audioSamples && typeof landing.audioSamples === 'object' ? landing.audioSamples : {}
     const playlist: Array<{ title: string; subtitle: string; audioUrl: string }> = []
+    const np = as_?.nowPlaying
+    if (np && typeof np === 'object' && typeof np.name === 'string' && np.name.trim()) {
+      playlist.push({
+        title: String(np.name),
+        subtitle: typeof np.time === 'string' ? np.time : '',
+        audioUrl: typeof np.audioUrl === 'string' ? np.audioUrl : '',
+      })
+    }
     if (Array.isArray(as_?.playlist)) {
       for (const t of as_.playlist) {
         if (t?.title) {
