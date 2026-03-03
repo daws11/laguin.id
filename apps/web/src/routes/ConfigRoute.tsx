@@ -7,6 +7,7 @@ import { apiGet, apiPost } from '@/lib/http'
 import { useThemeSlug } from '@/features/theme/ThemeContext'
 import { ensureMetaPixelLoaded, trackWishlist } from '@/features/analytics/MetaPixel'
 
+import { CountdownTimer } from '@/components/landing/CountdownTimer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -69,8 +70,6 @@ export function ConfigRoute() {
   const [playingTrackIdx, setPlayingTrackIdx] = useState<number | null>(null)
   const miniPlayerRef = useRef<HTMLAudioElement | null>(null)
 
-  // Countdown timer logic to match LandingRoute
-  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, mins: 0 })
 
   const [paymentAmount, setPaymentAmount] = useState<number>(497000)
   const [originalAmount, setOriginalAmount] = useState<number>(497000)
@@ -100,38 +99,6 @@ export function ConfigRoute() {
     const hText = String(h)
     return { label: `Dalam ${hText} jam`, sentenceLower: `dalam ${hText} jam`, short: `${hText} jam` }
   }, [deliveryDelayHours, instantEnabled])
-
-  useEffect(() => {
-    // Target date: February 14, 2026 (or next Feb 14)
-    // Adjust year dynamically to always point to next Valentine's
-    const now = new Date()
-    let targetYear = now.getFullYear()
-    // If today is past Feb 14, target next year
-    if (now.getMonth() > 1 || (now.getMonth() === 1 && now.getDate() > 14)) {
-      targetYear++
-    }
-    const targetDate = new Date(`${targetYear}-02-14T00:00:00`)
-
-    const updateTimer = () => {
-      const now = new Date()
-      const diff = targetDate.getTime() - now.getTime()
-
-      if (diff <= 0) {
-        setTimeLeft({ days: 0, hours: 0, mins: 0 })
-        return
-      }
-
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-
-      setTimeLeft({ days, hours, mins })
-    }
-
-    updateTimer() // Initial call
-    const timer = setInterval(updateTimer, 60000) // Update every minute is enough for this view
-    return () => clearInterval(timer)
-  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -408,7 +375,16 @@ export function ConfigRoute() {
       }
     }
 
-    return { faqItems, guarantee, playlist }
+    const pb = cfg?.promoBanner && typeof cfg.promoBanner === 'object' ? cfg.promoBanner : {}
+    const promoBanner = {
+      enabled: pb.enabled !== false,
+      countdownLabel: typeof pb.countdownLabel === 'string' && pb.countdownLabel.trim() ? pb.countdownLabel : "💝 Valentine's dalam",
+      countdownTargetDate: typeof pb.countdownTargetDate === 'string' && pb.countdownTargetDate.trim() ? pb.countdownTargetDate : '2027-02-14',
+      evergreenEnabled: pb.evergreenEnabled ?? false,
+      evergreenCycleHours: typeof pb.evergreenCycleHours === 'number' ? pb.evergreenCycleHours : 24,
+    }
+
+    return { faqItems, guarantee, playlist, promoBanner }
   }, [publicSiteConfig])
 
   useEffect(() => {
@@ -1093,10 +1069,16 @@ export function ConfigRoute() {
 
   return (
     <div className="min-h-screen bg-[var(--theme-accent-soft)] font-sans text-gray-900 pb-32" style={themeStyle}>
-      {/* Top Banner - Hide on mobile if possible or make super compact */}
-      <div className="bg-[var(--theme-accent)] px-4 py-1.5 text-center text-[9px] sm:text-xs font-bold text-white uppercase tracking-wide hidden sm:block">
-        🎁 {timeLeft.days} hari {timeLeft.hours} jam {timeLeft.mins} menit menuju Valentine • Dikirim {deliveryEta.sentenceLower}
-      </div>
+      {checkoutExtraData.promoBanner.enabled && (
+        <CountdownTimer
+          paymentAmount={null}
+          originalAmount={null}
+          countdownLabel={checkoutExtraData.promoBanner.countdownLabel}
+          countdownTargetDate={checkoutExtraData.promoBanner.countdownTargetDate}
+          evergreenEnabled={checkoutExtraData.promoBanner.evergreenEnabled}
+          evergreenCycleHours={checkoutExtraData.promoBanner.evergreenCycleHours}
+        />
+      )}
 
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-[var(--theme-accent-soft)] bg-white/95 backdrop-blur-sm shadow-sm">
