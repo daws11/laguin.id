@@ -253,6 +253,12 @@ export function LandingRoute() {
   }, [deliveryDelayHours, instantEnabled])
 
   const faqItems = useMemo<FaqItem[]>(() => {
+    const cfgFaq = (publicSiteConfig as any)?.faqSection
+    if (cfgFaq?.items && Array.isArray(cfgFaq.items) && cfgFaq.items.length > 0) {
+      return cfgFaq.items
+        .filter((it: any) => it?.q && it?.a)
+        .map((it: any) => ({ q: String(it.q), a: String(it.a) }))
+    }
     const etaAnswerStart = instantEnabled ? '10–30 menit' : deliveryEta.label
     const etaAnswer = `${etaAnswerStart}! Kamu akan dapat notifikasi email saat sudah siap.`
     return [
@@ -268,7 +274,7 @@ export function LandingRoute() {
       { q: 'Kalau aku gak suka gimana?', a: 'Revisi gratis tanpa batas sampai kamu suka. Masih gak puas? Refund penuh, tanpa tanya-tanya. 💕' },
       { q: 'Benarkah GRATIS?', a: `Ya! Spesial untuk 100 orang pertama (normalnya ${fmtCurrency(originalAmount)}). Tanpa biaya tersembunyi. Satu kesempatan, hadiah tak terlupakan.` },
     ]
-  }, [deliveryEta.label, instantEnabled])
+  }, [deliveryEta.label, instantEnabled, publicSiteConfig])
 
   useEffect(() => {
     const handleScroll = () => {
