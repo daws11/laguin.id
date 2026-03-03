@@ -1627,7 +1627,7 @@ export function ConfigRoute() {
               {/* 5. Mini sample songs playlist */}
               {checkoutExtraData.playlist.length > 0 && (
                 <div className="space-y-2">
-                  <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Contoh Lagu yang Dibuat</div>
+                  <div className="text-sm font-bold text-gray-800 text-center flex items-center justify-center gap-1.5"><Music className="h-4 w-4" /> Contoh Lagu yang Dibuat</div>
                   <audio
                     ref={miniPlayerRef}
                     onEnded={() => setPlayingTrackIdx(null)}
