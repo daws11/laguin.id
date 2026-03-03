@@ -130,6 +130,7 @@ type PublicSiteConfig = {
     heroStarLine?: string
     ctaButtonText?: string
     heroCtaButtonText?: string
+    heroChipsHeadline?: string
     mobileCtaQuotaBadge?: string
   }
   priceVisibility?: {
@@ -451,9 +452,6 @@ export function LandingRoute() {
   const audioSamples = landing.audioSamples ?? defaultPublicSiteConfig.landing!.audioSamples!
   const heroPlayer = landing.heroPlayer ?? defaultPublicSiteConfig.landing!.heroPlayer!
 
-  const heroCheckmarks = (site.heroCheckmarks && site.heroCheckmarks.length > 0)
-    ? site.heroCheckmarks.filter(x => x && x.trim())
-    : ['Kualitas Studio', '98% Menangis', 'Revisi Gratis']
   const trustBadge1 = site.trustBadges?.badge1 || deliveryEta.short + ' Delivery'
   const trustBadge2 = site.trustBadges?.badge2 || 'Secure'
   const trustBadge3 = site.trustBadges?.badge3 || '11 kuota sisa'
