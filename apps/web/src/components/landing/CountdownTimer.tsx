@@ -95,11 +95,15 @@ export function CountdownTimer({ paymentAmount, originalAmount, countdownLabel, 
     <div className="bg-[var(--theme-accent)] px-3 py-1.5 text-center text-[9px] sm:text-xs font-bold text-white uppercase tracking-tight leading-none">
       <div className="flex items-center justify-center gap-1.5 flex-wrap">
         <span>{countdownLabel} {showDays ? `${time.d}h ` : ''}{time.h}j {time.m}m {time.s}d lagi</span>
-        <span className="opacity-50 text-[8px]">•</span>
-        <span className="flex items-center gap-1">
-          <span className="line-through opacity-70">{fmtCurrencyGlobal(originalAmount)}</span>
-          <span>{fmtCurrencyGlobal(paymentAmount)} {paymentAmount === 0 ? '(100 pertama)' : ''}</span>
-        </span>
+        {(paymentAmount !== null || originalAmount !== null) && (
+          <>
+            <span className="opacity-50 text-[8px]">•</span>
+            <span className="flex items-center gap-1">
+              <span className="line-through opacity-70">{fmtCurrencyGlobal(originalAmount)}</span>
+              <span>{fmtCurrencyGlobal(paymentAmount)} {paymentAmount === 0 ? '(100 pertama)' : ''}</span>
+            </span>
+          </>
+        )}
       </div>
     </div>
   )

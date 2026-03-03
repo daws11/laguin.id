@@ -12,6 +12,7 @@ type Props = {
   fmtCurrency: (v: number | null | undefined) => string
   paymentAmount: number | null
   originalAmount: number | null
+  showPriceInButton?: boolean
   themeSlug: string | null
   sectionLabel?: string
   sectionHeadline?: string
@@ -24,6 +25,7 @@ export function HowItWorksSection({
   fmtCurrency,
   paymentAmount,
   originalAmount,
+  showPriceInButton = true,
   themeSlug,
   sectionLabel = 'Proses Mudah',
   sectionHeadline = 'Tiga langkah menuju <span class="text-[var(--theme-accent)] italic">tangis bahagia</span>',
@@ -62,8 +64,8 @@ export function HowItWorksSection({
       <div className="text-center pt-4">
         <Button asChild size="lg" className="h-14 px-10 rounded-full bg-[var(--theme-accent)] text-lg font-bold shadow-xl shadow-[var(--theme-accent-soft)] hover:opacity-90">
           <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center gap-2">
-            <span>{ctaButtonText} — {fmtCurrency(paymentAmount)}</span>
-            <span className="text-xs font-normal line-through opacity-70 decoration-white/50">{fmtCurrency(originalAmount)}</span>
+            <span>{ctaButtonText}{showPriceInButton ? ` — ${fmtCurrency(paymentAmount)}` : ''}</span>
+            {showPriceInButton && <span className="text-xs font-normal line-through opacity-70 decoration-white/50">{fmtCurrency(originalAmount)}</span>}
           </Link>
         </Button>
       </div>

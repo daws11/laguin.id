@@ -132,6 +132,19 @@ type PublicSiteConfig = {
     heroCtaButtonText?: string
     mobileCtaQuotaBadge?: string
   }
+  priceVisibility?: {
+    promoBanner?: boolean
+    header?: boolean
+    heroCtaButton?: boolean
+    audioSamplesButton?: boolean
+    comparisonSection?: boolean
+    howItWorksButton?: boolean
+    footerCtaButton?: boolean
+    mobileStickyButton?: boolean
+    funnelHeader?: boolean
+    orderSummary?: boolean
+    checkoutButton?: boolean
+  }
 }
 
 type PublicSettingsResponse = {
@@ -498,6 +511,17 @@ export function LandingRoute() {
   const faqSec = site.faqSection
   const footerSec = site.footer
   const miscText = site.miscText
+  const pv = site.priceVisibility ?? {} as any
+  const showPrice = {
+    promoBanner: pv.promoBanner !== false,
+    header: pv.header !== false,
+    heroCtaButton: pv.heroCtaButton !== false,
+    audioSamplesButton: pv.audioSamplesButton !== false,
+    comparisonSection: pv.comparisonSection !== false,
+    howItWorksButton: pv.howItWorksButton !== false,
+    footerCtaButton: pv.footerCtaButton !== false,
+    mobileStickyButton: pv.mobileStickyButton !== false,
+  }
 
   const heroImageUrl =
     typeof heroMedia.imageUrl === 'string' && heroMedia.imageUrl.trim()
@@ -616,7 +640,7 @@ export function LandingRoute() {
       {/* Sticky Top Banner */}
       <div className="sticky top-0 z-50">
         {promoBannerEnabled && (
-          <CountdownTimer paymentAmount={paymentAmount} originalAmount={originalAmount} countdownLabel={promoCountdownLabel} countdownTargetDate={promoCountdownTargetDate} evergreenEnabled={promoEvergreenEnabled} evergreenCycleHours={promoEvergreenCycleHours} />
+          <CountdownTimer paymentAmount={showPrice.promoBanner ? paymentAmount : null} originalAmount={showPrice.promoBanner ? originalAmount : null} countdownLabel={promoCountdownLabel} countdownTargetDate={promoCountdownTargetDate} evergreenEnabled={promoEvergreenEnabled} evergreenCycleHours={promoEvergreenCycleHours} />
         )}
         <div className="border-b border-[var(--theme-accent-soft)] bg-white/95 px-2 sm:px-4 py-2 backdrop-blur-sm">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-3">
@@ -630,8 +654,8 @@ export function LandingRoute() {
                 </div>
               )}
               <div className="leading-tight flex items-center gap-1.5">
-                <span className="text-[10px] text-gray-400 line-through">{fmtCurrency(originalAmount)}</span>
-                <span className="text-sm sm:text-lg font-bold text-[var(--theme-accent)]">{fmtCurrency(paymentAmount)}</span>
+                {showPrice.header && <span className="text-[10px] text-gray-400 line-through">{fmtCurrency(originalAmount)}</span>}
+                {showPrice.header && <span className="text-sm sm:text-lg font-bold text-[var(--theme-accent)]">{fmtCurrency(paymentAmount)}</span>}
                 {promoQuotaBadgeText && (
                   <Badge variant="destructive" className="h-4 px-1 py-0 text-[9px]">
                     {promoQuotaBadgeText}
@@ -751,8 +775,8 @@ export function LandingRoute() {
             <div className="space-y-2">
               <Button asChild size="lg" className="w-full sm:w-auto h-12 sm:h-14 px-8 rounded-full bg-[var(--theme-accent)] text-base sm:text-lg font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90 hover:scale-105 transition-all duration-300">
                 <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center justify-center gap-2">
-                  {miscText?.heroCtaButtonText || 'Buat Lagu'} — {fmtCurrency(paymentAmount)}
-                  <span className="text-[var(--theme-accent-soft)] line-through font-normal text-sm sm:text-base ml-1">{fmtCurrency(originalAmount)}</span>
+                  {miscText?.heroCtaButtonText || 'Buat Lagu'}{showPrice.heroCtaButton ? ` — ${fmtCurrency(paymentAmount)}` : ''}
+                  {showPrice.heroCtaButton && <span className="text-[var(--theme-accent-soft)] line-through font-normal text-sm sm:text-base ml-1">{fmtCurrency(originalAmount)}</span>}
                 </Link>
               </Button>
               
@@ -778,6 +802,7 @@ export function LandingRoute() {
             fmtCurrency={fmtCurrency}
             paymentAmount={paymentAmount}
             originalAmount={originalAmount}
+            showPriceInButton={showPrice.audioSamplesButton}
             themeSlug={themeSlug}
             sectionBadge={audioSamplesSec?.badge}
             sectionHeadline={audioSamplesSec?.headline}
@@ -796,6 +821,7 @@ export function LandingRoute() {
             fmtCurrency={fmtCurrency}
             paymentAmount={paymentAmount}
             originalAmount={originalAmount}
+            showPrice={showPrice.comparisonSection}
             deliveryEtaSentence={deliveryEta.sentenceLower}
             headline={comparisonSec?.headline}
             giftItems={comparisonSec?.giftItems as any}
@@ -822,6 +848,7 @@ export function LandingRoute() {
             fmtCurrency={fmtCurrency}
             paymentAmount={paymentAmount}
             originalAmount={originalAmount}
+            showPriceInButton={showPrice.howItWorksButton}
             themeSlug={themeSlug}
             sectionLabel={howItWorksSec?.label}
             sectionHeadline={howItWorksSec?.headline}
@@ -855,6 +882,7 @@ export function LandingRoute() {
             fmtCurrency={fmtCurrency}
             paymentAmount={paymentAmount}
             originalAmount={originalAmount}
+            showPriceInButton={showPrice.footerCtaButton}
             themeSlug={themeSlug}
             securityBadge={footerCtaSecurityBadge}
             quotaLine={footerCtaQuotaLine}
@@ -890,7 +918,7 @@ export function LandingRoute() {
            </div>
            <Button asChild size="lg" className="w-full h-auto min-h-[3.5rem] py-2 rounded-xl bg-[var(--theme-accent)] text-lg font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90 active:scale-95 transition-all">
             <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center justify-center gap-2 flex-wrap text-center leading-tight">
-              <span>{miscText?.ctaButtonText || 'Buat Lagunya'} — {fmtCurrency(paymentAmount)}</span>
+              <span>{miscText?.ctaButtonText || 'Buat Lagunya'}{showPrice.mobileStickyButton ? ` — ${fmtCurrency(paymentAmount)}` : ''}</span>
               <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/30 text-xs whitespace-nowrap">
                 {miscText?.mobileCtaQuotaBadge || '(11 sisa)'}
               </Badge>

@@ -11,6 +11,7 @@ type Props = {
   fmtCurrency: (v: number | null | undefined) => string
   paymentAmount: number | null
   originalAmount: number | null
+  showPrice?: boolean
   deliveryEtaSentence: string
   headline?: string
   giftItems?: GiftItem[]
@@ -38,6 +39,7 @@ export function ComparisonSection({
   fmtCurrency,
   paymentAmount,
   originalAmount,
+  showPrice = true,
   deliveryEtaSentence,
   headline = 'Kado yang akan dia <span class="text-gray-400 line-through decoration-[var(--theme-accent)]">lupakan</span> vs. yang akan dia <span class="text-[var(--theme-accent)] italic">putar ulang</span>',
   giftItems = defaultGiftItems,
@@ -77,7 +79,7 @@ export function ComparisonSection({
             </div>
             <div className="space-y-1">
               <h3 className="text-2xl font-bold text-gray-900">{productTitle}</h3>
-              <div className="text-[var(--theme-accent)] font-bold text-3xl">{fmtCurrency(paymentAmount)} <span className="text-gray-300 line-through text-lg font-normal">{fmtCurrency(originalAmount)}</span></div>
+              {showPrice && <div className="text-[var(--theme-accent)] font-bold text-3xl">{fmtCurrency(paymentAmount)} <span className="text-gray-300 line-through text-lg font-normal">{fmtCurrency(originalAmount)}</span></div>}
             </div>
             <ul className="text-left space-y-3 text-gray-600 bg-[var(--theme-accent-soft)] p-6 rounded-2xl w-full">
               {allChecklistItems.map((item, i) => (

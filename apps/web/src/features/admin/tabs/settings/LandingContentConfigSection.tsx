@@ -8,7 +8,7 @@ import { resolveApiUrl } from '@/lib/http'
 import * as adminApi from '@/features/admin/api'
 import { moveItem, parseToastItemsJson } from '@/features/admin/publicSiteDraft'
 import type { PublicSiteDraft } from '@/features/admin/types'
-import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap, Palette, ImagePlus, ShieldCheck, Megaphone, Plus, Trash2, Heart, PenLine, PartyPopper } from 'lucide-react'
+import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap, Palette, ImagePlus, ShieldCheck, Megaphone, Plus, Trash2, Heart, PenLine, PartyPopper, DollarSign } from 'lucide-react'
 
 interface LandingContentConfigProps {
   draft: PublicSiteDraft
@@ -67,6 +67,7 @@ export function LandingContentConfigSection({
     { id: 'faq-section', label: 'FAQ Section', icon: MessageSquare, group: 'Landing Page' },
     { id: 'footer-section', label: 'Footer', icon: LayoutTemplate, group: 'Landing Page' },
     { id: 'misc-text', label: 'Misc Text', icon: Type, group: 'Landing Page' },
+    { id: 'price-visibility', label: 'Price Visibility', icon: DollarSign, group: 'Landing Page' },
     { id: 'creation-delivery', label: t.creationDelivery ?? 'Creation & Delivery', icon: Zap, group: 'System' },
     { id: 'config-step0', label: 'Step 0: Announcement', icon: Megaphone, group: 'Config Steps' },
     { id: 'config-step1', label: 'Step 1: Recipient', icon: Heart, group: 'Config Steps' },
@@ -1878,15 +1879,7 @@ export function LandingContentConfigSection({
                                 <p className="text-[10px] text-muted-foreground">e.g. "Konfirmasi via WhatsApp"</p>
                             </div>
                         </div>
-                        <label className="flex items-center justify-between gap-2 rounded border p-3 bg-background cursor-pointer hover:bg-muted/40 transition-colors">
-                            <span className="text-sm font-medium">Show price in button</span>
-                            <input
-                                type="checkbox"
-                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                checked={draft.configSteps.step4.showPriceInButton}
-                                onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, showPriceInButton: e.target.checked } } }))}
-                            />
-                        </label>
+                        <p className="text-[10px] text-muted-foreground italic">Price visibility is now controlled from the "Price Visibility" tab.</p>
                     </div>
                 </div>
             )}
@@ -2229,6 +2222,68 @@ export function LandingContentConfigSection({
                             <label className="text-xs font-medium text-muted-foreground">Mobile CTA Quota Badge</label>
                             <Input value={draft.miscText.mobileCtaQuotaBadge} onChange={(e) => setDraft(d => ({ ...d, miscText: { ...d.miscText, mobileCtaQuotaBadge: e.target.value } }))} />
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'price-visibility' && (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="pb-2 border-b">
+                        <h3 className="text-base font-semibold">Price Visibility</h3>
+                        <p className="text-xs text-muted-foreground">Control where prices are shown across the landing page and config funnel.</p>
+                    </div>
+
+                    <div className="space-y-1 pb-2 border-b">
+                        <h4 className="text-sm font-medium">Landing Page</h4>
+                    </div>
+                    <div className="space-y-3">
+                        {([
+                            { key: 'promoBanner' as const, label: 'Promo Banner', desc: 'Price shown in the top countdown banner' },
+                            { key: 'header' as const, label: 'Header Bar', desc: 'Strikethrough + current price in the sticky header' },
+                            { key: 'heroCtaButton' as const, label: 'Hero CTA Button', desc: 'Price in the main hero call-to-action button' },
+                            { key: 'audioSamplesButton' as const, label: 'Audio Samples Button', desc: 'Price in the audio samples section CTA' },
+                            { key: 'comparisonSection' as const, label: 'Comparison Section', desc: 'Price shown in the comparison table' },
+                            { key: 'howItWorksButton' as const, label: 'How It Works Button', desc: 'Price in the how-it-works section CTA' },
+                            { key: 'footerCtaButton' as const, label: 'Footer CTA Button', desc: 'Price in the bottom call-to-action section' },
+                            { key: 'mobileStickyButton' as const, label: 'Mobile Sticky Button', desc: 'Price in the mobile bottom sticky bar' },
+                        ]).map(({ key, label, desc }) => (
+                            <label key={key} className="flex items-start gap-3 cursor-pointer p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={draft.priceVisibility[key]}
+                                    onChange={(e) => setDraft(d => ({ ...d, priceVisibility: { ...d.priceVisibility, [key]: e.target.checked } }))}
+                                    className="mt-0.5 accent-[var(--theme-accent,#E11D48)]"
+                                />
+                                <div>
+                                    <span className="text-sm font-medium">{label}</span>
+                                    <p className="text-xs text-muted-foreground">{desc}</p>
+                                </div>
+                            </label>
+                        ))}
+                    </div>
+
+                    <div className="space-y-1 pb-2 border-b pt-4">
+                        <h4 className="text-sm font-medium">Config Funnel</h4>
+                    </div>
+                    <div className="space-y-3">
+                        {([
+                            { key: 'funnelHeader' as const, label: 'Funnel Header', desc: 'Price shown in the config flow top bar' },
+                            { key: 'orderSummary' as const, label: 'Order Summary', desc: 'Price in the Step 4 order summary' },
+                            { key: 'checkoutButton' as const, label: 'Checkout Button', desc: 'Price appended to the checkout button text' },
+                        ]).map(({ key, label, desc }) => (
+                            <label key={key} className="flex items-start gap-3 cursor-pointer p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={draft.priceVisibility[key]}
+                                    onChange={(e) => setDraft(d => ({ ...d, priceVisibility: { ...d.priceVisibility, [key]: e.target.checked } }))}
+                                    className="mt-0.5 accent-[var(--theme-accent,#E11D48)]"
+                                />
+                                <div>
+                                    <span className="text-sm font-medium">{label}</span>
+                                    <p className="text-xs text-muted-foreground">{desc}</p>
+                                </div>
+                            </label>
+                        ))}
                     </div>
                 </div>
             )}

@@ -199,6 +199,19 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
     heroCtaButtonText: 'Buat Lagu',
     mobileCtaQuotaBadge: '(11 sisa)',
   },
+  priceVisibility: {
+    promoBanner: true,
+    header: true,
+    heroCtaButton: true,
+    audioSamplesButton: true,
+    comparisonSection: true,
+    howItWorksButton: true,
+    footerCtaButton: true,
+    mobileStickyButton: true,
+    funnelHeader: true,
+    orderSummary: true,
+    checkoutButton: true,
+  },
   configSteps: {
     step0: {
       enabled: true,
@@ -493,6 +506,7 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
     faqSection: buildFaqSection(cfg?.faqSection),
     footer: buildFooter(cfg?.footer),
     miscText: buildMiscText(cfg?.miscText),
+    priceVisibility: buildPriceVisibility(cfg?.priceVisibility),
   }
 }
 
@@ -591,6 +605,24 @@ function buildMiscText(raw: any) {
     ctaButtonText: asString(s?.ctaButtonText, d.ctaButtonText),
     heroCtaButtonText: asString(s?.heroCtaButtonText, d.heroCtaButtonText),
     mobileCtaQuotaBadge: asString(s?.mobileCtaQuotaBadge, d.mobileCtaQuotaBadge),
+  }
+}
+
+function buildPriceVisibility(raw: any): PublicSiteDraft['priceVisibility'] {
+  const s = raw && typeof raw === 'object' ? raw : {}
+  const d = defaultPublicSiteDraft.priceVisibility
+  return {
+    promoBanner: asBool(s?.promoBanner, d.promoBanner),
+    header: asBool(s?.header, d.header),
+    heroCtaButton: asBool(s?.heroCtaButton, d.heroCtaButton),
+    audioSamplesButton: asBool(s?.audioSamplesButton, d.audioSamplesButton),
+    comparisonSection: asBool(s?.comparisonSection, d.comparisonSection),
+    howItWorksButton: asBool(s?.howItWorksButton, d.howItWorksButton),
+    footerCtaButton: asBool(s?.footerCtaButton, d.footerCtaButton),
+    mobileStickyButton: asBool(s?.mobileStickyButton, d.mobileStickyButton),
+    funnelHeader: asBool(s?.funnelHeader, d.funnelHeader),
+    orderSummary: asBool(s?.orderSummary, d.orderSummary),
+    checkoutButton: asBool(s?.checkoutButton, d.checkoutButton),
   }
 }
 
@@ -953,6 +985,8 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
     mobileCtaQuotaBadge: draft.miscText.mobileCtaQuotaBadge.trim(),
   }
 
-  return { logoUrl, faviconUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, heroCheckmarks: nextHeroCheckmarks, trustBadges: nextTrustBadges, statsBar: nextStatsBar, reviews: nextReviews, promoBanner: nextPromoBanner, configSteps: nextConfigSteps, audioSamplesSection: nextAudioSamplesSection, comparisonSection: nextComparisonSection, howItWorksSection: nextHowItWorksSection, guaranteeSection: nextGuaranteeSection, faqSection: nextFaqSection, footer: nextFooter, miscText: nextMiscText }
+  const nextPriceVisibility = { ...draft.priceVisibility }
+
+  return { logoUrl, faviconUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, heroCheckmarks: nextHeroCheckmarks, trustBadges: nextTrustBadges, statsBar: nextStatsBar, reviews: nextReviews, promoBanner: nextPromoBanner, configSteps: nextConfigSteps, audioSamplesSection: nextAudioSamplesSection, comparisonSection: nextComparisonSection, howItWorksSection: nextHowItWorksSection, guaranteeSection: nextGuaranteeSection, faqSection: nextFaqSection, footer: nextFooter, miscText: nextMiscText, priceVisibility: nextPriceVisibility }
 }
 

@@ -242,6 +242,7 @@ type Props = {
   fmtCurrency: (v: number | null | undefined) => string
   paymentAmount: number | null
   originalAmount: number | null
+  showPriceInButton?: boolean
   themeSlug: string | null
   sectionBadge?: string
   sectionHeadline?: string
@@ -260,6 +261,7 @@ export function AudioSamplesSection({
   fmtCurrency,
   paymentAmount,
   originalAmount,
+  showPriceInButton = true,
   themeSlug,
   sectionBadge = 'Tekan Putar',
   sectionHeadline = 'Dengar <span class="text-[var(--theme-accent)] italic">namanya</span> di lagu asli',
@@ -333,8 +335,8 @@ export function AudioSamplesSection({
           <p className="text-gray-600" dangerouslySetInnerHTML={{ __html: sanitizeHtml(ctaLine) }} />
           <Button asChild size="lg" className="h-12 px-8 rounded-xl bg-[var(--theme-accent)] font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90">
             <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center gap-2">
-              <span>Buat Lagunya — {fmtCurrency(paymentAmount)}</span>
-              <span className="text-xs font-normal line-through opacity-70 decoration-white/50">{fmtCurrency(originalAmount)}</span>
+              <span>Buat Lagunya{showPriceInButton ? ` — ${fmtCurrency(paymentAmount)}` : ''}</span>
+              {showPriceInButton && <span className="text-xs font-normal line-through opacity-70 decoration-white/50">{fmtCurrency(originalAmount)}</span>}
             </Link>
           </Button>
         </div>

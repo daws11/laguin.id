@@ -258,6 +258,20 @@ export type MiscTextConfig = {
   mobileCtaQuotaBadge: string
 }
 
+export type PriceVisibility = {
+  promoBanner: boolean
+  header: boolean
+  heroCtaButton: boolean
+  audioSamplesButton: boolean
+  comparisonSection: boolean
+  howItWorksButton: boolean
+  footerCtaButton: boolean
+  mobileStickyButton: boolean
+  funnelHeader: boolean
+  orderSummary: boolean
+  checkoutButton: boolean
+}
+
 export type PublicSiteDraft = {
   logoUrl: string
   faviconUrl: string
@@ -351,6 +365,7 @@ export type PublicSiteDraft = {
   faqSection: FaqSectionConfig
   footer: FooterConfig
   miscText: MiscTextConfig
+  priceVisibility: PriceVisibility
 }
 
 export type CustomerListItem = {
