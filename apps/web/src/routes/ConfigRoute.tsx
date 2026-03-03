@@ -34,6 +34,7 @@ import {
   Megaphone,
   ChevronDown,
   Play,
+  Pause,
   ChevronRight,
   BadgeCheck
 } from 'lucide-react'
@@ -65,6 +66,8 @@ export function ConfigRoute() {
   const [deliveryDelayHours, setDeliveryDelayHours] = useState<number | null>(null)
   const [manualConfirmationEnabled, setManualConfirmationEnabled] = useState(false)
   const [faqOpenIndex, setFaqOpenIndex] = useState<number | null>(null)
+  const [playingTrackIdx, setPlayingTrackIdx] = useState<number | null>(null)
+  const miniPlayerRef = useRef<HTMLAudioElement | null>(null)
 
   // Countdown timer logic to match LandingRoute
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, mins: 0 })
@@ -1604,19 +1607,46 @@ export function ConfigRoute() {
               {checkoutExtraData.playlist.length > 0 && (
                 <div className="space-y-2">
                   <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Contoh Lagu yang Dibuat</div>
+                  <audio
+                    ref={miniPlayerRef}
+                    onEnded={() => setPlayingTrackIdx(null)}
+                    onError={() => setPlayingTrackIdx(null)}
+                    className="hidden"
+                  />
                   <div className="space-y-2">
-                    {checkoutExtraData.playlist.slice(0, 3).map((track, i) => (
-                      <div key={i} className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-3 shadow-sm">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--theme-accent-soft)] text-[var(--theme-accent)]">
-                          <Play className="h-3.5 w-3.5 ml-0.5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-bold text-gray-900 truncate">{track.title}</div>
-                          {track.subtitle && <div className="text-[10px] text-gray-400 truncate">{track.subtitle}</div>}
-                        </div>
-                        <Music className="h-3.5 w-3.5 text-gray-300 shrink-0" />
-                      </div>
-                    ))}
+                    {checkoutExtraData.playlist.slice(0, 3).map((track, i) => {
+                      const isPlaying = playingTrackIdx === i
+                      const audioSrc = track.audioUrl ? resolveAsset(track.audioUrl) : ''
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          disabled={!audioSrc}
+                          onClick={() => {
+                            const audio = miniPlayerRef.current
+                            if (!audio || !audioSrc) return
+                            if (isPlaying) {
+                              audio.pause()
+                              setPlayingTrackIdx(null)
+                            } else {
+                              audio.src = audioSrc
+                              audio.play().catch(() => setPlayingTrackIdx(null))
+                              setPlayingTrackIdx(i)
+                            }
+                          }}
+                          className="w-full flex items-center gap-3 bg-white rounded-xl border border-gray-100 p-3 shadow-sm hover:bg-gray-50 transition-colors text-left"
+                        >
+                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isPlaying ? 'bg-[var(--theme-accent)] text-white' : 'bg-[var(--theme-accent-soft)] text-[var(--theme-accent)]'} transition-colors`}>
+                            {isPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-0.5" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-bold text-gray-900 truncate">{track.title}</div>
+                            {track.subtitle && <div className="text-[10px] text-gray-400 truncate">{track.subtitle}</div>}
+                          </div>
+                          <Music className="h-3.5 w-3.5 text-gray-300 shrink-0" />
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               )}
