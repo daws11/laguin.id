@@ -8,19 +8,20 @@ interface SelectionChipProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 export function SelectionChip({ selected, label, icon, className, ...props }: SelectionChipProps) {
+  const hasIcon = icon && typeof icon === 'string' ? icon.trim().length > 0 : Boolean(icon)
   return (
     <button
       type="button"
       className={cn(
-        "flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition-all hover:bg-muted",
+        "inline-flex items-center justify-center gap-1.5 rounded-full border px-5 py-2.5 text-sm font-medium transition-all",
         selected
-          ? "border-[var(--theme-accent)] bg-[var(--theme-accent)] text-white hover:opacity-90"
-          : "bg-white text-gray-700 hover:border-gray-300",
+          ? "border-[var(--theme-accent)] bg-[var(--theme-accent)] text-white shadow-md shadow-[var(--theme-accent-soft)] hover:opacity-90"
+          : "border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:border-gray-300",
         className
       )}
       {...props}
     >
-      {icon && <span className="text-lg">{icon}</span>}
+      {hasIcon && <span className="text-base">{icon}</span>}
       {label}
     </button>
   )

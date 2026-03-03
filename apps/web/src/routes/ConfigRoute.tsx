@@ -209,7 +209,7 @@ export function ConfigRoute() {
 
     const relChips = arr(s1?.relationshipChips, (x: any) => ({
       label: str(x?.label, ''),
-      icon: str(x?.icon, '✨'),
+      icon: typeof x?.icon === 'string' ? x.icon.trim() : '',
       value: str(x?.value, ''),
     })).filter((x: any) => x.label && x.value)
 
@@ -1128,8 +1128,8 @@ export function ConfigRoute() {
                 <p className="text-xs text-gray-500">{configSteps.step1.subtitle}</p>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
-                {[...configSteps.step1.relationshipChips, { label: 'Lainnya', icon: '✨', value: 'Lainnya' }].map((chip) => (
+              <div className="flex flex-wrap gap-2">
+                {[...configSteps.step1.relationshipChips, { label: 'Lainnya', icon: '', value: 'Lainnya' }].map((chip) => (
                   <SelectionChip
                     key={chip.value}
                     label={chip.label}
@@ -1140,7 +1140,6 @@ export function ConfigRoute() {
                       setValue('extraNotes', `Relasi dengan penerima: ${chip.value}`)
                       if (chip.value !== 'Lainnya') setValue('occasion', '')
                     }}
-                    className={relationship === chip.value ? "bg-[var(--theme-accent)] border-[var(--theme-accent)] text-white w-full shadow-md shadow-[var(--theme-accent-soft)] px-2 py-3" : "w-full bg-white shadow-sm px-2 py-3"}
                   />
                 ))}
               </div>
