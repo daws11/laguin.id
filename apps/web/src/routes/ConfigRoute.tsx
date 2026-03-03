@@ -1545,7 +1545,19 @@ export function ConfigRoute() {
 
                 {/* Agreement UI temporarily disabled (keep announcement step). */}
 
-                {/* Trust badges after contact inputs */}
+                {/* Primary CTA after contact inputs */}
+                <Button
+                  type="submit"
+                  className="h-12 w-full rounded-xl bg-[var(--theme-accent)] text-sm font-bold text-white shadow-lg shadow-[var(--theme-accent-soft)] hover:bg-[var(--theme-accent)] active:scale-95 transition-all"
+                  disabled={
+                    loading ||
+                    (!manualConfirmationEnabled && emailOtpEnabled && !emailVerified)
+                  }
+                >
+                  {loading ? 'Memproses...' : (manualConfirmationEnabled ? configSteps.step4.manualCheckoutButtonText : `${configSteps.step4.checkoutButtonText}${funnelPriceVisibility.checkoutButton ? ` — ${fmtCurrency(paymentAmount)}` : ''}`)}
+                </Button>
+
+                {/* Trust badges */}
                 <div className="flex justify-center gap-4 text-[10px] text-gray-400">
                   {configSteps.step4.securityBadges.map((badge, i) => (
                     <div key={i} className="flex items-center gap-1">
