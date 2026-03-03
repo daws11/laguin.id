@@ -1749,8 +1749,8 @@ export function ConfigRoute() {
             </div>
           )}
 
-          {/* BOTTOM NAV / CTA */}
-          <div className="fixed inset-x-0 bottom-0 z-50 bg-white border-t border-gray-100 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+          {/* BOTTOM NAV / CTA — hidden on step 4 (inline CTAs used instead) */}
+          <div className={`fixed inset-x-0 bottom-0 z-50 bg-white border-t border-gray-100 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]${step === 4 ? ' hidden' : ''}`}>
              <div className="mx-auto max-w-4xl flex flex-col gap-2">
                {step === 4 && (
                  <div className="text-center text-[10px] sm:text-xs text-gray-500 flex justify-center items-center gap-1 mb-1">
