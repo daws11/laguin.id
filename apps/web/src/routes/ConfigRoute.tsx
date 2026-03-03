@@ -341,6 +341,7 @@ export function ConfigRoute() {
         securityBadges: securityBadges.length ? securityBadges : ['Checkout aman', '{delivery}'],
         draftTimerText: str(s4?.draftTimerText, 'Cerita tersimpan selama {timer} — selesaikan checkout untuk menyimpannya'),
         checkoutButtonText: str(s4?.checkoutButtonText, 'Ke checkout'),
+        checkoutSubtext: str(s4?.checkoutSubtext, 'Siap bikin sesuatu yang spesial untuk {recipient}?'),
         manualCheckoutButtonText: str(s4?.manualCheckoutButtonText, 'Konfirmasi via WhatsApp'),
         showPriceInButton: typeof s4?.showPriceInButton === 'boolean' ? s4.showPriceInButton : true,
         checkoutImageUrl: str(s4?.checkoutImageUrl, '/images/checkout-studio.png'),
@@ -1693,6 +1694,7 @@ export function ConfigRoute() {
                 >
                   {loading ? 'Memproses...' : (manualConfirmationEnabled ? configSteps.step4.manualCheckoutButtonText : `${configSteps.step4.checkoutButtonText}${funnelPriceVisibility.checkoutButton ? ` — ${fmtCurrency(paymentAmount)}` : ''}`)}
                 </Button>
+                <p className="text-center text-xs text-gray-400">{configSteps.step4.checkoutSubtext.replace('{recipient}', currentRecipient)}</p>
 
                 <div className="rounded-xl bg-gray-50 p-3 border border-gray-100 space-y-2">
                   <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">{configSteps.step4.nextStepsTitle}</div>

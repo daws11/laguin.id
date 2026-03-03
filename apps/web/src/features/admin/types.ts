@@ -165,6 +165,7 @@ export type ConfigStep4 = {
   securityBadges: string[]
   draftTimerText: string
   checkoutButtonText: string
+  checkoutSubtext: string
   manualCheckoutButtonText: string
   showPriceInButton: boolean
   checkoutImageUrl: string

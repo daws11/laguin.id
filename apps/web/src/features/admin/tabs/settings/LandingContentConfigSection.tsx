@@ -1885,6 +1885,11 @@ export function LandingContentConfigSection({
                                 <p className="text-[10px] text-muted-foreground">e.g. "Konfirmasi via WhatsApp"</p>
                             </div>
                         </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-muted-foreground">Subtext under button</label>
+                            <Input value={draft.configSteps.step4.checkoutSubtext} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, checkoutSubtext: e.target.value } } }))} />
+                            <p className="text-[10px] text-muted-foreground">Use {'{recipient}'} for recipient name. e.g. "Siap bikin sesuatu yang spesial untuk {'{recipient}'}?"</p>
+                        </div>
                         <p className="text-[10px] text-muted-foreground italic">Price visibility is now controlled from the "Price Visibility" tab.</p>
                     </div>
                 </div>
