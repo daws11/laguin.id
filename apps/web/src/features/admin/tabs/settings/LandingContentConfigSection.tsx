@@ -2230,6 +2230,11 @@ export function LandingContentConfigSection({
                             <Input value={draft.miscText.heroCtaButtonText} onChange={(e) => setDraft(d => ({ ...d, miscText: { ...d.miscText, heroCtaButtonText: e.target.value } }))} />
                         </div>
                         <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Hero Chips Headline</label>
+                            <Input value={draft.miscText.heroChipsHeadline} onChange={(e) => setDraft(d => ({ ...d, miscText: { ...d.miscText, heroChipsHeadline: e.target.value } }))} />
+                            <p className="text-[10px] text-muted-foreground">Headline above relationship chips. e.g. "Lagu ini untuk siapa?"</p>
+                        </div>
+                        <div className="space-y-1">
                             <label className="text-xs font-medium text-muted-foreground">Mobile CTA Quota Badge</label>
                             <Input value={draft.miscText.mobileCtaQuotaBadge} onChange={(e) => setDraft(d => ({ ...d, miscText: { ...d.miscText, mobileCtaQuotaBadge: e.target.value } }))} />
                         </div>

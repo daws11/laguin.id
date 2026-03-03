@@ -784,7 +784,9 @@ export function LandingRoute() {
           </div>
 
           <div className="text-center md:text-left space-y-4 md:space-y-6 md:col-start-1 md:row-start-2">
-            <div className="flex flex-wrap justify-center md:justify-start gap-2">
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-gray-700">{miscText?.heroChipsHeadline || 'Lagu ini untuk siapa?'}</p>
+              <div className="flex flex-wrap justify-center md:justify-start gap-2">
               {heroRelChips.map((chip, idx) => (
                 <Link
                   key={idx}
@@ -795,6 +797,7 @@ export function LandingRoute() {
                   {chip.label}
                 </Link>
               ))}
+              </div>
             </div>
 
             <div className="space-y-2">

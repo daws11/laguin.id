@@ -257,6 +257,7 @@ export type MiscTextConfig = {
   heroStarLine: string
   ctaButtonText: string
   heroCtaButtonText: string
+  heroChipsHeadline: string
   mobileCtaQuotaBadge: string
 }
 

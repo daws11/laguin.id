@@ -197,6 +197,7 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
     heroStarLine: '2,847 menangis bahagia',
     ctaButtonText: 'Buat Lagunya',
     heroCtaButtonText: 'Buat Lagu',
+    heroChipsHeadline: 'Lagu ini untuk siapa?',
     mobileCtaQuotaBadge: '(11 sisa)',
   },
   priceVisibility: {
@@ -606,6 +607,7 @@ function buildMiscText(raw: any) {
     heroStarLine: asString(s?.heroStarLine, d.heroStarLine),
     ctaButtonText: asString(s?.ctaButtonText, d.ctaButtonText),
     heroCtaButtonText: asString(s?.heroCtaButtonText, d.heroCtaButtonText),
+    heroChipsHeadline: asString(s?.heroChipsHeadline, d.heroChipsHeadline),
     mobileCtaQuotaBadge: asString(s?.mobileCtaQuotaBadge, d.mobileCtaQuotaBadge),
   }
 }
@@ -988,6 +990,7 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
     heroStarLine: draft.miscText.heroStarLine.trim(),
     ctaButtonText: draft.miscText.ctaButtonText.trim(),
     heroCtaButtonText: draft.miscText.heroCtaButtonText.trim(),
+    heroChipsHeadline: draft.miscText.heroChipsHeadline.trim(),
     mobileCtaQuotaBadge: draft.miscText.mobileCtaQuotaBadge.trim(),
   }
 
