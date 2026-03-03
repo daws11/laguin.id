@@ -1740,9 +1740,15 @@ export function LandingContentConfigSection({
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-xs font-medium text-muted-foreground">Order Summary Label</label>
-                        <Input value={draft.configSteps.step4.orderSummaryLabel} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, orderSummaryLabel: e.target.value } } }))} />
+                    <div className="grid grid-cols-[1fr_80px] gap-3">
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-muted-foreground">Order Summary Label</label>
+                            <Input value={draft.configSteps.step4.orderSummaryLabel} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, orderSummaryLabel: e.target.value } } }))} />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-medium text-muted-foreground">Emoji</label>
+                            <Input value={draft.configSteps.step4.orderSummaryEmoji} onChange={(e) => setDraft(d => ({ ...d, configSteps: { ...d.configSteps, step4: { ...d.configSteps.step4, orderSummaryEmoji: e.target.value } } }))} className="text-center" />
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">

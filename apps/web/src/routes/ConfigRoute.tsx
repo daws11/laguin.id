@@ -316,6 +316,7 @@ export function ConfigRoute() {
         subtitleTemplate: str(s4?.subtitleTemplate, 'Kirim lagu {recipient} ke mana?'),
         manualSubtitle: str(s4?.manualSubtitle, 'Konfirmasi pesanan via WhatsApp'),
         orderSummaryLabel: str(s4?.orderSummaryLabel, 'Ringkasan Pesanan'),
+        orderSummaryEmoji: typeof s4?.orderSummaryEmoji === 'string' ? s4.orderSummaryEmoji.trim() : '💝',
         whatsappLabel: str(s4?.whatsappLabel, 'Nomor WhatsApp'),
         whatsappPlaceholder: str(s4?.whatsappPlaceholder, 'Masukkan nomor WhatsApp'),
         emailLabel: str(s4?.emailLabel, 'Alamat Email'),
@@ -1333,7 +1334,7 @@ export function ConfigRoute() {
                       className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-base">💝</span>
+                        {configSteps.step4.orderSummaryEmoji && <span className="text-base">{configSteps.step4.orderSummaryEmoji}</span>}
                         <div className="flex flex-col items-start">
                           <span className="text-xs font-bold text-gray-700">{configSteps.step4.orderSummaryLabel}</span>
                           <span className="text-[10px] text-gray-500">{genre}, {language || 'Indonesian'}</span>

@@ -154,6 +154,7 @@ export type ConfigStep4 = {
   subtitleTemplate: string
   manualSubtitle: string
   orderSummaryLabel: string
+  orderSummaryEmoji: string
   whatsappLabel: string
   whatsappPlaceholder: string
   emailLabel: string
