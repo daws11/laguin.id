@@ -636,7 +636,7 @@ export function ConfigRoute() {
 
       const relParam = searchParams.get('rel')
       if (relParam) {
-        setStep(1)
+        setStep(initialStep)
         setRelationship(relParam)
       } else {
         setStep(initialStep)
