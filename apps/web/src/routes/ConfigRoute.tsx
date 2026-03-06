@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { OrderInputSchema, type OrderInput } from 'shared'
 import { apiGet, apiPost } from '@/lib/http'
 import { useThemeSlug } from '@/features/theme/ThemeContext'
-import { ensureMetaPixelLoaded, trackWishlist } from '@/features/analytics/MetaPixel'
+import { ensureMetaPixelLoaded, trackWishlist, executePixelScript } from '@/features/analytics/MetaPixel'
 
 import { CountdownTimer } from '@/components/landing/CountdownTimer'
 import { Button } from '@/components/ui/button'
@@ -74,6 +74,10 @@ export function ConfigRoute() {
   const [paymentAmount, setPaymentAmount] = useState<number>(497000)
   const [originalAmount, setOriginalAmount] = useState<number>(497000)
   const [wishlistPixelId, setWishlistPixelId] = useState<string | null>(null)
+  const [pixelStep1Script, setPixelStep1Script] = useState<string | null>(null)
+  const [pixelStep4Script, setPixelStep4Script] = useState<string | null>(null)
+  const pixelStep1Fired = useRef(false)
+  const pixelStep4Fired = useRef(false)
   const [draftCountdown, setDraftCountdown] = useState(10 * 60)
   const draftCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -113,6 +117,8 @@ export function ConfigRoute() {
       paymentAmount?: number
       originalAmount?: number
       metaPixelWishlistId?: string | null
+      metaPixelStep1Script?: string | null
+      metaPixelStep4Script?: string | null
     }>(`/api/public/settings${themeSlug ? `?theme=${encodeURIComponent(themeSlug)}` : ''}`)
       .then((res) => {
         if (cancelled) return
@@ -125,6 +131,8 @@ export function ConfigRoute() {
         setPaymentAmount(res?.paymentAmount ?? 497000)
         setOriginalAmount(res?.originalAmount ?? 497000)
         setWishlistPixelId(res?.metaPixelWishlistId ?? null)
+        setPixelStep1Script(res?.metaPixelStep1Script ?? null)
+        setPixelStep4Script(res?.metaPixelStep4Script ?? null)
         
         // Resolve hero video URL
         type PublicSiteConfigMaybe = { landing?: { heroMedia?: { videoUrl?: unknown } } }
@@ -392,6 +400,17 @@ export function ConfigRoute() {
       setStep(1)
     }
   }, [settingsLoaded, configSteps.step0.enabled])
+
+  useEffect(() => {
+    if (step === 1 && pixelStep1Script && !pixelStep1Fired.current) {
+      pixelStep1Fired.current = true
+      executePixelScript(pixelStep1Script)
+    }
+    if (step === 4 && pixelStep4Script && !pixelStep4Fired.current) {
+      pixelStep4Fired.current = true
+      executePixelScript(pixelStep4Script)
+    }
+  }, [step, pixelStep1Script, pixelStep4Script])
 
   const [emailVerificationId, setEmailVerificationId] = useState<string | null>(null)
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', ''])

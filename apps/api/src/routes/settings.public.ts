@@ -39,6 +39,9 @@ export const publicSettingsRoutes: FastifyPluginAsync = async (app) => {
       showThemesInFooter: s.showThemesInFooter ?? false,
       metaPixelId: s.metaPixelId ?? null,
       metaPixelWishlistId: s.metaPixelWishlistId ?? null,
+      metaPixelStep1Script: (s as any).metaPixelStep1Script ?? null,
+      metaPixelStep4Script: (s as any).metaPixelStep4Script ?? null,
+      metaPixelConfirmScript: (s as any).metaPixelConfirmScript ?? null,
     }
   })
   

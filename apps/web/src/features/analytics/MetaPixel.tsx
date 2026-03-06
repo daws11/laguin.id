@@ -60,3 +60,14 @@ export function trackWishlist(pixelId: string, params?: Record<string, unknown>)
   }
 }
 
+export function executePixelScript(script: string | null | undefined) {
+  if (!script || typeof script !== 'string') return
+  const cleaned = script.replace(/<\/?script[^>]*>/gi, '').trim()
+  if (!cleaned) return
+  try {
+    new Function(cleaned)()
+  } catch (e) {
+    console.warn('[MetaPixel] Script execution error:', e)
+  }
+}
+

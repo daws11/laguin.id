@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { Check, Clock, Music, Loader2, ArrowLeft, CreditCard } from 'lucide-react'
 
 import { apiGet, apiPost } from '@/lib/http'
+import { executePixelScript } from '@/features/analytics/MetaPixel'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -73,6 +74,8 @@ export function CheckoutRoute() {
   const hasAttemptedAutoConfirm = useRef(false)
   const hasTrackedInitiateCheckout = useRef(false)
   const hasTrackedPurchase = useRef(false)
+  const pixelConfirmFired = useRef(false)
+  const [pixelConfirmScript, setPixelConfirmScript] = useState<string | null>(null)
 
   const [themeColors, setThemeColors] = useState<{ accentColor?: string; bgColor1?: string; bgColor2?: string } | null | undefined>(undefined)
 
@@ -87,6 +90,7 @@ export function CheckoutRoute() {
         if (cancelled) return
         setManualConfirmationEnabled(Boolean(res?.manualConfirmationEnabled))
         setPaymentAmount(res?.paymentAmount ?? 497000)
+        setPixelConfirmScript((res as any)?.metaPixelConfirmScript ?? null)
         const c = (res as any)?.publicSiteConfig?.colors ?? (res as any)?.colors
         setThemeColors(c ?? null)
       })
@@ -233,6 +237,13 @@ export function CheckoutRoute() {
   }
 
   const showProgressUI = Boolean(order && !needsXenditPayment && order.paymentStatus !== 'failed' && (order.status === 'processing' || order.status === 'created' || order.status === 'failed' || confirming || hasAttemptedAutoConfirm.current))
+
+  useEffect(() => {
+    if (showProgressUI && pixelConfirmScript && !pixelConfirmFired.current) {
+      pixelConfirmFired.current = true
+      executePixelScript(pixelConfirmScript)
+    }
+  }, [showProgressUI, pixelConfirmScript])
 
   return (
     <div className="min-h-screen bg-[var(--theme-accent-soft)] font-sans pb-32 pt-10 px-4" style={themeStyle}>

@@ -52,6 +52,9 @@ model Settings {
   showThemesInFooter Boolean @default(false)
   metaPixelId      String?
   metaPixelWishlistId String?
+  metaPixelStep1Script String?
+  metaPixelStep4Script String?
+  metaPixelConfirmScript String?
   xenditSecretKeyEnc String?
   xenditWebhookToken String?
   allowMultipleOrdersPerWhatsapp Boolean @default(false)

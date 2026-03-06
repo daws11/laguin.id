@@ -20,6 +20,9 @@ const UpdateSchema = z.object({
 
   metaPixelId: z.string().optional().nullable(),
   metaPixelWishlistId: z.string().optional().nullable(),
+  metaPixelStep1Script: z.string().optional().nullable(),
+  metaPixelStep4Script: z.string().optional().nullable(),
+  metaPixelConfirmScript: z.string().optional().nullable(),
 
   openaiApiKey: z.string().min(1).optional(),
   openaiModel: z.string().optional().nullable(),
@@ -74,6 +77,9 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       showThemesInFooter: s.showThemesInFooter ?? false,
       metaPixelId: s.metaPixelId ?? null,
       metaPixelWishlistId: s.metaPixelWishlistId ?? null,
+      metaPixelStep1Script: (s as any).metaPixelStep1Script ?? null,
+      metaPixelStep4Script: (s as any).metaPixelStep4Script ?? null,
+      metaPixelConfirmScript: (s as any).metaPixelConfirmScript ?? null,
       hasXenditKey: Boolean(maybeDecrypt((s as any).xenditSecretKeyEnc)),
       xenditWebhookToken: (s as any).xenditWebhookToken ?? null,
       allowMultipleOrdersPerWhatsapp: (s as any).allowMultipleOrdersPerWhatsapp ?? false,
@@ -145,6 +151,9 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       showThemesInFooter: parsed.data.showThemesInFooter,
       metaPixelId: parsed.data.metaPixelId,
       metaPixelWishlistId: parsed.data.metaPixelWishlistId,
+      metaPixelStep1Script: parsed.data.metaPixelStep1Script,
+      metaPixelStep4Script: parsed.data.metaPixelStep4Script,
+      metaPixelConfirmScript: parsed.data.metaPixelConfirmScript,
       allowMultipleOrdersPerWhatsapp: parsed.data.allowMultipleOrdersPerWhatsapp,
     }
 
@@ -193,6 +202,9 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       showThemesInFooter: updated.showThemesInFooter ?? false,
       metaPixelId: updated.metaPixelId ?? null,
       metaPixelWishlistId: updated.metaPixelWishlistId ?? null,
+      metaPixelStep1Script: (updated as any).metaPixelStep1Script ?? null,
+      metaPixelStep4Script: (updated as any).metaPixelStep4Script ?? null,
+      metaPixelConfirmScript: (updated as any).metaPixelConfirmScript ?? null,
       allowMultipleOrdersPerWhatsapp: (updated as any).allowMultipleOrdersPerWhatsapp ?? false,
       kieAiCallbackUrl: process.env.KIE_AI_CALLBACK_URL || null,
 
