@@ -10,17 +10,21 @@ declare global {
 
 const META_PIXEL_SCRIPT_ID = 'meta-pixel-base'
 
-export function ensureMetaPixelLoaded(pixelId: string) {
-  const id = (pixelId ?? '').trim()
-  if (!id) return
-  if (typeof window === 'undefined' || typeof document === 'undefined') return
+let _pixelLoadScheduled = false
+const _pendingInits: string[] = []
+const _pendingTracks: Array<[string, ...any[]]> = []
 
-  // Load script if not yet injected (React StrictMode in dev, re-mounts, etc.)
-  if (!document.getElementById(META_PIXEL_SCRIPT_ID)) {
+function _doLoadPixel() {
+  if (document.getElementById(META_PIXEL_SCRIPT_ID)) {
+    _pendingInits.forEach(id => window.fbq?.('init', id))
+    _pendingInits.length = 0
+    _pendingTracks.forEach(args => window.fbq?.(...args))
+    _pendingTracks.length = 0
+    return
+  }
   ;(function (f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) {
     if (f.fbq) return
     n = (f.fbq = function () {
-      // eslint-disable-next-line prefer-rest-params
       n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments)
     })
     if (!f._fbq) f._fbq = n
@@ -35,9 +39,38 @@ export function ensureMetaPixelLoaded(pixelId: string) {
     s = b.getElementsByTagName(e)[0]
     s.parentNode.insertBefore(t, s)
   })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js')
+  _pendingInits.forEach(id => window.fbq?.('init', id))
+  _pendingInits.length = 0
+  _pendingTracks.forEach(args => window.fbq?.(...args))
+  _pendingTracks.length = 0
+}
+
+export function ensureMetaPixelLoaded(pixelId: string) {
+  const id = (pixelId ?? '').trim()
+  if (!id) return
+  if (typeof window === 'undefined' || typeof document === 'undefined') return
+
+  if (document.getElementById(META_PIXEL_SCRIPT_ID)) {
+    window.fbq?.('init', id)
+    return
   }
-  // Always init this pixel (supports multiple pixels)
-  window.fbq?.('init', id)
+
+  _pendingInits.push(id)
+  if (!_pixelLoadScheduled) {
+    _pixelLoadScheduled = true
+    const schedule = typeof requestIdleCallback === 'function'
+      ? requestIdleCallback
+      : (cb: () => void) => setTimeout(cb, 1)
+    schedule(_doLoadPixel)
+  }
+}
+
+function _trackPixel(...args: [string, ...any[]]) {
+  if (window.fbq) {
+    window.fbq(...args)
+  } else {
+    _pendingTracks.push(args)
+  }
 }
 
 export function MetaPixel({ pixelId }: { pixelId: string }) {
@@ -45,8 +78,7 @@ export function MetaPixel({ pixelId }: { pixelId: string }) {
 
   useEffect(() => {
     ensureMetaPixelLoaded(pixelId)
-    window.fbq?.('track', 'PageView')
-    // Track SPA navigation as page views
+    _trackPixel('track', 'PageView')
   }, [pixelId, location.pathname, location.search])
 
   return null

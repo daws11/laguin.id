@@ -27,7 +27,7 @@ export function LandingFooter({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-12">
           <div className="flex flex-col items-center sm:items-start gap-3">
             <Link to={themeSlug ? `/${themeSlug}` : '/'} className="flex items-center gap-2">
-              <img src={logoUrl} alt="Laguin.id - Lagumu, Ceritamu" className="h-10 w-auto object-contain opacity-70" loading="lazy" />
+              <img src={logoUrl} alt="Laguin.id - Lagumu, Ceritamu" className="h-10 w-auto object-contain opacity-70" loading="lazy" width="135" height="40" />
             </Link>
             <p className="text-gray-500 text-xs">{tagline}</p>
             <div className="text-xs space-y-1 text-gray-400">

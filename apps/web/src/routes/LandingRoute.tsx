@@ -370,7 +370,19 @@ export function LandingRoute() {
       .then((res) => {
         if (cancelled) return
         const cfg = res?.publicSiteConfig
-        if (cfg && typeof cfg === 'object') setPublicSiteConfig(cfg)
+        if (cfg && typeof cfg === 'object') {
+          setPublicSiteConfig(cfg)
+          const heroImg = (cfg as any)?.landing?.heroMedia?.imageUrl
+          if (typeof heroImg === 'string' && heroImg.trim() && !document.getElementById('preload-hero')) {
+            const base = import.meta.env.VITE_API_BASE_URL ?? ''
+            const link = document.createElement('link')
+            link.id = 'preload-hero'
+            link.rel = 'preload'
+            link.as = 'image'
+            link.href = /^https?:\/\//i.test(heroImg) ? heroImg : (base + heroImg)
+            document.head.appendChild(link)
+          }
+        }
         else setPublicSiteConfig(null)
         setInstantEnabled(typeof res?.instantEnabled === 'boolean' ? res.instantEnabled : null)
         setDeliveryDelayHours(typeof res?.deliveryDelayHours === 'number' ? res.deliveryDelayHours : null)
@@ -684,7 +696,7 @@ export function LandingRoute() {
         <div className="border-b border-[var(--theme-accent-soft)] bg-white/95 px-7 sm:px-9 py-2 backdrop-blur-sm">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-3">
             <Link to={themeSlug ? `/${themeSlug}` : '/'} className="flex items-center gap-2">
-              <img src={logoUrl} alt="Laguin.id - Lagumu, Ceritamu" className="h-8 w-auto object-contain" />
+              <img src={logoUrl} alt="Laguin.id - Lagumu, Ceritamu" className="h-8 w-auto object-contain" width="108" height="32" />
             </Link>
             <div className="text-right flex flex-col items-end gap-0.5 sm:flex-row sm:items-center sm:gap-3">
               {promoPromoBadgeText && (

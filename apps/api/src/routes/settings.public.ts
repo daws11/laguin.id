@@ -8,7 +8,8 @@ const QuerySchema = z.object({
 })
 
 export const publicSettingsRoutes: FastifyPluginAsync = async (app) => {
-  app.get('/public/settings', async (req) => {
+  app.get('/public/settings', async (req, reply) => {
+    reply.header('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
     const parsed = QuerySchema.safeParse(req.query)
     const themeSlug = parsed.success ? parsed.data.theme : undefined
     

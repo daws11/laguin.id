@@ -63,7 +63,7 @@ app.get('/uploads/*', async (req, reply) => {
 
     reply.header('Content-Type', result.contentType)
     reply.header('Content-Length', result.buffer.length)
-    reply.header('Cache-Control', 'public, max-age=86400')
+    reply.header('Cache-Control', 'public, max-age=31536000, immutable')
     return reply.send(result.buffer)
   } catch (err) {
     req.log.error(err, 'Error serving upload')
