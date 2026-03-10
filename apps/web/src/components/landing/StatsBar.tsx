@@ -6,7 +6,7 @@ type Props = {
 
 export function StatsBar({ items }: Props) {
   return (
-    <section className="py-8 border-y border-[var(--theme-accent-soft)] bg-white/50 backdrop-blur-sm -mx-2 px-2 sm:-mx-4 sm:px-4 md:-mx-6 md:px-6">
+    <section className="py-8 border-y border-[var(--theme-accent-soft)] bg-white/50 backdrop-blur-sm -mx-7 px-7 sm:-mx-9 sm:px-9 md:-mx-11 md:px-11">
       <div className="flex flex-wrap justify-center gap-8 md:gap-24 text-center">
         {items.map((stat, idx) => (
           <div key={idx}>

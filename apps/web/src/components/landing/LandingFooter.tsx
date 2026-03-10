@@ -23,7 +23,7 @@ export function LandingFooter({
 }: Props) {
   return (
     <footer className="border-t border-gray-100 bg-white py-12 text-sm text-gray-400">
-      <div className="mx-auto max-w-7xl px-4">
+      <div className="mx-auto max-w-7xl px-7 sm:px-9 md:px-11">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-12">
           <div className="flex flex-col items-center sm:items-start gap-3">
             <Link to={themeSlug ? `/${themeSlug}` : '/'} className="flex items-center gap-2">

@@ -676,7 +676,7 @@ export function LandingRoute() {
         {promoBannerEnabled && (
           <CountdownTimer paymentAmount={showPrice.promoBanner ? paymentAmount : null} originalAmount={showPrice.promoBanner ? originalAmount : null} countdownLabel={promoCountdownLabel} countdownTargetDate={promoCountdownTargetDate} evergreenEnabled={promoEvergreenEnabled} evergreenCycleHours={promoEvergreenCycleHours} />
         )}
-        <div className="border-b border-[var(--theme-accent-soft)] bg-white/95 px-2 sm:px-4 py-2 backdrop-blur-sm">
+        <div className="border-b border-[var(--theme-accent-soft)] bg-white/95 px-7 sm:px-9 py-2 backdrop-blur-sm">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-3">
             <Link to={themeSlug ? `/${themeSlug}` : '/'} className="flex items-center gap-2">
               <img src={logoUrl} alt="Laguin.id - Lagumu, Ceritamu" className="h-8 w-auto object-contain" />
@@ -701,7 +701,7 @@ export function LandingRoute() {
         </div>
       </div>
 
-      <main className="mx-auto max-w-7xl w-full px-2 sm:px-4 md:px-6 pt-0 sm:pt-12 space-y-8 sm:space-y-20">
+      <main className="mx-auto max-w-7xl w-full px-7 sm:px-9 md:px-11 pt-0 sm:pt-12 space-y-8 sm:space-y-20">
         {/* HERO SECTION */}
         <section ref={heroRef} aria-labelledby="hero-title" className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 md:gap-12 items-start md:items-center min-h-[calc(100svh-5rem)] md:min-h-0 content-start md:content-center">
           <div className="text-center md:text-left space-y-3 md:space-y-6 md:col-start-1 md:row-start-1 order-2 md:order-none">
@@ -718,7 +718,7 @@ export function LandingRoute() {
           </div>
 
           <div className="relative mx-auto w-full max-w-full sm:max-w-md md:max-w-full min-w-0 md:col-start-2 md:row-start-1 md:row-span-2 order-1 md:order-none">
-             <div className="relative aspect-[4/3] w-[calc(100%+1rem)] sm:w-full overflow-hidden rounded-none sm:rounded-2xl shadow-2xl -mx-2 sm:mx-0">
+             <div className="relative aspect-[4/3] w-[calc(100%+3.5rem)] sm:w-full overflow-hidden rounded-none sm:rounded-2xl shadow-2xl -mx-7 sm:mx-0">
                <div className="absolute inset-0 bg-gray-900/10 z-10"></div>
                {heroVideoUrl ? (
                  <video
