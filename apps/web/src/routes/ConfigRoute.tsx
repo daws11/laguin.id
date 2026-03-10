@@ -1130,7 +1130,7 @@ export function ConfigRoute() {
         )}
       </header>
 
-      <main className="mx-auto max-w-4xl w-full px-4 py-4 sm:py-8 lg:py-12">
+      <main className="mx-auto max-w-4xl w-full px-4 pt-0 pb-4 sm:py-8 lg:py-12">
         <form onSubmit={form.handleSubmit(onSubmit, onInvalid)}>
           
           {/* STEP 0: ANNOUNCEMENT - halaman pengumuman */}

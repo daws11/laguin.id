@@ -688,7 +688,7 @@ export function LandingRoute() {
         </div>
       </div>
 
-      <main className="mx-auto max-w-7xl w-full px-2 sm:px-4 md:px-6 pt-2 sm:pt-12 space-y-8 sm:space-y-20">
+      <main className="mx-auto max-w-7xl w-full px-2 sm:px-4 md:px-6 pt-0 sm:pt-12 space-y-8 sm:space-y-20">
         {/* HERO SECTION */}
         <section ref={heroRef} aria-labelledby="hero-title" className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 md:gap-12 items-center">
           <div className="text-center md:text-left space-y-3 md:space-y-6 md:col-start-1 md:row-start-1 order-2 md:order-none">
