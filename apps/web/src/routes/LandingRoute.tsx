@@ -689,7 +689,7 @@ export function LandingRoute() {
       <main className="mx-auto max-w-7xl w-full px-2 sm:px-4 md:px-6 pt-2 sm:pt-12 space-y-8 sm:space-y-20">
         {/* HERO SECTION */}
         <section ref={heroRef} aria-labelledby="hero-title" className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 md:gap-12 items-center">
-          <div className="text-center md:text-left space-y-3 md:space-y-6 md:col-start-1 md:row-start-1">
+          <div className="text-center md:text-left space-y-3 md:space-y-6 md:col-start-1 md:row-start-1 order-2 md:order-none">
             <div className="flex flex-row items-center justify-center md:justify-start gap-2">
               <div className="flex text-amber-400 gap-0.5 scale-90 origin-left">
                 <Star className="h-4 w-4 fill-current" />
@@ -709,8 +709,8 @@ export function LandingRoute() {
             <p className="text-sm sm:text-lg text-gray-600 leading-normal max-w-lg mx-auto md:mx-0" dangerouslySetInnerHTML={{ __html: sanitizeHtml(heroSubtext) }} />
           </div>
 
-          <div className="relative mx-auto w-full max-w-full sm:max-w-md md:max-w-full min-w-0 md:col-start-2 md:row-start-1 md:row-span-2">
-             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl sm:rounded-2xl shadow-2xl">
+          <div className="relative mx-auto w-full max-w-full sm:max-w-md md:max-w-full min-w-0 md:col-start-2 md:row-start-1 md:row-span-2 order-1 md:order-none">
+             <div className="relative aspect-[4/3] w-[calc(100%+1rem)] sm:w-full overflow-hidden rounded-none sm:rounded-2xl shadow-2xl -mx-2 sm:mx-0">
                <div className="absolute inset-0 bg-gray-900/10 z-10"></div>
                {heroVideoUrl ? (
                  <video
@@ -781,7 +781,7 @@ export function LandingRoute() {
              </div>
           </div>
 
-          <div className="text-center md:text-left space-y-4 md:space-y-6 md:col-start-1 md:row-start-2">
+          <div className="text-center md:text-left space-y-4 md:space-y-6 md:col-start-1 md:row-start-2 order-3 md:order-none">
             <div className="space-y-2">
               <p className="text-sm font-semibold text-gray-700">{miscText?.heroChipsHeadline || 'Lagu ini untuk siapa?'}</p>
               <div className="flex flex-wrap justify-center md:justify-start gap-2">
