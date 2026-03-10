@@ -173,7 +173,7 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
     const rawPaymentAmount = themeCD ? (themeCD.paymentAmount ?? 497000) : 497000
     const paymentAmount = typeof rawPaymentAmount === 'number' && Number.isFinite(rawPaymentAmount) && rawPaymentAmount >= 0 ? Math.floor(rawPaymentAmount) : 497000
     const xenditConfigured = Boolean(maybeDecrypt((settings as any).xenditSecretKeyEnc))
-    const useXenditPayment = !manualConfirmationEnabled && xenditConfigured && paymentAmount > 0
+    const shouldCreateInvoice = xenditConfigured && paymentAmount > 0
 
     const order = await prisma.order.create({
       data: {
@@ -206,7 +206,7 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       },
     })
 
-    if (useXenditPayment) {
+    if (shouldCreateInvoice) {
       try {
         const host = req.headers['x-forwarded-host'] || req.headers.host || ''
         const proto = req.headers['x-forwarded-proto'] || 'https'
@@ -235,14 +235,23 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
           message: `Xendit invoice created: ${invoice.id}`,
         })
 
-        return { orderId: order.id, xenditInvoiceUrl: invoice.invoice_url }
+        if (!manualConfirmationEnabled) {
+          return { orderId: order.id, xenditInvoiceUrl: invoice.invoice_url }
+        }
       } catch (err: any) {
         app.log.error({ err, orderId: order.id }, 'Failed to create Xendit invoice')
-        await prisma.order.update({
-          where: { id: order.id },
-          data: { paymentStatus: 'failed', errorMessage: 'Gagal membuat invoice pembayaran.' },
+        if (!manualConfirmationEnabled) {
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { paymentStatus: 'failed', errorMessage: 'Gagal membuat invoice pembayaran.' },
+          })
+          return reply.code(500).send({ error: 'Gagal membuat invoice pembayaran. Silakan coba lagi.' })
+        }
+        await addOrderEvent({
+          orderId: order.id,
+          type: 'xendit_invoice_failed',
+          message: `Xendit invoice creation failed (non-critical, manual mode): ${err.message ?? 'unknown'}`,
         })
-        return reply.code(500).send({ error: 'Gagal membuat invoice pembayaran. Silakan coba lagi.' })
       }
     }
 
