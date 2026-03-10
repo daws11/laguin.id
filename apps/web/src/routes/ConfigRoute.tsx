@@ -1608,10 +1608,6 @@ export function ConfigRoute() {
                     <span className="text-gray-500">Estimasi</span>
                     <span className="font-bold text-green-600 flex items-center gap-1"><Zap className="h-3 w-3" /> {deliveryEta.short}</span>
                   </div>
-                  <Separator className="my-2" />
-                  <div className="bg-[var(--theme-accent-soft)] p-2 rounded text-[var(--theme-accent)] italic text-[11px]">
-                    &ldquo;{storyText.length > 60 ? storyText.slice(0, 60) + '...' : storyText}&rdquo;
-                  </div>
                   {funnelPriceVisibility.orderSummary && (
                     <>
                       <Separator className="my-2" />
