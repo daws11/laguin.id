@@ -85,7 +85,7 @@ export function CheckoutRoute() {
     if (!order) return
     let cancelled = false
     const themeParam = order.themeSlug ? `?theme=${encodeURIComponent(order.themeSlug)}` : ''
-    apiGet<{ manualConfirmationEnabled?: boolean; paymentAmount?: number; colors?: { accentColor?: string; bgColor1?: string; bgColor2?: string } }>(`/api/public/settings${themeParam}`)
+    apiGet<{ manualConfirmationEnabled?: boolean; paymentAmount?: number; colors?: { accentColor?: string; buttonColor?: string; bgColor1?: string; bgColor2?: string } }>(`/api/public/settings${themeParam}`)
       .then((res) => {
         if (cancelled) return
         setManualConfirmationEnabled(Boolean(res?.manualConfirmationEnabled))

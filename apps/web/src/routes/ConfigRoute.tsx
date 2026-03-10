@@ -11,7 +11,6 @@ import { CountdownTimer } from '@/components/landing/CountdownTimer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent } from '@/components/ui/card'
 import { SelectionChip } from '@/components/ui/selection-chip' // Adjust import path if needed
 import { VibeCard } from '@/components/ui/vibe-card' // Adjust import path
 import { PromptChip } from '@/components/ui/prompt-chip' // Adjust import path
