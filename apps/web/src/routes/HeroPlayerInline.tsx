@@ -80,25 +80,12 @@ export function HeroPlayerInline({
         )}
       </div>
 
-      {/* Overlay: klik area video = pause/play lagu; tutup pakai tombol × */}
-      <div className="absolute inset-0">
-        <button
-          type="button"
-          aria-label={playing ? 'Jeda lagu' : 'Putar lagu'}
-          onClick={() => {
-            if (!audioUrl) return
-            const a = audioRef.current
-            if (!a) return
-            if (playing) {
-              closeAndStop()
-            } else {
-              a.play()
-                .then(() => setPlaying(true))
-                .catch(() => setPlaying(false))
-            }
-          }}
-          className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"
-        />
+      {/* Overlay: klik anywhere = close player */}
+      <div
+        className="absolute inset-0 cursor-pointer"
+        onClick={() => closeAndStop()}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
         {/* Playing badge (toggle pause/play) */}
         <button
