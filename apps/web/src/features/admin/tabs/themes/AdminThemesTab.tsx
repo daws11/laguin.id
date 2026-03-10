@@ -140,6 +140,19 @@ export function AdminThemesTab({ t, token, defaultThemeSlug, onDefaultThemeChang
     }
   }
 
+  async function handleDuplicate(slug: string) {
+    setError(null)
+    setLoading(true)
+    try {
+      await adminApi.adminDuplicateTheme(token, slug)
+      await refresh()
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to duplicate theme')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function handleAiGenerate() {
     if (!aiPrompt.trim() || aiGenerating) return
     setAiGenerating(true)
@@ -420,6 +433,9 @@ export function AdminThemesTab({ t, token, defaultThemeSlug, onDefaultThemeChang
               )}
               <Button variant="ghost" size="sm" onClick={() => startEdit(theme)} className="text-xs">
                 {t.edit ?? 'Edit'}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => handleDuplicate(theme.slug)} disabled={loading} className="text-xs">
+                Duplicate
               </Button>
               {theme.slug !== defaultThemeSlug && (
                 <Button variant="ghost" size="sm" onClick={() => handleDelete(theme.slug)} className="text-xs text-destructive hover:text-destructive">

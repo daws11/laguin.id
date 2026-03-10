@@ -103,6 +103,44 @@ export const adminThemeRoutes: FastifyPluginAsync = async (app) => {
     return { ok: true }
   })
 
+  app.post('/themes/:slug/duplicate', async (req, reply) => {
+    const params = SlugParamSchema.safeParse(req.params)
+    if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
+
+    const existing = await prisma.theme.findUnique({ where: { slug: params.data.slug } })
+    if (!existing) return reply.code(404).send({ error: 'not_found' })
+
+    const suffix = ' (Copy)'
+    const maxNameLen = 200
+    const baseName = existing.name.length + suffix.length > maxNameLen
+      ? existing.name.slice(0, maxNameLen - suffix.length)
+      : existing.name
+    const newName = `${baseName}${suffix}`
+
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const newSlug = attempt === 0
+        ? `${params.data.slug}-copy`
+        : `${params.data.slug}-copy-${attempt + 1}`
+
+      try {
+        const duplicate = await prisma.theme.create({
+          data: {
+            slug: newSlug,
+            name: newName,
+            isActive: false,
+            settings: existing.settings as any,
+          },
+        })
+        return duplicate
+      } catch (e: any) {
+        if (e?.code === 'P2002' && attempt < 9) continue
+        throw e
+      }
+    }
+
+    return reply.code(409).send({ error: 'slug_taken', message: 'Could not generate a unique slug for the duplicate.' })
+  })
+
   app.post('/themes/ai-generate', async (req, reply) => {
     const parsed = AiGenerateSchema.safeParse(req.body)
     if (!parsed.success) {

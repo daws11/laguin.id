@@ -134,3 +134,15 @@ export async function adminDeleteTheme(token: string, slug: string) {
   return res.json()
 }
 
+export async function adminDuplicateTheme(token: string, slug: string) {
+  const res = await fetch(`/api/admin/themes/${encodeURIComponent(slug)}/duplicate`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error((body as any).error ?? 'Failed to duplicate theme')
+  }
+  return res.json()
+}
+
