@@ -70,6 +70,7 @@ export type ReviewItem = {
 
 export type ThemeColors = {
   accentColor: string
+  buttonColor: string
   bgColor1: string
   bgColor2: string
 }

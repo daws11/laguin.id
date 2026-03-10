@@ -333,7 +333,7 @@ export function AudioSamplesSection({
 
         <div className="mt-10 text-center space-y-4">
           <p className="text-gray-600" dangerouslySetInnerHTML={{ __html: sanitizeHtml(ctaLine) }} />
-          <Button asChild size="lg" className="h-12 px-8 rounded-xl bg-[var(--theme-accent)] font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90">
+          <Button asChild size="lg" className="h-12 px-8 rounded-xl bg-[var(--theme-button)] font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90">
             <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center gap-2">
               <span>Buat Lagunya{showPriceInButton ? ` — ${fmtCurrency(paymentAmount)}` : ''}</span>
               {showPriceInButton && <span className="text-xs font-normal line-through opacity-70 decoration-white/50">{fmtCurrency(originalAmount)}</span>}

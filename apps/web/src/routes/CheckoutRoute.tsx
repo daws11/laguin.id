@@ -107,6 +107,7 @@ export function CheckoutRoute() {
 
   const themeStyle = {
     '--theme-accent': themeColors?.accentColor || '#E11D48',
+    '--theme-button': themeColors?.buttonColor || themeColors?.accentColor || '#E11D48',
     '--theme-accent-soft': themeColors?.bgColor1 || '#FFF5F7',
     '--theme-bg': themeColors?.bgColor2 || '#FFFFFF',
   } as React.CSSProperties
@@ -276,7 +277,7 @@ export function CheckoutRoute() {
                     Lanjutkan ke pembayaran untuk memproses pesanan kamu. Lagu akan dibuat otomatis setelah pembayaran diterima.
                   </p>
                   <Button
-                    className="w-full h-14 rounded-full bg-[var(--theme-accent)] text-white text-lg font-bold shadow-xl hover:opacity-90 hover:scale-[1.02] transition-all duration-300"
+                    className="w-full h-14 rounded-full bg-[var(--theme-button)] text-white text-lg font-bold shadow-xl hover:opacity-90 hover:scale-[1.02] transition-all duration-300"
                     onClick={() => {
                       if (order?.xenditInvoiceUrl) {
                         window.location.href = order.xenditInvoiceUrl
@@ -388,7 +389,7 @@ export function CheckoutRoute() {
             {/* Actions: Removed auto-confirm button. Only show if error occurs to retry. */}
             {error && order.status === 'created' ? (
                <Button 
-                 className="w-full h-14 rounded-full bg-[var(--theme-accent)] text-white text-lg font-bold shadow-xl shadow-[var(--theme-accent-soft)] hover:opacity-90 hover:scale-[1.02] transition-all duration-300" 
+                 className="w-full h-14 rounded-full bg-[var(--theme-button)] text-white text-lg font-bold shadow-xl shadow-[var(--theme-accent-soft)] hover:opacity-90 hover:scale-[1.02] transition-all duration-300" 
                  onClick={() => {
                     hasAttemptedAutoConfirm.current = true
                     confirm()

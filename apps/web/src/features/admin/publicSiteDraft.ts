@@ -2,6 +2,7 @@ import type { PublicSiteDraft, Settings, ToastItem } from './types'
 
 export const defaultThemeColors = {
   accentColor: '#E11D48',
+  buttonColor: '',
   bgColor1: '#FFF5F7',
   bgColor2: '#FFFFFF',
 }
@@ -408,6 +409,7 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
     faviconUrl: asString(cfg?.faviconUrl, defaultPublicSiteDraft.faviconUrl),
     colors: {
       accentColor: asString(colors?.accentColor, defaultThemeColors.accentColor),
+      buttonColor: asString(colors?.buttonColor, defaultThemeColors.buttonColor),
       bgColor1: asString(colors?.bgColor1, defaultThemeColors.bgColor1),
       bgColor2: asString(colors?.bgColor2, defaultThemeColors.bgColor2),
     },
@@ -824,6 +826,7 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
 
   const nextColors = {
     accentColor: draft.colors.accentColor.trim() || defaultThemeColors.accentColor,
+    buttonColor: draft.colors.buttonColor.trim() || '',
     bgColor1: draft.colors.bgColor1.trim() || defaultThemeColors.bgColor1,
     bgColor2: draft.colors.bgColor2.trim() || defaultThemeColors.bgColor2,
   }

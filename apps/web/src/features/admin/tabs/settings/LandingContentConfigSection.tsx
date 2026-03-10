@@ -639,6 +639,24 @@ export function LandingContentConfigSection({
                             </div>
                         </div>
                         <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Button Color</label>
+                            <p className="text-[10px] text-muted-foreground">Color for CTA buttons. Leave empty to use accent color.</p>
+                            <div className="flex items-center gap-3">
+                                <input
+                                    type="color"
+                                    className="h-10 w-14 rounded border cursor-pointer"
+                                    value={draft.colors.buttonColor || draft.colors.accentColor}
+                                    onChange={(e) => setDraft(d => ({ ...d, colors: { ...d.colors, buttonColor: e.target.value } }))}
+                                />
+                                <Input
+                                    className="flex-1 font-mono text-sm"
+                                    value={draft.colors.buttonColor}
+                                    onChange={(e) => setDraft(d => ({ ...d, colors: { ...d.colors, buttonColor: e.target.value } }))}
+                                    placeholder="(same as accent)"
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-1">
                             <label className="text-xs font-medium text-muted-foreground">Background Color 1</label>
                             <p className="text-[10px] text-muted-foreground">Soft background for header, sections, and badges.</p>
                             <div className="flex items-center gap-3">

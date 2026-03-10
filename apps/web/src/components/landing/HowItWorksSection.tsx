@@ -62,7 +62,7 @@ export function HowItWorksSection({
       </div>
 
       <div className="text-center pt-4">
-        <Button asChild size="lg" className="h-14 px-10 rounded-full bg-[var(--theme-accent)] text-lg font-bold shadow-xl shadow-[var(--theme-accent-soft)] hover:opacity-90">
+        <Button asChild size="lg" className="h-14 px-10 rounded-full bg-[var(--theme-button)] text-lg font-bold shadow-xl shadow-[var(--theme-accent-soft)] hover:opacity-90">
           <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center gap-2">
             <span>{ctaButtonText}{showPriceInButton ? ` — ${fmtCurrency(paymentAmount)}` : ''}</span>
             {showPriceInButton && <span className="text-xs font-normal line-through opacity-70 decoration-white/50">{fmtCurrency(originalAmount)}</span>}

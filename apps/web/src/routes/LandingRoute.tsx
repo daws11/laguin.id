@@ -440,6 +440,7 @@ export function LandingRoute() {
   const themeColors = (publicSiteConfig as any)?.colors
   const themeStyle = {
     '--theme-accent': themeColors?.accentColor || '#E11D48',
+    '--theme-button': themeColors?.buttonColor || themeColors?.accentColor || '#E11D48',
     '--theme-accent-soft': themeColors?.bgColor1 || '#FFF5F7',
     '--theme-bg': themeColors?.bgColor2 || '#FFFFFF',
   } as React.CSSProperties
@@ -794,7 +795,7 @@ export function LandingRoute() {
             </div>
 
             <div className="space-y-2">
-              <Button asChild size="lg" className="w-full sm:w-auto h-12 sm:h-14 px-8 rounded-full bg-[var(--theme-accent)] text-base sm:text-lg font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90 hover:scale-105 transition-all duration-300">
+              <Button asChild size="lg" className="w-full sm:w-auto h-12 sm:h-14 px-8 rounded-full bg-[var(--theme-button)] text-base sm:text-lg font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90 hover:scale-105 transition-all duration-300">
                 <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center justify-center gap-2">
                   {miscText?.heroCtaButtonText || 'Buat Lagu'}{showPrice.heroCtaButton ? ` — ${fmtCurrency(paymentAmount)}` : ''}
                   {showPrice.heroCtaButton && <span className="text-[var(--theme-accent-soft)] line-through font-normal text-sm sm:text-base ml-1">{fmtCurrency(originalAmount)}</span>}
@@ -948,7 +949,7 @@ export function LandingRoute() {
              <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-green-500" /> {deliveryEta.short}</span>
              <span className="flex items-center gap-1"><ShieldCheck className="h-3 w-3 text-green-500" /> Garansi</span>
            </div>
-           <Button asChild size="lg" className="w-full h-auto min-h-[3.5rem] py-2 rounded-xl bg-[var(--theme-accent)] text-lg font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90 active:scale-95 transition-all">
+           <Button asChild size="lg" className="w-full h-auto min-h-[3.5rem] py-2 rounded-xl bg-[var(--theme-button)] text-lg font-bold shadow-lg shadow-[var(--theme-accent-soft)] hover:opacity-90 active:scale-95 transition-all">
             <Link to={themeSlug ? `/${themeSlug}/config` : '/config'} className="flex items-center justify-center gap-2 flex-wrap text-center leading-tight">
               <span>{miscText?.ctaButtonText || 'Buat Lagunya'}{showPrice.mobileStickyButton ? ` — ${fmtCurrency(paymentAmount)}` : ''}</span>
               <Badge variant="secondary" className="bg-white/20 text-white hover:bg-white/30 text-xs whitespace-nowrap">

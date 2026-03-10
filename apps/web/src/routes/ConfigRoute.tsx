@@ -1063,6 +1063,7 @@ export function ConfigRoute() {
   const themeColors = (publicSiteConfig as any)?.colors
   const themeStyle = {
     '--theme-accent': themeColors?.accentColor || '#E11D48',
+    '--theme-button': themeColors?.buttonColor || themeColors?.accentColor || '#E11D48',
     '--theme-accent-soft': themeColors?.bgColor1 || '#FFF5F7',
     '--theme-bg': themeColors?.bgColor2 || '#FFFFFF',
   } as React.CSSProperties
@@ -1546,7 +1547,7 @@ export function ConfigRoute() {
                 {/* Primary CTA after contact inputs */}
                 <Button
                   type="submit"
-                  className="h-12 w-full rounded-xl bg-[var(--theme-accent)] text-sm font-bold text-white shadow-lg shadow-[var(--theme-accent-soft)] hover:bg-[var(--theme-accent)] active:scale-95 transition-all"
+                  className="h-12 w-full rounded-xl bg-[var(--theme-button)] text-sm font-bold text-white shadow-lg shadow-[var(--theme-accent-soft)] hover:bg-[var(--theme-button)] active:scale-95 transition-all"
                   disabled={
                     loading ||
                     (!manualConfirmationEnabled && emailOtpEnabled && !emailVerified)
@@ -1683,7 +1684,7 @@ export function ConfigRoute() {
               <div className="space-y-3">
                 <Button
                   type="button"
-                  className="h-12 w-full rounded-xl bg-[var(--theme-accent)] text-sm font-bold text-white shadow-lg shadow-[var(--theme-accent-soft)] hover:bg-[var(--theme-accent)] active:scale-95 transition-all"
+                  className="h-12 w-full rounded-xl bg-[var(--theme-button)] text-sm font-bold text-white shadow-lg shadow-[var(--theme-accent-soft)] hover:bg-[var(--theme-button)] active:scale-95 transition-all"
                   onClick={(e) => { e.preventDefault(); const submitBtn = (e.target as HTMLElement).closest('form')?.querySelector<HTMLButtonElement>('button[type="submit"]'); submitBtn?.click(); }}
                   disabled={
                     loading ||
@@ -1777,7 +1778,7 @@ export function ConfigRoute() {
                  
                  <Button 
                    type="submit" 
-                   className="h-12 sm:h-14 w-full rounded-xl bg-[var(--theme-accent)] text-base sm:text-lg font-bold text-white shadow-lg shadow-[var(--theme-accent-soft)] hover:bg-[var(--theme-accent)] active:scale-95 transition-all"
+                   className="h-12 sm:h-14 w-full rounded-xl bg-[var(--theme-button)] text-base sm:text-lg font-bold text-white shadow-lg shadow-[var(--theme-accent-soft)] hover:bg-[var(--theme-button)] active:scale-95 transition-all"
                    onClick={step < 4 ? (e) => { e.preventDefault(); handleNext(); } : undefined}
                   disabled={
                     loading ||
