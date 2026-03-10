@@ -92,7 +92,7 @@ export function CountdownTimer({ paymentAmount, originalAmount, countdownLabel, 
   const showDays = !evergreenEnabled || (time.d > 0)
 
   return (
-    <div className="bg-[var(--theme-accent)] px-3 py-1.5 text-center text-[9px] sm:text-xs font-bold text-white uppercase tracking-tight leading-none">
+    <div className="bg-[var(--theme-button)] px-3 py-1.5 text-center text-[9px] sm:text-xs font-bold text-white uppercase tracking-tight leading-none">
       <div className="flex items-center justify-center gap-1.5 flex-wrap">
         <span>{countdownLabel} {showDays ? `${time.d}h ` : ''}{time.h}j {time.m}m {time.s}d lagi</span>
         {(paymentAmount !== null || originalAmount !== null) && (

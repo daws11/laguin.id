@@ -1137,7 +1137,7 @@ export function ConfigRoute() {
           {/* STEP 0: ANNOUNCEMENT - halaman pengumuman */}
           {step === 0 && configSteps.step0.enabled && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-4 -mx-4 sm:mx-0">
-              <div className="bg-[var(--theme-accent)] px-4 py-3 flex items-center justify-center gap-2 text-white">
+              <div className="bg-[var(--theme-button)] px-4 py-3 flex items-center justify-center gap-2 text-white">
                 <Megaphone className="h-4 w-4 shrink-0" />
                 <span className="text-xs sm:text-sm font-bold uppercase tracking-wider">{configSteps.step0.bannerHeadline}</span>
               </div>
