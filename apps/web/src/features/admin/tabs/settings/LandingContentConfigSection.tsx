@@ -2030,6 +2030,10 @@ export function LandingContentConfigSection({
                     <div className="pb-2 border-b">
                         <h3 className="text-base font-semibold">How It Works</h3>
                         <p className="text-xs text-muted-foreground">Configure the "How It Works" section on the landing page.</p>
+                        <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                            <input type="checkbox" checked={!draft.howItWorksSection.hidden} onChange={(e) => setDraft(d => ({ ...d, howItWorksSection: { ...d.howItWorksSection, hidden: !e.target.checked } }))} className="rounded" />
+                            <span className="text-sm">Show this section on landing page</span>
+                        </label>
                     </div>
                     <div className="space-y-3">
                         <div className="space-y-1">
@@ -2153,6 +2157,10 @@ export function LandingContentConfigSection({
                     <div className="pb-2 border-b">
                         <h3 className="text-base font-semibold">FAQ Section</h3>
                         <p className="text-xs text-muted-foreground">Configure the FAQ section on the landing page.</p>
+                        <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                            <input type="checkbox" checked={!draft.faqSection.hidden} onChange={(e) => setDraft(d => ({ ...d, faqSection: { ...d.faqSection, hidden: !e.target.checked } }))} className="rounded" />
+                            <span className="text-sm">Show this section on landing page</span>
+                        </label>
                     </div>
                     <div className="space-y-3">
                         <div className="space-y-1">

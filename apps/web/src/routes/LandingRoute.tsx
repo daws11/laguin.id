@@ -104,6 +104,7 @@ type PublicSiteConfig = {
     checklistItems?: Array<{ text?: string }>
   }
   howItWorksSection?: {
+    hidden?: boolean
     label?: string
     headline?: string
     steps?: Array<{ icon?: string; title?: string; desc?: string }>
@@ -116,6 +117,7 @@ type PublicSiteConfig = {
     videoUrl?: string
   }
   faqSection?: {
+    hidden?: boolean
     headline?: string
     items?: Array<{ q?: string; a?: string }>
   }
@@ -327,15 +329,6 @@ export function LandingRoute() {
         availability: 'https://schema.org/InStock',
       },
     }
-    const faqPage = {
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      mainEntity: faqItems.map(({ q, a }) => ({
-        '@type': 'Question',
-        name: q,
-        acceptedAnswer: { '@type': 'Answer', text: a.replace(/😉|💕/g, '') },
-      })),
-    }
     const scriptOrg = document.createElement('script')
     scriptOrg.type = 'application/ld+json'
     scriptOrg.textContent = JSON.stringify(organization)
@@ -344,19 +337,31 @@ export function LandingRoute() {
     scriptSvc.type = 'application/ld+json'
     scriptSvc.textContent = JSON.stringify(service)
     scriptSvc.id = 'ld-service'
-    const scriptFaq = document.createElement('script')
-    scriptFaq.type = 'application/ld+json'
-    scriptFaq.textContent = JSON.stringify(faqPage)
-    scriptFaq.id = 'ld-faq'
     document.head.appendChild(scriptOrg)
     document.head.appendChild(scriptSvc)
-    document.head.appendChild(scriptFaq)
+    const faqHidden = (publicSiteConfig as any)?.faqSection?.hidden === true
+    if (!faqHidden) {
+      const faqPage = {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqItems.map(({ q, a }) => ({
+          '@type': 'Question',
+          name: q,
+          acceptedAnswer: { '@type': 'Answer', text: a.replace(/😉|💕/g, '') },
+        })),
+      }
+      const scriptFaq = document.createElement('script')
+      scriptFaq.type = 'application/ld+json'
+      scriptFaq.textContent = JSON.stringify(faqPage)
+      scriptFaq.id = 'ld-faq'
+      document.head.appendChild(scriptFaq)
+    }
     return () => {
       document.getElementById('ld-organization')?.remove()
       document.getElementById('ld-service')?.remove()
       document.getElementById('ld-faq')?.remove()
     }
-  }, [deliveryEta.sentenceLower, faqItems])
+  }, [deliveryEta.sentenceLower, faqItems, publicSiteConfig])
 
   useEffect(() => {
     let cancelled = false
@@ -887,6 +892,7 @@ export function LandingRoute() {
           />
         </Suspense>
 
+        {!howItWorksSec?.hidden && (
         <Suspense fallback={sectionFallback}>
           <HowItWorksSection
             deliveryEtaSentence={deliveryEta.sentenceLower}
@@ -901,6 +907,7 @@ export function LandingRoute() {
             ctaButtonText={miscText?.ctaButtonText}
           />
         </Suspense>
+        )}
 
         <Suspense fallback={sectionFallback}>
           <GuaranteeSection
@@ -913,12 +920,14 @@ export function LandingRoute() {
           />
         </Suspense>
 
+        {!faqSec?.hidden && (
         <Suspense fallback={sectionFallback}>
           <FaqSection
             items={faqItems}
             sectionHeadline={faqSec?.headline}
           />
         </Suspense>
+        )}
 
         <Suspense fallback={sectionFallback}>
           <FooterCtaSection

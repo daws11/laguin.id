@@ -162,6 +162,7 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
     ],
   },
   howItWorksSection: {
+    hidden: false,
     label: 'Proses Mudah',
     headline: 'Tiga langkah menuju <span class="text-[var(--theme-accent)] italic">tangis bahagia</span>',
     steps: [
@@ -178,6 +179,7 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
     videoUrl: '/laguin-studio.mp4',
   },
   faqSection: {
+    hidden: false,
     headline: 'Pertanyaan <span class="text-[var(--theme-accent)] italic">Cepat</span>',
     items: [
       { q: 'Dia bukan tipe yang emosional...', a: "Itu yang MEREKA SEMUA katakan! 98% menangis — mantan militer, ayah yang kaku, pacar 'aku gak main perasaan'. Semakin tangguh mereka, semakin dalam jatuhnya. 😉" },
@@ -560,6 +562,7 @@ function buildHowItWorksSection(raw: any) {
     desc: asString(x?.desc, ''),
   })).filter((x: any) => x.title)
   return {
+    hidden: s?.hidden === true,
     label: asString(s?.label, d.label),
     headline: asString(s?.headline, d.headline),
     steps: steps.length ? steps : d.steps,
@@ -587,6 +590,7 @@ function buildFaqSection(raw: any) {
     a: asString(x?.a, ''),
   })).filter((x: any) => x.q)
   return {
+    hidden: s?.hidden === true,
     headline: asString(s?.headline, d.headline),
     items: items.length ? items : d.items,
   }
@@ -960,6 +964,7 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
   }
 
   const nextHowItWorksSection = {
+    hidden: draft.howItWorksSection.hidden,
     label: draft.howItWorksSection.label.trim(),
     headline: draft.howItWorksSection.headline.trim(),
     steps: draft.howItWorksSection.steps.map((s) => ({
@@ -978,6 +983,7 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
   }
 
   const nextFaqSection = {
+    hidden: draft.faqSection.hidden,
     headline: draft.faqSection.headline.trim(),
     items: draft.faqSection.items.map((x) => ({
       q: x.q.trim(),
