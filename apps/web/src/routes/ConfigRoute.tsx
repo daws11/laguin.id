@@ -1133,67 +1133,65 @@ export function ConfigRoute() {
         )}
       </header>
 
-      <main className={`mx-auto max-w-4xl w-full px-4 ${step === 0 ? 'py-2 sm:py-4' : 'py-4 sm:py-8 lg:py-12'}`}>
+      <main className="mx-auto max-w-4xl w-full px-4 py-4 sm:py-8 lg:py-12">
         <form onSubmit={form.handleSubmit(onSubmit, onInvalid)}>
           
           {/* STEP 0: ANNOUNCEMENT - halaman pengumuman */}
           {step === 0 && configSteps.step0.enabled && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-4 -mx-4 sm:mx-0">
-              <div className="bg-[var(--theme-accent)] px-4 py-2 flex items-center justify-center gap-2 text-white">
-                <Megaphone className="h-3.5 w-3.5 shrink-0" />
-                <span className="text-[10px] sm:text-sm font-bold uppercase tracking-wider">{configSteps.step0.bannerHeadline}</span>
+              <div className="bg-[var(--theme-accent)] px-4 py-3 flex items-center justify-center gap-2 text-white">
+                <Megaphone className="h-4 w-4 shrink-0" />
+                <span className="text-xs sm:text-sm font-bold uppercase tracking-wider">{configSteps.step0.bannerHeadline}</span>
               </div>
 
-              <div className="bg-white px-4 sm:px-8 py-2 sm:py-4">
-                <h2 className="text-xs sm:text-lg md:text-xl font-bold text-gray-900 leading-snug text-center mx-auto max-w-lg mb-2 sm:mb-4" dangerouslySetInnerHTML={{ __html: configSteps.step0.mainHeadline }} />
+              <div className="bg-white px-4 sm:px-8 py-6 sm:py-8 text-center space-y-4 sm:space-y-6">
+                <h2 className="text-sm sm:text-xl md:text-2xl font-bold text-gray-900 leading-snug mx-auto max-w-lg" dangerouslySetInnerHTML={{ __html: configSteps.step0.mainHeadline }} />
 
-                <div className="flex flex-row items-start gap-3 sm:gap-6 sm:justify-center">
-                  <div className="relative shrink-0 rounded-lg overflow-hidden bg-gray-100 shadow-md ring-1 ring-gray-200 w-[80px] sm:w-[130px] md:w-[150px] aspect-[9/16]">
-                     {heroVideoUrl ? (
-                       <video 
-                         src={heroVideoUrl} 
-                         autoPlay 
-                         loop 
-                         muted 
-                         playsInline
-                         className="w-full h-full object-cover"
-                       />
-                     ) : (
-                       <div className="flex items-center justify-center h-full text-gray-400 text-[9px] italic">Video</div>
-                     )}
-                  </div>
+                <div className="relative mx-auto rounded-xl overflow-hidden bg-gray-100 shadow-md ring-1 ring-gray-200 w-[110px] sm:w-[180px] md:w-[220px] aspect-[9/16]">
+                   {heroVideoUrl ? (
+                     <video 
+                       src={heroVideoUrl} 
+                       autoPlay 
+                       loop 
+                       muted 
+                       playsInline
+                       className="w-full h-full object-cover"
+                     />
+                   ) : (
+                     <div className="flex items-center justify-center h-full text-gray-400 text-xs italic">Video preview</div>
+                   )}
+                </div>
 
-                  <div className="flex-1 min-w-0 space-y-2 sm:space-y-3 sm:max-w-xs">
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-2.5 sm:p-3 text-[10px] sm:text-sm text-green-800">
-                      <p className="font-bold mb-0.5 flex items-center gap-1.5 text-xs sm:text-base"><span className="text-base sm:text-xl">🤑</span> {configSteps.step0.guaranteeTitle}</p>
-                      <p className="leading-snug opacity-90" dangerouslySetInnerHTML={{ __html: configSteps.step0.guaranteeText }} />
-                    </div>
-                    <p className="text-[9px] sm:text-xs text-gray-400 italic">*Syarat dan ketentuan berlaku</p>
+                <div className="mx-auto max-w-md w-full">
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-3 sm:p-4 text-xs sm:text-sm text-green-800 text-center">
+                    <p className="font-bold mb-1 flex items-center justify-center gap-2 text-base sm:text-lg"><span className="text-xl">🤑</span> {configSteps.step0.guaranteeTitle}</p>
+                    <p className="leading-relaxed opacity-90" dangerouslySetInnerHTML={{ __html: configSteps.step0.guaranteeText }} />
                   </div>
+                  <p className="text-[10px] sm:text-xs text-gray-400 italic mt-2 text-center">*Syarat dan ketentuan berlaku</p>
                 </div>
               </div>
 
-              <div className="bg-gradient-to-b from-[var(--theme-accent-soft)] to-white px-4 py-3 sm:py-6 border-t border-[var(--theme-accent-soft)]">
-                <h3 className="text-[9px] sm:text-xs font-bold text-[var(--theme-accent)] mb-2.5 sm:mb-6 text-center uppercase tracking-widest">{configSteps.step0.howItWorksTitle}</h3>
+              <div className="bg-gradient-to-b from-[var(--theme-accent-soft)] to-white px-4 py-6 sm:py-10 border-t border-[var(--theme-accent-soft)]">
+                <h3 className="text-[10px] sm:text-xs font-bold text-[var(--theme-accent)] mb-4 sm:mb-8 text-center uppercase tracking-widest">{configSteps.step0.howItWorksTitle}</h3>
                 
-                <div className={`grid ${configSteps.step0.howItWorksSteps.length <= 2 ? 'grid-cols-2' : configSteps.step0.howItWorksSteps.length >= 4 ? 'grid-cols-4' : 'grid-cols-3'} gap-3 sm:gap-8 max-w-lg mx-auto`}>
+                <div className={`grid ${configSteps.step0.howItWorksSteps.length <= 2 ? 'grid-cols-2' : configSteps.step0.howItWorksSteps.length >= 4 ? 'grid-cols-4' : 'grid-cols-3'} gap-4 sm:gap-8 max-w-lg mx-auto`}>
                   {configSteps.step0.howItWorksSteps.map((s, i) => (
                     <div key={i} className="flex flex-col items-center text-center">
-                      <div className="w-5 h-5 sm:w-8 sm:h-8 rounded-full bg-[var(--theme-accent)] text-white flex items-center justify-center text-[10px] sm:text-sm font-bold mb-1 sm:mb-2 shadow-sm">{i + 1}</div>
-                      <p className="font-bold text-[9px] sm:text-sm text-gray-800 leading-tight">{s.title}</p>
-                      <p className="text-[8px] sm:text-xs text-gray-500 leading-none mt-0.5">{s.subtitle}</p>
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[var(--theme-accent)] text-white flex items-center justify-center text-xs sm:text-sm font-bold mb-2 shadow-sm">{i + 1}</div>
+                      <p className="font-bold text-[10px] sm:text-sm text-gray-800 leading-tight">{s.title}</p>
+                      <p className="text-[9px] sm:text-xs text-gray-500 leading-none mt-1">{s.subtitle}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <p className="text-center text-[9px] sm:text-sm text-gray-400 mt-2 px-4 animate-bounce">{configSteps.step0.bottomCtaText}</p>
+              <p className="text-center text-[10px] sm:text-sm text-gray-400 mt-4 px-4 animate-bounce">{configSteps.step0.bottomCtaText}</p>
             </div>
           )}
 
           {/* STEP 1: WHO IS IT FOR? */}
           {step === 1 && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-[15px]">
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2">
               <div className="text-center space-y-1">
                 <h1 className="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
                   <Heart className="h-5 w-5 text-[var(--theme-accent)] fill-[var(--theme-accent-soft)]" />
@@ -1253,7 +1251,7 @@ export function ConfigRoute() {
 
           {/* STEP 2: VIBE */}
           {step === 2 && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-[15px]">
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2">
               <div className="text-center space-y-1">
                 <h1 className="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
                   <Music className="h-5 w-5 text-[var(--theme-accent)]" />
@@ -1310,7 +1308,7 @@ export function ConfigRoute() {
 
           {/* STEP 3: STORY */}
           {step === 3 && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-[15px]">
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2">
               <div className="text-center space-y-1">
                 <h1 className="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
                   <PenLine className="h-5 w-5 text-[var(--theme-accent)]" />
