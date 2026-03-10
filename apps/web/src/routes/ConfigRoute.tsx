@@ -1603,15 +1603,13 @@ export function ConfigRoute() {
                     <>
                       <Separator className="my-2" />
                       <div className="space-y-1">
-                        <div>
-                          <div className="text-sm font-bold text-gray-900">
-                            Lagu Personal <span className="text-xs font-normal text-gray-400">({relationship})</span>
-                          </div>
-                          {originalAmount > paymentAmount && (
-                            <span className="inline-block mt-1 text-[10px] font-bold bg-[var(--theme-accent)] text-white px-2 py-0.5 rounded-full">HEMAT {Math.round((1 - paymentAmount / originalAmount) * 100)}%</span>
-                          )}
+                        <div className="text-sm font-bold text-gray-900">
+                          Lagu Personal <span className="text-xs font-normal text-gray-400">({relationship})</span>
                         </div>
-                        <div className="flex items-center justify-end gap-3">
+                        <div className="flex items-center gap-3 mt-1">
+                          {originalAmount > paymentAmount && (
+                            <span className="text-[10px] font-bold bg-[var(--theme-accent)] text-white px-2 py-0.5 rounded-full">HEMAT {Math.round((1 - paymentAmount / originalAmount) * 100)}%</span>
+                          )}
                           {originalAmount > paymentAmount && (
                             <span className="text-sm text-gray-400 line-through">{fmtCurrency(originalAmount)}</span>
                           )}
