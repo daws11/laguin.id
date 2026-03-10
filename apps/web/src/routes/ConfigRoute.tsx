@@ -1602,18 +1602,21 @@ export function ConfigRoute() {
                   {funnelPriceVisibility.orderSummary && (
                     <>
                       <Separator className="my-2" />
-                      <div className="space-y-1">
-                        <div className="text-sm font-bold text-gray-900">
-                          Lagu Personal <span className="text-xs font-normal text-gray-400">({relationship})</span>
-                        </div>
-                        <div className="flex items-center gap-3 mt-1">
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">Lagu Personal <span className="text-gray-400">({relationship})</span></span>
                           {originalAmount > paymentAmount && (
                             <span className="text-[10px] font-bold bg-[var(--theme-accent)] text-white px-2 py-0.5 rounded-full">HEMAT {Math.round((1 - paymentAmount / originalAmount) * 100)}%</span>
                           )}
-                          {originalAmount > paymentAmount && (
-                            <span className="text-sm text-gray-400 line-through">{fmtCurrency(originalAmount)}</span>
-                          )}
-                          <span className="text-lg font-bold text-[var(--theme-accent)]">{fmtCurrency(paymentAmount)}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">Total</span>
+                          <span className="font-bold text-[var(--theme-accent)] flex items-center gap-2">
+                            {originalAmount > paymentAmount && (
+                              <span className="text-gray-400 line-through font-normal">{fmtCurrency(originalAmount)}</span>
+                            )}
+                            {fmtCurrency(paymentAmount)}
+                          </span>
                         </div>
                       </div>
                     </>
