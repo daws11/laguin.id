@@ -1193,7 +1193,7 @@ export function ConfigRoute() {
 
           {/* STEP 1: WHO IS IT FOR? */}
           {step === 1 && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2">
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-[15px]">
               <div className="text-center space-y-1">
                 <h1 className="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
                   <Heart className="h-5 w-5 text-[var(--theme-accent)] fill-[var(--theme-accent-soft)]" />
@@ -1253,7 +1253,7 @@ export function ConfigRoute() {
 
           {/* STEP 2: VIBE */}
           {step === 2 && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2">
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-[15px]">
               <div className="text-center space-y-1">
                 <h1 className="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
                   <Music className="h-5 w-5 text-[var(--theme-accent)]" />
@@ -1310,7 +1310,7 @@ export function ConfigRoute() {
 
           {/* STEP 3: STORY */}
           {step === 3 && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-2">
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pt-[15px]">
               <div className="text-center space-y-1">
                 <h1 className="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
                   <PenLine className="h-5 w-5 text-[var(--theme-accent)]" />
