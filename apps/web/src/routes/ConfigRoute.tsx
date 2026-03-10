@@ -1315,10 +1315,9 @@ export function ConfigRoute() {
                 <p className="text-xs text-gray-500" dangerouslySetInnerHTML={{ __html: configSteps.step3.subtitle }} />
               </div>
 
-              <div className="rounded-xl bg-[var(--theme-accent-soft)] border border-[var(--theme-accent-soft)] p-3 space-y-2 text-xs text-gray-600">
+              <div className="rounded-xl bg-[var(--theme-accent-soft)] border border-[var(--theme-accent-soft)] p-3 space-y-2 text-sm text-gray-600">
                 {configSteps.step3.tipBullets.map((bullet, i) => (
-                  <div key={i} className="flex gap-2 items-start">
-                    <span className="text-[var(--theme-accent)] font-bold mt-0.5">•</span>
+                  <div key={i}>
                     <span>{bullet}</span>
                   </div>
                 ))}
