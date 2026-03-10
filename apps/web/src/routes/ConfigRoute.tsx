@@ -1118,7 +1118,7 @@ export function ConfigRoute() {
             </div>
           )}
         </div>
-        {step > 0 && step <= 4 && (
+        {step > 0 && step < 4 && (
           <div className="px-4 pb-2 pt-1 max-w-4xl mx-auto w-full">
             <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
               <div className="h-full bg-[var(--theme-accent)] rounded-full transition-all duration-500" style={{ width: `${(step / 4) * 100}%` }} />
