@@ -1615,18 +1615,20 @@ export function ConfigRoute() {
                   {funnelPriceVisibility.orderSummary && (
                     <>
                       <Separator className="my-2" />
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm font-bold text-gray-900">
-                          Lagu Personal <span className="text-xs font-normal text-gray-400">({relationship})</span>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-bold text-gray-900">
+                            Lagu Personal <span className="text-xs font-normal text-gray-400">({relationship})</span>
+                          </div>
+                          {originalAmount > paymentAmount && (
+                            <span className="text-[10px] font-bold bg-[var(--theme-accent)] text-white px-2 py-0.5 rounded-full">HEMAT {Math.round((1 - paymentAmount / originalAmount) * 100)}%</span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-end gap-3">
                           {originalAmount > paymentAmount && (
-                            <span className="text-[9px] font-bold bg-[var(--theme-accent)] text-white px-1.5 py-0.5 rounded-full">HEMAT {Math.round((1 - paymentAmount / originalAmount) * 100)}%</span>
+                            <span className="text-sm text-gray-400 line-through">{fmtCurrency(originalAmount)}</span>
                           )}
-                          {originalAmount > paymentAmount && (
-                            <span className="text-xs text-gray-400 line-through">{fmtCurrency(originalAmount)}</span>
-                          )}
-                          <span className="text-base font-bold text-[var(--theme-accent)]">{fmtCurrency(paymentAmount)}</span>
+                          <span className="text-lg font-bold text-[var(--theme-accent)]">{fmtCurrency(paymentAmount)}</span>
                         </div>
                       </div>
                     </>
