@@ -77,7 +77,7 @@ export function CheckoutRoute() {
   const pixelConfirmFired = useRef(false)
   const [pixelConfirmScript, setPixelConfirmScript] = useState<string | null>(null)
 
-  const [themeColors, setThemeColors] = useState<{ accentColor?: string; bgColor1?: string; bgColor2?: string } | null | undefined>(undefined)
+  const [themeColors, setThemeColors] = useState<{ accentColor?: string; buttonColor?: string; bgColor1?: string; bgColor2?: string } | null | undefined>(undefined)
 
   const [paymentAmount, setPaymentAmount] = useState<number>(497000)
 
