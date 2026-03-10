@@ -735,7 +735,7 @@ export function LandingRoute() {
           </div>
 
           <div className="relative mx-auto w-full max-w-full sm:max-w-md md:max-w-full min-w-0 md:col-start-2 md:row-start-1 md:row-span-2 order-1 md:order-none">
-             <div className="relative aspect-[4/3] w-[calc(100%+3.5rem)] sm:w-full overflow-hidden rounded-none sm:rounded-2xl shadow-2xl -mx-7 sm:mx-0">
+             <div className="relative aspect-[16/9] sm:aspect-[4/3] w-[calc(100%+3.5rem)] sm:w-full overflow-hidden rounded-none sm:rounded-2xl shadow-2xl -mx-7 sm:mx-0">
                <div className="absolute inset-0 bg-gray-900/10 z-10"></div>
                {heroVideoUrl ? (
                  <video
