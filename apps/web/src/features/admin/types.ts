@@ -211,6 +211,7 @@ export type HowItWorksLandingStep = {
 }
 
 export type HowItWorksSectionConfig = {
+  hidden?: boolean
   label: string
   headline: string
   steps: HowItWorksLandingStep[]
@@ -230,6 +231,7 @@ export type FaqItemConfig = {
 }
 
 export type FaqSectionConfig = {
+  hidden?: boolean
   headline: string
   items: FaqItemConfig[]
 }

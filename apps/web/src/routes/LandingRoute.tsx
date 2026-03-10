@@ -86,7 +86,7 @@ type PublicSiteConfig = {
     }>
   }
   activityToast?: ActivityToastConfig
-  colors?: { accentColor?: string; bgColor1?: string; bgColor2?: string }
+  colors?: { accentColor?: string; buttonColor?: string; bgColor1?: string; bgColor2?: string }
   audioSamplesSection?: {
     badge?: string
     headline?: string
