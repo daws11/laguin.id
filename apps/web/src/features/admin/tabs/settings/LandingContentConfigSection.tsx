@@ -2247,8 +2247,16 @@ export function LandingContentConfigSection({
                                 value={draft.miscText.headlineFont}
                                 onChange={(e) => setDraft(d => ({ ...d, miscText: { ...d.miscText, headlineFont: e.target.value } }))}
                             >
-                                <option value="serif">Serif (classic)</option>
-                                <option value="sans-serif">Sans-serif (modern)</option>
+                                <option value="serif">Serif (system)</option>
+                                <option value="sans-serif">Sans-serif (system)</option>
+                                <option value="Playfair Display">Playfair Display (elegant serif)</option>
+                                <option value="Merriweather">Merriweather (readable serif)</option>
+                                <option value="Lora">Lora (contemporary serif)</option>
+                                <option value="Cormorant Garamond">Cormorant Garamond (refined classic)</option>
+                                <option value="DM Serif Display">DM Serif Display (high-impact)</option>
+                                <option value="Poppins">Poppins (geometric sans)</option>
+                                <option value="Montserrat">Montserrat (bold modern sans)</option>
+                                <option value="Raleway">Raleway (elegant sans)</option>
                             </select>
                             <p className="text-[10px] text-muted-foreground">Font family for the hero headline.</p>
                         </div>

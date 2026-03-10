@@ -431,6 +431,18 @@ export function LandingRoute() {
     return chips
   }, [publicSiteConfig])
 
+  const headlineFont = ((publicSiteConfig as any)?.miscText?.headlineFont as string) || 'serif'
+  useEffect(() => {
+    if (headlineFont === 'serif' || headlineFont === 'sans-serif') return
+    const id = `gfont-${headlineFont.replace(/\s+/g, '-')}`
+    if (document.getElementById(id)) return
+    const link = document.createElement('link')
+    link.id = id
+    link.rel = 'stylesheet'
+    link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(headlineFont)}:wght@700&display=swap`
+    document.head.appendChild(link)
+  }, [headlineFont])
+
   if (publicSiteConfig === undefined) {
     return <div className="min-h-screen" />
   }
@@ -697,7 +709,7 @@ export function LandingRoute() {
               <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-gray-500">{miscText.heroTagline}</p>
             )}
 
-            <h1 id="hero-title" className={`${(miscText?.headlineFont || 'serif') === 'serif' ? 'font-serif' : 'font-sans'} text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight`}>
+            <h1 id="hero-title" className={`${headlineFont === 'serif' ? 'font-serif' : headlineFont === 'sans-serif' ? 'font-sans' : ''} text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight`} style={headlineFont !== 'serif' && headlineFont !== 'sans-serif' ? { fontFamily: `'${headlineFont}', serif` } : undefined}>
               <span className="text-gray-900">{heroHeadlineLine1}</span>
               <br className="hidden sm:inline" /> <span className="text-[var(--theme-accent)]">{heroHeadlineLine2}</span>
             </h1>
