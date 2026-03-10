@@ -258,6 +258,8 @@ export type FooterCtaConfig = {
 
 export type MiscTextConfig = {
   heroStarLine: string
+  heroTagline: string
+  headlineFont: string
   ctaButtonText: string
   heroCtaButtonText: string
   heroChipsHeadline: string

@@ -195,6 +195,8 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
   },
   miscText: {
     heroStarLine: '2,847 menangis bahagia',
+    heroTagline: 'THE #1 CUSTOM SONG GIFT',
+    headlineFont: 'serif',
     ctaButtonText: 'Buat Lagunya',
     heroCtaButtonText: 'Buat Lagu',
     heroChipsHeadline: 'Lagu ini untuk siapa?',
@@ -605,6 +607,8 @@ function buildMiscText(raw: any) {
   const d = defaultPublicSiteDraft.miscText
   return {
     heroStarLine: asString(s?.heroStarLine, d.heroStarLine),
+    heroTagline: asString(s?.heroTagline, d.heroTagline),
+    headlineFont: asString(s?.headlineFont, d.headlineFont),
     ctaButtonText: asString(s?.ctaButtonText, d.ctaButtonText),
     heroCtaButtonText: asString(s?.heroCtaButtonText, d.heroCtaButtonText),
     heroChipsHeadline: asString(s?.heroChipsHeadline, d.heroChipsHeadline),
@@ -988,6 +992,8 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
 
   const nextMiscText = {
     heroStarLine: draft.miscText.heroStarLine.trim(),
+    heroTagline: draft.miscText.heroTagline.trim(),
+    headlineFont: draft.miscText.headlineFont.trim() || 'serif',
     ctaButtonText: draft.miscText.ctaButtonText.trim(),
     heroCtaButtonText: draft.miscText.heroCtaButtonText.trim(),
     heroChipsHeadline: draft.miscText.heroChipsHeadline.trim(),

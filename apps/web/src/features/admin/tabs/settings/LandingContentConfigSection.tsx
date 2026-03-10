@@ -2218,6 +2218,23 @@ export function LandingContentConfigSection({
                     </div>
                     <div className="space-y-3">
                         <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Hero Tagline</label>
+                            <Input value={draft.miscText.heroTagline} onChange={(e) => setDraft(d => ({ ...d, miscText: { ...d.miscText, heroTagline: e.target.value } }))} />
+                            <p className="text-[10px] text-muted-foreground">Small text above the headline. e.g. "THE #1 CUSTOM SONG GIFT"</p>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Headline Font</label>
+                            <select
+                                className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
+                                value={draft.miscText.headlineFont}
+                                onChange={(e) => setDraft(d => ({ ...d, miscText: { ...d.miscText, headlineFont: e.target.value } }))}
+                            >
+                                <option value="serif">Serif (classic)</option>
+                                <option value="sans-serif">Sans-serif (modern)</option>
+                            </select>
+                            <p className="text-[10px] text-muted-foreground">Font family for the hero headline.</p>
+                        </div>
+                        <div className="space-y-1">
                             <label className="text-xs font-medium text-muted-foreground">Hero Star Line</label>
                             <Input value={draft.miscText.heroStarLine} onChange={(e) => setDraft(d => ({ ...d, miscText: { ...d.miscText, heroStarLine: e.target.value } }))} />
                         </div>

@@ -128,6 +128,8 @@ type PublicSiteConfig = {
   }
   miscText?: {
     heroStarLine?: string
+    heroTagline?: string
+    headlineFont?: string
     ctaButtonText?: string
     heroCtaButtonText?: string
     heroChipsHeadline?: string
@@ -690,18 +692,11 @@ export function LandingRoute() {
         {/* HERO SECTION */}
         <section ref={heroRef} aria-labelledby="hero-title" className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 md:gap-12 items-center">
           <div className="text-center md:text-left space-y-3 md:space-y-6 md:col-start-1 md:row-start-1 order-2 md:order-none">
-            <div className="flex flex-row items-center justify-center md:justify-start gap-2">
-              <div className="flex text-amber-400 gap-0.5 scale-90 origin-left">
-                <Star className="h-4 w-4 fill-current" />
-                <Star className="h-4 w-4 fill-current" />
-                <Star className="h-4 w-4 fill-current" />
-                <Star className="h-4 w-4 fill-current" />
-                <Star className="h-4 w-4 fill-current" />
-              </div>
-              <span className="text-xs font-medium text-gray-500">{miscText?.heroStarLine || '2,847 menangis bahagia'}</span>
-            </div>
+            {(miscText?.heroTagline) && (
+              <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-gray-500">{miscText.heroTagline}</p>
+            )}
 
-            <h1 id="hero-title" className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight">
+            <h1 id="hero-title" className={`${(miscText?.headlineFont || 'serif') === 'serif' ? 'font-serif' : 'font-sans'} text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight`}>
               <span className="text-gray-900">{heroHeadlineLine1}</span>
               <br className="hidden sm:inline" /> <span className="text-[var(--theme-accent)]">{heroHeadlineLine2}</span>
             </h1>
@@ -812,6 +807,17 @@ export function LandingRoute() {
                 <span className="flex items-center gap-0.5"><ShieldCheck className="h-2.5 w-2.5 text-green-500" /> {trustBadge2}</span>
                 <span>•</span>
                 <span className="text-[var(--theme-accent)]">{trustBadge3}</span>
+              </div>
+
+              <div className="flex flex-row items-center justify-center md:justify-start gap-2 pt-1">
+                <div className="flex text-amber-400 gap-0.5">
+                  <Star className="h-4 w-4 fill-current" />
+                  <Star className="h-4 w-4 fill-current" />
+                  <Star className="h-4 w-4 fill-current" />
+                  <Star className="h-4 w-4 fill-current" />
+                  <Star className="h-4 w-4 fill-current" />
+                </div>
+                <span className="text-xs font-medium text-gray-500">{miscText?.heroStarLine || '2,847 menangis bahagia'}</span>
               </div>
             </div>
           </div>
