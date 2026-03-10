@@ -1117,18 +1117,15 @@ export function ConfigRoute() {
             </div>
           )}
         </div>
-        {/* Progress Bar inside Header - Ultra Compact */}
-        <div className="w-full h-0.5 bg-gray-100 flex">
-           {[0, 1, 2, 3, 4].map((i) => (
-             <div key={i} className={`flex-1 transition-all duration-500 ${i <= step ? 'bg-[var(--theme-accent)]' : 'bg-transparent'}`} />
-           ))}
-        </div>
-        {/* Step Indicator Text - Floating below header if needed, but keeping it minimal for now */}
-        {step > 0 && step < 4 && (
-          <div className="absolute top-full left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-[var(--theme-accent-soft)] py-1 text-center">
-             <div className="text-[10px] font-medium text-gray-400">
-               {step === 1 ? configSteps.step1.headline : step === 2 ? 'Pilih vibe musik' : configSteps.step3.headline}
-             </div>
+        {step > 0 && step <= 4 && (
+          <div className="px-4 pb-2 pt-1 max-w-4xl mx-auto w-full">
+            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <div className="h-full bg-[var(--theme-accent)] rounded-full transition-all duration-500" style={{ width: `${(step / 4) * 100}%` }} />
+            </div>
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-[11px] font-semibold text-gray-700">Step {step} of 4</span>
+              <span className="text-[11px] text-gray-400 flex items-center gap-1"><Clock className="h-3 w-3" /> Takes ~2 min</span>
+            </div>
           </div>
         )}
       </header>
