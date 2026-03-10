@@ -17,6 +17,7 @@ import {
   ChevronUp,
   Music,
   ExternalLink,
+  Copy,
   X,
   Activity,
   FileText,
@@ -192,6 +193,31 @@ export function AdminOrdersTab({
                   </>
                 )}
               </div>
+              {selectedOrder.xenditInvoiceUrl && (
+                <div className="flex items-center gap-2 mt-1 text-xs">
+                  <span className="text-muted-foreground">Payment Link:</span>
+                  <a
+                    href={selectedOrder.xenditInvoiceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline truncate max-w-[300px] inline-flex items-center gap-1"
+                  >
+                    {selectedOrder.xenditInvoiceUrl}
+                    <ExternalLink className="h-3 w-3 shrink-0" />
+                  </a>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    title="Copy payment link"
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedOrder.xenditInvoiceUrl)
+                    }}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="flex gap-2">
               <Button
