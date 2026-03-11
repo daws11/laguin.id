@@ -7,6 +7,7 @@ const QuerySchema = z.object({
   from: z.string().optional(),
   to: z.string().optional(),
   themeSlug: z.string().optional(),
+  tzOffset: z.string().optional(),
 })
 
 export const adminFunnelRoutes: FastifyPluginAsync = async (app) => {
@@ -14,16 +15,19 @@ export const adminFunnelRoutes: FastifyPluginAsync = async (app) => {
     const parsed = QuerySchema.safeParse(req.query)
     const query = parsed.success ? parsed.data : {}
 
+    const offsetMinutes = query.tzOffset ? parseInt(query.tzOffset, 10) : 0
+    const offsetMs = (isNaN(offsetMinutes) ? 0 : offsetMinutes) * 60 * 1000
+
     const now = new Date()
     const defaultFrom = new Date(now)
     defaultFrom.setDate(defaultFrom.getDate() - 7)
     defaultFrom.setHours(0, 0, 0, 0)
 
-    const fromDate = query.from ? new Date(query.from + 'T00:00:00.000Z') : defaultFrom
-    const toDate = query.to ? new Date(query.to + 'T23:59:59.999Z') : now
+    const fromDate = query.from ? new Date(new Date(query.from + 'T00:00:00.000Z').getTime() + offsetMs) : defaultFrom
+    const toDate = query.to ? new Date(new Date(query.to + 'T23:59:59.999Z').getTime() + offsetMs) : now
 
-    const fromStr = fromDate.toISOString().slice(0, 10)
-    const toStr = toDate.toISOString().slice(0, 10)
+    const fromStr = query.from ?? fromDate.toISOString().slice(0, 10)
+    const toStr = query.to ?? toDate.toISOString().slice(0, 10)
 
     const pageViewWhere: any = {
       createdAt: { gte: fromDate, lte: toDate },

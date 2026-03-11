@@ -99,7 +99,8 @@ export type FunnelStep = { key: string; label: string; count: number }
 export type FunnelData = { dateRange: { from: string; to: string }; steps: FunnelStep[] }
 
 export async function adminGetFunnel(token: string, from: string, to: string, themeSlug?: string) {
-  let url = `/api/admin/funnel?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+  const tzOffset = new Date().getTimezoneOffset()
+  let url = `/api/admin/funnel?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&tzOffset=${tzOffset}`
   if (themeSlug) url += `&themeSlug=${encodeURIComponent(themeSlug)}`
   return apiGet<FunnelData>(url, { token })
 }
