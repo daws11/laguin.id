@@ -349,11 +349,13 @@ export function AdminOrdersTab({
                 <span>{selectedOrder.id}</span>
                 <span>&bull;</span>
                 <span>{new Date(selectedOrder.createdAt).toLocaleString()}</span>
-                {selectedOrder.customer && (
+                {(selectedOrder.inputPayload?.recipientName || selectedOrder.customer) && (
                   <>
                     <span>&bull;</span>
-                    <span>{selectedOrder.customer.name}</span>
-                    <span>({selectedOrder.customer.whatsappNumber})</span>
+                    <span>{selectedOrder.inputPayload?.recipientName ?? selectedOrder.customer?.name}</span>
+                    {selectedOrder.customer?.whatsappNumber && (
+                      <span>({selectedOrder.customer.whatsappNumber})</span>
+                    )}
                   </>
                 )}
               </div>
