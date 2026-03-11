@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { adminGetFunnel, adminGetThemes, type FunnelData, type ThemeItem } from '@/features/admin/api'
+import { adminGetFunnel, adminGetFunnelTrend, adminGetThemes, type FunnelData, type TrendData, type ThemeItem } from '@/features/admin/api'
 
 function formatDate(d: Date): string {
   const y = d.getFullYear()
@@ -18,12 +18,113 @@ function defaultTo(): string {
   return formatDate(new Date())
 }
 
+const TREND_LINES = [
+  { key: 'step0Pct' as const, label: 'Add to Cart (Step 0)', color: '#f59e0b' },
+  { key: 'orderCreatedPct' as const, label: 'Order Created', color: '#3b82f6' },
+  { key: 'orderConfirmedPct' as const, label: 'Order Confirmed', color: '#10b981' },
+]
+
+function TrendChart({ days }: { days: { date: string; homepage: number; step0Pct: number; orderCreatedPct: number; orderConfirmedPct: number }[] }) {
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null)
+  const W = 700
+  const H = 220
+  const PAD = { top: 20, right: 20, bottom: 40, left: 45 }
+  const cw = W - PAD.left - PAD.right
+  const ch = H - PAD.top - PAD.bottom
+
+  const allVals = days.flatMap(d => [d.step0Pct, d.orderCreatedPct, d.orderConfirmedPct])
+  const maxY = Math.max(10, ...allVals)
+  const yTicks = [0, Math.round(maxY / 2), Math.ceil(maxY)]
+
+  function x(i: number) { return PAD.left + (days.length > 1 ? (i / (days.length - 1)) * cw : cw / 2) }
+  function y(v: number) { return PAD.top + ch - (v / (maxY || 1)) * ch }
+
+  function polyline(key: 'step0Pct' | 'orderCreatedPct' | 'orderConfirmedPct') {
+    return days.map((d, i) => `${x(i)},${y(d[key])}`).join(' ')
+  }
+
+  const shortDate = (d: string) => {
+    const parts = d.split('-')
+    return `${parseInt(parts[1])}/${parseInt(parts[2])}`
+  }
+
+  const labelInterval = Math.max(1, Math.floor(days.length / 7))
+
+  return (
+    <div className="rounded-lg border bg-background p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-sm font-semibold">Conversion Trend (%)</h4>
+        <div className="flex gap-4">
+          {TREND_LINES.map(l => (
+            <div key={l.key} className="flex items-center gap-1.5">
+              <span className="inline-block w-3 h-[3px] rounded-full" style={{ background: l.color }} />
+              <span className="text-[11px] text-muted-foreground">{l.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="w-full"
+        style={{ maxHeight: 260 }}
+        onMouseLeave={() => setHoverIdx(null)}
+      >
+        {yTicks.map(v => (
+          <g key={v}>
+            <line x1={PAD.left} x2={W - PAD.right} y1={y(v)} y2={y(v)} stroke="#e5e7eb" strokeWidth={1} />
+            <text x={PAD.left - 6} y={y(v) + 4} textAnchor="end" className="fill-muted-foreground" style={{ fontSize: 10 }}>{v}%</text>
+          </g>
+        ))}
+
+        {TREND_LINES.map(l => (
+          <polyline key={l.key} points={polyline(l.key)} fill="none" stroke={l.color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        ))}
+
+        {days.map((d, i) => (
+          <g key={i}>
+            {i % labelInterval === 0 && (
+              <text x={x(i)} y={H - 6} textAnchor="middle" className="fill-muted-foreground" style={{ fontSize: 10 }}>{shortDate(d.date)}</text>
+            )}
+            <rect
+              x={x(i) - (cw / days.length / 2)}
+              y={PAD.top}
+              width={cw / days.length}
+              height={ch}
+              fill="transparent"
+              onMouseEnter={() => setHoverIdx(i)}
+            />
+            {TREND_LINES.map(l => (
+              <circle key={l.key} cx={x(i)} cy={y(d[l.key])} r={hoverIdx === i ? 4 : 2} fill={l.color} />
+            ))}
+          </g>
+        ))}
+
+        {hoverIdx !== null && days[hoverIdx] && (
+          <g>
+            <line x1={x(hoverIdx)} x2={x(hoverIdx)} y1={PAD.top} y2={PAD.top + ch} stroke="#9ca3af" strokeWidth={1} strokeDasharray="3,3" />
+          </g>
+        )}
+      </svg>
+      {hoverIdx !== null && days[hoverIdx] && (
+        <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground border-t pt-2">
+          <span className="font-medium text-foreground">{days[hoverIdx].date}</span>
+          <span>{days[hoverIdx].homepage} views</span>
+          {TREND_LINES.map(l => (
+            <span key={l.key} style={{ color: l.color }}>{l.label}: {days[hoverIdx]![l.key]}%</span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function AdminFunnelTab({ t, token }: { t: any; token: string }) {
   const [from, setFrom] = useState(defaultFrom)
   const [to, setTo] = useState(defaultTo)
   const [pendingFrom, setPendingFrom] = useState(from)
   const [pendingTo, setPendingTo] = useState(to)
   const [data, setData] = useState<FunnelData | null>(null)
+  const [trend, setTrend] = useState<TrendData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [themes, setThemes] = useState<ThemeItem[]>([])
@@ -37,8 +138,12 @@ export function AdminFunnelTab({ t, token }: { t: any; token: string }) {
     setLoading(true)
     setError(null)
     try {
-      const result = await adminGetFunnel(token, f, toDate, themeFilter || undefined)
+      const [result, trendResult] = await Promise.all([
+        adminGetFunnel(token, f, toDate, themeFilter || undefined),
+        adminGetFunnelTrend(token, f, toDate, themeFilter || undefined),
+      ])
       setData(result)
+      setTrend(trendResult)
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load funnel data')
     } finally {
@@ -117,6 +222,10 @@ export function AdminFunnelTab({ t, token }: { t: any; token: string }) {
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           {error}
         </div>
+      )}
+
+      {!loading && trend && trend.days.length > 1 && (
+        <TrendChart days={trend.days} />
       )}
 
       {!loading && data && data.steps.every((s) => s.count === 0) && (

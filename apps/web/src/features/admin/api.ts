@@ -105,6 +105,16 @@ export async function adminGetFunnel(token: string, from: string, to: string, th
   return apiGet<FunnelData>(url, { token })
 }
 
+export type TrendDay = { date: string; homepage: number; step0Pct: number; orderCreatedPct: number; orderConfirmedPct: number }
+export type TrendData = { days: TrendDay[] }
+
+export async function adminGetFunnelTrend(token: string, from: string, to: string, themeSlug?: string) {
+  const tzOffset = new Date().getTimezoneOffset()
+  let url = `/api/admin/funnel/trend?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&tzOffset=${tzOffset}`
+  if (themeSlug) url += `&themeSlug=${encodeURIComponent(themeSlug)}`
+  return apiGet<TrendData>(url, { token })
+}
+
 export type ThemeItem = {
   id: string
   slug: string

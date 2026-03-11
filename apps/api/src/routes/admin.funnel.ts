@@ -80,4 +80,68 @@ export const adminFunnelRoutes: FastifyPluginAsync = async (app) => {
       ],
     }
   })
+
+  app.get('/funnel/trend', async (req) => {
+    const parsed = QuerySchema.safeParse(req.query)
+    const query = parsed.success ? parsed.data : {}
+
+    const offsetMinutes = query.tzOffset ? parseInt(query.tzOffset, 10) : 0
+    const offsetMs = (isNaN(offsetMinutes) ? 0 : offsetMinutes) * 60 * 1000
+
+    const now = new Date()
+    const defaultFrom = new Date(now)
+    defaultFrom.setDate(defaultFrom.getDate() - 7)
+    defaultFrom.setHours(0, 0, 0, 0)
+
+    const fromDate = query.from ? new Date(new Date(query.from + 'T00:00:00.000Z').getTime() + offsetMs) : defaultFrom
+    const toDate = query.to ? new Date(new Date(query.to + 'T23:59:59.999Z').getTime() + offsetMs) : now
+
+    const themeFilter = query.themeSlug || undefined
+
+    const days: string[] = []
+    const cursor = new Date(query.from ? query.from + 'T00:00:00.000Z' : defaultFrom.toISOString().slice(0, 10) + 'T00:00:00.000Z')
+    const endLocal = query.to ?? now.toISOString().slice(0, 10)
+    while (cursor.toISOString().slice(0, 10) <= endLocal) {
+      days.push(cursor.toISOString().slice(0, 10))
+      cursor.setDate(cursor.getDate() + 1)
+    }
+
+    const results = await Promise.all(
+      days.map(async (day) => {
+        const dayStart = new Date(new Date(day + 'T00:00:00.000Z').getTime() + offsetMs)
+        const dayEnd = new Date(new Date(day + 'T23:59:59.999Z').getTime() + offsetMs)
+        const dateRange = { gte: dayStart, lte: dayEnd }
+
+        const pvWhere: any = { createdAt: dateRange }
+        if (themeFilter) pvWhere.themeSlug = themeFilter
+
+        const draftWhere: any = { step: { gte: 0 }, createdAt: dateRange }
+        if (themeFilter) draftWhere.themeSlug = themeFilter
+
+        const orderCreatedWhere: any = { createdAt: dateRange }
+        if (themeFilter) orderCreatedWhere.themeSlug = themeFilter
+
+        const orderConfirmedWhere: any = { confirmedAt: dateRange }
+        if (themeFilter) orderConfirmedWhere.themeSlug = themeFilter
+
+        const [pvResult, step0, orderCreated, orderConfirmed] = await Promise.all([
+          prisma.pageView.findMany({ where: pvWhere, select: { sessionId: true }, distinct: ['sessionId'] }),
+          prisma.orderDraft.count({ where: draftWhere }),
+          prisma.order.count({ where: orderCreatedWhere }),
+          prisma.order.count({ where: orderConfirmedWhere }),
+        ])
+
+        const homepage = pvResult.length
+        return {
+          date: day,
+          homepage,
+          step0Pct: homepage > 0 ? Math.round((step0 / homepage) * 1000) / 10 : 0,
+          orderCreatedPct: homepage > 0 ? Math.round((orderCreated / homepage) * 1000) / 10 : 0,
+          orderConfirmedPct: homepage > 0 ? Math.round((orderConfirmed / homepage) * 1000) / 10 : 0,
+        }
+      })
+    )
+
+    return { days: results }
+  })
 }
