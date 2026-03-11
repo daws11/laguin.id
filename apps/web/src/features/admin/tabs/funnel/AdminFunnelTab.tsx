@@ -68,7 +68,6 @@ function TrendChart({ days }: { days: TrendDay[] }) {
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="w-full"
-        style={{ maxHeight: 300 }}
         onMouseLeave={() => setHoverIdx(null)}
       >
         {yTicks.map(v => (
