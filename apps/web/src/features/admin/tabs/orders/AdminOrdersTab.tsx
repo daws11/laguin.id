@@ -4,8 +4,9 @@ import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import type { OrderDetail, OrderListItem } from '@/features/admin/types'
-import { adminGetThemes, type ThemeItem } from '@/features/admin/api'
+import { adminGetThemes, adminUpdateOrderInput, type ThemeItem } from '@/features/admin/api'
 import {
   Search,
   RotateCcw,
@@ -24,9 +25,80 @@ import {
   Terminal,
   Trash2,
   Sparkles,
+  Pencil,
+  Save,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+
+function EditableStoryField({ story, token, orderId, label, onSaved }: {
+  story: string
+  token: string
+  orderId: string
+  label: string
+  onSaved: (updatedOrder: any) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(story)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setDraft(story)
+    setEditing(false)
+  }, [story])
+
+  const handleSave = async () => {
+    if (!draft.trim()) return
+    setSaving(true)
+    try {
+      const updated = await adminUpdateOrderInput(token, orderId, { story: draft.trim() })
+      onSaved(updated)
+      setEditing(false)
+    } catch {
+      // keep editing mode open on error
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            {label}
+          </label>
+          {!editing ? (
+            <Button variant="ghost" size="sm" className="h-6 gap-1 text-xs" onClick={() => setEditing(true)}>
+              <Pencil className="h-3 w-3" /> Edit
+            </Button>
+          ) : (
+            <div className="flex gap-1">
+              <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setDraft(story); setEditing(false) }} disabled={saving}>
+                Cancel
+              </Button>
+              <Button variant="default" size="sm" className="h-6 gap-1 text-xs" onClick={handleSave} disabled={saving || !draft.trim()}>
+                <Save className="h-3 w-3" /> {saving ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          )}
+        </div>
+        {editing ? (
+          <Textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            className="text-sm min-h-[120px] leading-relaxed"
+            disabled={saving}
+          />
+        ) : (
+          <div className="p-2.5 bg-muted/30 rounded-lg text-sm border whitespace-pre-wrap min-h-[120px] leading-relaxed">
+            {story}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 function statusColor(status: string) {
   const s = (status ?? '').toLowerCase()
@@ -419,16 +491,13 @@ export function AdminOrdersTab({
                         </div>
                       </div>
                     </div>
-                    <div className="space-y-4">
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          {t.story}
-                        </label>
-                        <div className="p-2.5 bg-muted/30 rounded-lg text-sm border whitespace-pre-wrap min-h-[120px] leading-relaxed">
-                          {selectedOrder.inputPayload.story}
-                        </div>
-                      </div>
-                    </div>
+                    <EditableStoryField
+                      story={selectedOrder.inputPayload.story}
+                      token={token}
+                      orderId={selectedOrder.id}
+                      label={t.story}
+                      onSaved={(updatedOrder) => onSelectOrder(updatedOrder)}
+                    />
                     {selectedOrder.inputPayload.musicPreferences && (
                       <div className="sm:col-span-2 space-y-3 pt-2 border-t">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-primary">

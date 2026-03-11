@@ -68,6 +68,40 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     return order
   })
 
+  const UpdateInputSchema = z.object({ story: z.string().min(1).max(10000) })
+
+  app.post('/orders/:id/update-input', async (req, reply) => {
+    const params = ParamsIdSchema.safeParse(req.params)
+    if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
+
+    const body = UpdateInputSchema.safeParse(req.body)
+    if (!body.success) return reply.code(400).send({ error: 'invalid_body' })
+
+    const order = await prisma.order.findUnique({ where: { id: params.data.id } })
+    if (!order) return reply.code(404).send({ error: 'not_found' })
+
+    const existingPayload = (order.inputPayload && typeof order.inputPayload === 'object') ? order.inputPayload as Record<string, unknown> : {}
+    const updatedPayload = { ...existingPayload, story: body.data.story }
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { inputPayload: updatedPayload },
+    })
+
+    await addOrderEvent({
+      orderId: order.id,
+      type: 'input_edited',
+      message: 'Story text edited by admin.',
+    })
+
+    const updated = await prisma.order.findUnique({
+      where: { id: order.id },
+      include: { customer: true, events: { orderBy: { createdAt: 'desc' }, take: 200 } },
+    })
+
+    return updated
+  })
+
   app.post('/orders/:id/retry', async (req, reply) => {
     const params = ParamsIdSchema.safeParse(req.params)
     if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
