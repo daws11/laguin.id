@@ -105,6 +105,13 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
       data: { inputPayload: updatedPayload },
     })
 
+    if (body.data.recipientName !== undefined && order.customerId) {
+      await prisma.customer.update({
+        where: { id: order.customerId },
+        data: { name: body.data.recipientName },
+      }).catch(() => {})
+    }
+
     await addOrderEvent({
       orderId: order.id,
       type: 'input_edited',
