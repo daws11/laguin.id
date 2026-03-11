@@ -837,8 +837,8 @@ export function AdminOrdersTab({
         </div>
       )}
 
-      <div className="flex-1 min-h-0 border rounded-lg overflow-hidden bg-card">
-        <div className="overflow-auto h-full">
+      <div className="flex-1 min-h-0 border rounded-lg overflow-hidden bg-card flex flex-col">
+        <div className="overflow-auto flex-1 min-h-0">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 sticky top-0 z-10">
               <tr className="border-b">
@@ -1041,7 +1041,7 @@ export function AdminOrdersTab({
           </table>
         </div>
         {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t px-4 py-3">
+          <div className="flex items-center justify-between border-t px-4 py-3 shrink-0 bg-card">
             <span className="text-sm text-muted-foreground">
               Showing {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length}
             </span>
