@@ -63,7 +63,7 @@ export async function adminGetOrder(token: string, id: string) {
   return apiGet<OrderDetail>(`/api/admin/orders/${encodeURIComponent(id)}`, { token })
 }
 
-export async function adminUpdateOrderInput(token: string, id: string, data: { story: string }) {
+export async function adminUpdateOrderInput(token: string, id: string, data: Record<string, unknown>) {
   return apiPost(`/api/admin/orders/${encodeURIComponent(id)}/update-input`, data, { token })
 }
 

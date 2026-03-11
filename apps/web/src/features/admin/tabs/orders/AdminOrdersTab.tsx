@@ -32,68 +32,156 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-function EditableStoryField({ story, token, orderId, label, onSaved }: {
-  story: string
+function EditableUserInput({ inputPayload, token, orderId, t, onSaved }: {
+  inputPayload: any
   token: string
   orderId: string
-  label: string
+  t: any
   onSaved: (updatedOrder: any) => void
 }) {
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(story)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [draft, setDraft] = useState({
+    recipientName: inputPayload.recipientName ?? '',
+    yourName: inputPayload.yourName ?? '',
+    occasion: inputPayload.occasion ?? '',
+    story: inputPayload.story ?? '',
+    musicPreferences: { ...(inputPayload.musicPreferences ?? {}) } as Record<string, string>,
+  })
 
   useEffect(() => {
-    setDraft(story)
+    setDraft({
+      recipientName: inputPayload.recipientName ?? '',
+      yourName: inputPayload.yourName ?? '',
+      occasion: inputPayload.occasion ?? '',
+      story: inputPayload.story ?? '',
+      musicPreferences: { ...(inputPayload.musicPreferences ?? {}) },
+    })
     setEditing(false)
-  }, [story])
+  }, [inputPayload])
 
   const handleSave = async () => {
-    if (!draft.trim()) return
     setSaving(true)
+    setSaveError(null)
     try {
-      const updated = await adminUpdateOrderInput(token, orderId, { story: draft.trim() })
+      const payload: Record<string, unknown> = {}
+      if (draft.recipientName !== (inputPayload.recipientName ?? '')) payload.recipientName = draft.recipientName
+      if (draft.yourName !== (inputPayload.yourName ?? '')) payload.yourName = draft.yourName
+      if (draft.occasion !== (inputPayload.occasion ?? '')) payload.occasion = draft.occasion
+      if (draft.story !== (inputPayload.story ?? '')) payload.story = draft.story
+
+      const origPrefs = inputPayload.musicPreferences ?? {}
+      const prefsChanged = Object.keys(draft.musicPreferences).some(k => draft.musicPreferences[k] !== (origPrefs[k] ?? ''))
+      if (prefsChanged) payload.musicPreferences = draft.musicPreferences
+
+      if (Object.keys(payload).length === 0) { setEditing(false); setSaving(false); return }
+
+      const updated = await adminUpdateOrderInput(token, orderId, payload)
       onSaved(updated)
       setEditing(false)
-    } catch {
-      // keep editing mode open on error
+    } catch (e: any) {
+      setSaveError(e?.message ?? 'Failed to save changes')
     } finally {
       setSaving(false)
     }
   }
 
+  const resetDraft = () => {
+    setDraft({
+      recipientName: inputPayload.recipientName ?? '',
+      yourName: inputPayload.yourName ?? '',
+      occasion: inputPayload.occasion ?? '',
+      story: inputPayload.story ?? '',
+      musicPreferences: { ...(inputPayload.musicPreferences ?? {}) },
+    })
+    setEditing(false)
+  }
+
+  const standardPrefKeys = ['genre', 'mood', 'vibe', 'tempo', 'voiceStyle', 'language']
+  const existingKeys = Object.keys(inputPayload.musicPreferences ?? {})
+  const musicPrefKeys = [...new Set([...standardPrefKeys, ...existingKeys])].filter(k => editing || (inputPayload.musicPreferences ?? {})[k])
+
   return (
     <div className="space-y-4">
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            {label}
-          </label>
-          {!editing ? (
-            <Button variant="ghost" size="sm" className="h-6 gap-1 text-xs" onClick={() => setEditing(true)}>
-              <Pencil className="h-3 w-3" /> Edit
+      <div className="flex items-center justify-between">
+        <span />
+        {!editing ? (
+          <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => { setEditing(true); setSaveError(null) }}>
+            <Pencil className="h-3 w-3" /> Edit
+          </Button>
+        ) : (
+          <div className="flex gap-1">
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={resetDraft} disabled={saving}>
+              Cancel
             </Button>
+            <Button variant="default" size="sm" className="h-7 gap-1 text-xs" onClick={handleSave} disabled={saving}>
+              <Save className="h-3 w-3" /> {saving ? 'Saving...' : 'Save'}
+            </Button>
+          </div>
+        )}
+      </div>
+      {saveError && (
+        <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-1.5">{saveError}</div>
+      )}
+
+      <div className="grid gap-6 sm:grid-cols-2">
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t.recipientName}</label>
+            {editing ? (
+              <Input value={draft.recipientName} onChange={e => setDraft(d => ({ ...d, recipientName: e.target.value }))} className="text-sm" disabled={saving} />
+            ) : (
+              <div className="p-2.5 bg-muted/30 rounded-lg text-sm font-medium border">{inputPayload.recipientName}</div>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t.yourName}</label>
+            {editing ? (
+              <Input value={draft.yourName} onChange={e => setDraft(d => ({ ...d, yourName: e.target.value }))} className="text-sm" disabled={saving} />
+            ) : (
+              <div className="p-2.5 bg-muted/30 rounded-lg text-sm border text-muted-foreground">{inputPayload.yourName || '-'}</div>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t.occasion}</label>
+            {editing ? (
+              <Input value={draft.occasion} onChange={e => setDraft(d => ({ ...d, occasion: e.target.value }))} className="text-sm" disabled={saving} />
+            ) : (
+              <div className="p-2.5 bg-muted/30 rounded-lg text-sm border">{inputPayload.occasion}</div>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t.story}</label>
+          {editing ? (
+            <Textarea value={draft.story} onChange={e => setDraft(d => ({ ...d, story: e.target.value }))} className="text-sm min-h-[180px] leading-relaxed" disabled={saving} />
           ) : (
-            <div className="flex gap-1">
-              <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setDraft(story); setEditing(false) }} disabled={saving}>
-                Cancel
-              </Button>
-              <Button variant="default" size="sm" className="h-6 gap-1 text-xs" onClick={handleSave} disabled={saving || !draft.trim()}>
-                <Save className="h-3 w-3" /> {saving ? 'Saving...' : 'Save'}
-              </Button>
-            </div>
+            <div className="p-2.5 bg-muted/30 rounded-lg text-sm border whitespace-pre-wrap min-h-[180px] leading-relaxed">{inputPayload.story}</div>
           )}
         </div>
-        {editing ? (
-          <Textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            className="text-sm min-h-[120px] leading-relaxed"
-            disabled={saving}
-          />
-        ) : (
-          <div className="p-2.5 bg-muted/30 rounded-lg text-sm border whitespace-pre-wrap min-h-[120px] leading-relaxed">
-            {story}
+
+        {musicPrefKeys.length > 0 && (
+          <div className="sm:col-span-2 space-y-3 pt-2 border-t">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-primary">{t.musicPreferences}</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {musicPrefKeys.map(key => (
+                <div key={key} className="space-y-1">
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase">{key}</span>
+                  {editing ? (
+                    <Input
+                      value={draft.musicPreferences[key] ?? ''}
+                      onChange={e => setDraft(d => ({ ...d, musicPreferences: { ...d.musicPreferences, [key]: e.target.value } }))}
+                      className="text-sm h-8 capitalize"
+                      disabled={saving}
+                    />
+                  ) : (
+                    <div className="text-sm font-medium capitalize border-b border-dashed pb-1">{String(inputPayload.musicPreferences[key])}</div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -507,64 +595,13 @@ export function AdminOrdersTab({
 
               <TabsContent value="userInput" className="space-y-4">
                 {selectedOrder.inputPayload ? (
-                  <div className="grid gap-6 sm:grid-cols-2">
-                    <div className="space-y-4">
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          {t.recipientName}
-                        </label>
-                        <div className="p-2.5 bg-muted/30 rounded-lg text-sm font-medium border">
-                          {selectedOrder.inputPayload.recipientName}
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          {t.yourName}
-                        </label>
-                        <div className="p-2.5 bg-muted/30 rounded-lg text-sm border text-muted-foreground">
-                          {selectedOrder.inputPayload.yourName || '-'}
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          {t.occasion}
-                        </label>
-                        <div className="p-2.5 bg-muted/30 rounded-lg text-sm border">
-                          {selectedOrder.inputPayload.occasion}
-                        </div>
-                      </div>
-                    </div>
-                    <EditableStoryField
-                      story={selectedOrder.inputPayload.story}
-                      token={token}
-                      orderId={selectedOrder.id}
-                      label={t.story}
-                      onSaved={(updatedOrder) => onSelectOrder(updatedOrder)}
-                    />
-                    {selectedOrder.inputPayload.musicPreferences && (
-                      <div className="sm:col-span-2 space-y-3 pt-2 border-t">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-primary">
-                          {t.musicPreferences}
-                        </h4>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                          {Object.entries(
-                            selectedOrder.inputPayload.musicPreferences as Record<string, unknown>
-                          ).map(([key, val]) =>
-                            val ? (
-                              <div key={key} className="space-y-1">
-                                <span className="text-[10px] font-medium text-muted-foreground uppercase">
-                                  {key}
-                                </span>
-                                <div className="text-sm font-medium capitalize border-b border-dashed pb-1">
-                                  {String(val)}
-                                </div>
-                              </div>
-                            ) : null
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <EditableUserInput
+                    inputPayload={selectedOrder.inputPayload}
+                    token={token}
+                    orderId={selectedOrder.id}
+                    t={t}
+                    onSaved={(updatedOrder) => onSelectOrder(updatedOrder)}
+                  />
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
                     {t.noInputData ?? 'No input data found.'}

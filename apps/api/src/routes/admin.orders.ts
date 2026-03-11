@@ -68,7 +68,13 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     return order
   })
 
-  const UpdateInputSchema = z.object({ story: z.string().min(1).max(10000) })
+  const UpdateInputSchema = z.object({
+    recipientName: z.string().min(1).max(200).optional(),
+    yourName: z.string().max(200).optional(),
+    occasion: z.string().max(200).optional(),
+    story: z.string().min(1).max(10000).optional(),
+    musicPreferences: z.record(z.unknown()).optional(),
+  }).refine(data => Object.keys(data).length > 0, { message: 'At least one field required' })
 
   app.post('/orders/:id/update-input', async (req, reply) => {
     const params = ParamsIdSchema.safeParse(req.params)
@@ -81,7 +87,18 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     if (!order) return reply.code(404).send({ error: 'not_found' })
 
     const existingPayload = (order.inputPayload && typeof order.inputPayload === 'object') ? order.inputPayload as Record<string, unknown> : {}
-    const updatedPayload = { ...existingPayload, story: body.data.story }
+    const updatedPayload = { ...existingPayload }
+
+    const editedFields: string[] = []
+    if (body.data.recipientName !== undefined) { updatedPayload.recipientName = body.data.recipientName; editedFields.push('recipientName') }
+    if (body.data.yourName !== undefined) { updatedPayload.yourName = body.data.yourName; editedFields.push('yourName') }
+    if (body.data.occasion !== undefined) { updatedPayload.occasion = body.data.occasion; editedFields.push('occasion') }
+    if (body.data.story !== undefined) { updatedPayload.story = body.data.story; editedFields.push('story') }
+    if (body.data.musicPreferences !== undefined) {
+      const existingPrefs = (typeof existingPayload.musicPreferences === 'object' && existingPayload.musicPreferences) ? existingPayload.musicPreferences as Record<string, unknown> : {}
+      updatedPayload.musicPreferences = { ...existingPrefs, ...body.data.musicPreferences }
+      editedFields.push('musicPreferences')
+    }
 
     await prisma.order.update({
       where: { id: order.id },
@@ -91,7 +108,7 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     await addOrderEvent({
       orderId: order.id,
       type: 'input_edited',
-      message: 'Story text edited by admin.',
+      message: `Edited by admin: ${editedFields.join(', ')}`,
     })
 
     const updated = await prisma.order.findUnique({
