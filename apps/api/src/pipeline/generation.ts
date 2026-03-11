@@ -256,6 +256,9 @@ export async function processOrderGeneration(orderId: string) {
       const style = moodDescription ?? ''
       const lyrics = lyricsText ?? ''
 
+      const rawVoice = (input.musicPreferences.voiceStyle ?? '').toLowerCase().trim()
+      const vocalGender: 'f' | 'm' | undefined = rawVoice === 'female' ? 'f' : rawVoice === 'male' ? 'm' : undefined
+
       const { taskId, metadata } = await createSunoTaskWithKieAi({
         apiKey,
         callbackUrl,
@@ -263,6 +266,7 @@ export async function processOrderGeneration(orderId: string) {
         title,
         style,
         lyrics,
+        vocalGender,
       })
 
       await prisma.order.update({
