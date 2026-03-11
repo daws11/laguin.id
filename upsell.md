@@ -2,7 +2,7 @@
 
 ## Overview
 
-Add a per-theme upsell system that lets admins create unlimited upsell offers shown to users during the checkout flow. Three modes are supported:
+Add a per-theme upsell system with up to 3 upsell slots that admins can configure, toggle on/off, and reorder. When upsells are enabled, at least 1 must be active. Three modes are supported:
 
 | Mode | Name | Behavior |
 |------|------|----------|
@@ -16,7 +16,7 @@ Add a per-theme upsell system that lets admins create unlimited upsell offers sh
 
 ### New: Upsell definition (stored in Theme settings JSON)
 
-Each theme's `settings` JSON blob gets a new `upsells` section inside `creationDelivery`:
+Each theme's `settings` JSON blob gets a new `upsells` section inside `creationDelivery`. There are exactly 3 upsell slots — each can be configured independently and toggled on/off:
 
 ```json
 {
@@ -24,7 +24,7 @@ Each theme's `settings` JSON blob gets a new `upsells` section inside `creationD
     "upsellMode": "none",
     "upsells": [
       {
-        "id": "upsell_abc123",
+        "id": "upsell_1",
         "title": "Add 3rd Verse",
         "description": "Your song comes with 2 verses by default. Add a 3rd verse (bridge) & chorus.",
         "highlightText": "For most customers, the 3rd verse is typically where someone cries out of love!",
@@ -37,17 +37,54 @@ Each theme's `settings` JSON blob gets a new `upsells` section inside `creationD
         "guaranteeSubtext": "Love it or get your money back, no questions asked",
         "sortOrder": 0,
         "isActive": true
+      },
+      {
+        "id": "upsell_2",
+        "title": "",
+        "description": "",
+        "highlightText": "",
+        "price": 0,
+        "priceLabel": "One-time upgrade",
+        "imageUrl": null,
+        "acceptButtonText": "Yes, Add It!",
+        "declineButtonText": "No Thanks, Continue",
+        "guaranteeBadge": "",
+        "guaranteeSubtext": "",
+        "sortOrder": 1,
+        "isActive": false
+      },
+      {
+        "id": "upsell_3",
+        "title": "",
+        "description": "",
+        "highlightText": "",
+        "price": 0,
+        "priceLabel": "One-time upgrade",
+        "imageUrl": null,
+        "acceptButtonText": "Yes, Add It!",
+        "declineButtonText": "No Thanks, Continue",
+        "guaranteeBadge": "",
+        "guaranteeSubtext": "",
+        "sortOrder": 2,
+        "isActive": false
       }
     ]
   }
 }
 ```
 
+**Constraints:**
+- Maximum of 3 upsell slots (fixed). No "Add" or "Delete" buttons — all 3 slots always exist.
+- Each slot can be toggled active/inactive independently.
+- When upsell mode is `pre-payment` or `post-payment`, at least 1 upsell must be active. The admin UI enforces this by preventing the last active upsell from being deactivated.
+- Slots can be reordered (drag or up/down arrows). The `sortOrder` field determines display order to the customer — only active upsells are shown, in sort order.
+
 **Why JSON in Theme settings instead of a separate DB table:**
 - Consistent with how all other theme config is stored (publicSiteConfig, creationDelivery)
 - Upsells are tightly coupled to themes — each theme has its own set
 - Admin UI already has patterns for editing arrays in theme settings (FAQ items, how-it-works steps, audio samples)
 - No need for relational queries between upsells and other entities
+- Fixed 3-slot structure keeps the data simple and predictable
 
 ### Modified: Order model (Prisma schema)
 
@@ -108,7 +145,7 @@ Body: { acceptedUpsellIds: string[] }
 
 Logic:
 1. Load the order and its theme settings
-2. Validate that all `acceptedUpsellIds` match active upsells for this theme
+2. Validate that all `acceptedUpsellIds` match active upsells for this theme (max 3 possible)
 3. Calculate upsell total from matched upsells
 4. Store `acceptedUpsells` JSON on the order
 5. **Pre-payment mode:**
@@ -224,16 +261,17 @@ Add a new section "Upsells" with:
 - Radio/select for upsell mode: `none`, `pre-payment`, `post-payment`
 - Description text explaining each mode
 
-### 2. Upsell list editor
+### 2. Upsell slots editor
 
 **File:** `apps/web/src/features/admin/tabs/settings/UpsellsEditor.tsx` (new component)
 
-Only visible when upsell mode is not `none`. Features:
-- List of upsell cards with drag-to-reorder (or up/down arrows)
-- Each card shows: title, price, active toggle
-- "Add Upsell" button
-- Click to expand/edit: title, description, highlight text, price, button texts, guarantee text, image upload, active toggle
-- Delete button with confirmation
+Only visible when upsell mode is not `none`. Shows all 3 upsell slots:
+- Each slot is a collapsible card showing: title (or "Upsell 1/2/3" if untitled), price, active/inactive toggle
+- Up/down arrow buttons to reorder slots
+- Click to expand/edit: title, description, highlight text, price, button texts, guarantee text, image upload
+- Active toggle on each slot — the UI prevents deactivating the last remaining active upsell (shows a tooltip/message: "At least 1 upsell must be active")
+- No "Add" or "Delete" buttons — all 3 slots always exist, just toggle them on/off
+- Inactive slots appear dimmed/greyed out in the admin list
 
 This follows the same pattern as the FAQ items editor or how-it-works steps editor.
 
@@ -302,21 +340,43 @@ In the order detail view, add a section showing:
 
 ## Example User Flows
 
-### Pre-payment flow (base 200k + 3 upsells at 50k each):
+### Pre-payment flow (base 200k, 3 slots configured, 2 active at 50k each):
 ```
-Step 4 → Upsell 1 (Accept ✓) → Upsell 2 (Decline ✗) → Upsell 3 (Accept ✓)
-→ POST /orders/:id/upsells { acceptedUpsellIds: ["upsell_1", "upsell_3"] }
-→ Xendit invoice created for 300k (200k + 50k + 50k)
+Admin has: Upsell 1 (active, 50k), Upsell 2 (inactive), Upsell 3 (active, 50k)
+User sees only active upsells in sort order:
+
+Step 4 → Upsell 1 (Accept ✓) → Upsell 3 (Decline ✗)
+→ POST /orders/:id/upsells { acceptedUpsellIds: ["upsell_1"] }
+→ Xendit invoice created for 250k (200k + 50k)
+→ User pays 250k → webhook fires → order confirmed
+```
+
+### Pre-payment flow (all 3 active, user accepts all):
+```
+Admin has: Upsell 1 (active, 50k), Upsell 2 (active, 30k), Upsell 3 (active, 20k)
+
+Step 4 → Upsell 1 (Accept ✓) → Upsell 2 (Accept ✓) → Upsell 3 (Accept ✓)
+→ POST /orders/:id/upsells { acceptedUpsellIds: ["upsell_1", "upsell_2", "upsell_3"] }
+→ Xendit invoice created for 300k (200k + 50k + 30k + 20k)
 → User pays 300k → webhook fires → order confirmed
 ```
 
-### Post-payment flow (base 200k + 2 upsells at 50k each):
+### Post-payment flow (base 200k, 2 active upsells at 50k each):
 ```
 Step 4 → Xendit invoice for 200k → User pays 200k → webhook fires → order confirmed
 → Redirect to Upsell 1 (Accept ✓) → Upsell 2 (Accept ✓)
 → POST /orders/:id/upsells { acceptedUpsellIds: ["upsell_1", "upsell_2"] }
 → Second Xendit invoice created for 100k (50k + 50k)
 → User pays 100k → webhook fires → upsell payment recorded
+→ Confirmation page
+```
+
+### Post-payment flow (user declines all upsells):
+```
+Step 4 → Xendit invoice for 200k → User pays 200k → webhook fires → order confirmed
+→ Redirect to Upsell 1 (Decline ✗) → Upsell 2 (Decline ✗)
+→ POST /orders/:id/upsells { acceptedUpsellIds: [] }
+→ No second invoice needed
 → Confirmation page
 ```
 
