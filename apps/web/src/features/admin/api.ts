@@ -79,6 +79,10 @@ export async function adminResendWhatsApp(token: string, id: string) {
   return apiPost(`/api/admin/orders/${encodeURIComponent(id)}/resend-whatsapp`, {}, { token })
 }
 
+export async function adminMarkDelivered(token: string, id: string) {
+  return apiPost<any>(`/api/admin/orders/${encodeURIComponent(id)}/mark-delivered`, {}, { token })
+}
+
 export async function adminBulkDeleteOrders(token: string, ids: string[]) {
   return apiPost<{ ok: true; deleted: number }>('/api/admin/orders/bulk-delete', { ids }, { token })
 }

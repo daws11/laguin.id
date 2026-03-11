@@ -27,6 +27,7 @@ import {
   Sparkles,
   Pencil,
   Save,
+  CheckCircle2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -148,6 +149,7 @@ export function AdminOrdersTab({
   onRetryOrder,
   onResendEmail,
   onResendWhatsApp,
+  onMarkDelivered,
   onBulkDelete,
   loading,
 }: {
@@ -160,6 +162,7 @@ export function AdminOrdersTab({
   onRetryOrder: (id: string) => void
   onResendEmail: (id: string) => void
   onResendWhatsApp: (id: string) => void
+  onMarkDelivered: (id: string) => void
   onBulkDelete: (ids: string[]) => Promise<void>
   loading: boolean
 }) {
@@ -171,6 +174,7 @@ export function AdminOrdersTab({
   const [themes, setThemes] = useState<ThemeItem[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showDeliverConfirm, setShowDeliverConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
@@ -292,6 +296,17 @@ export function AdminOrdersTab({
               )}
             </div>
             <div className="flex gap-2">
+              {selectedOrder.deliveryStatus !== 'delivered' && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setShowDeliverConfirm(true)}
+                  disabled={loading}
+                  className="gap-2"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Mark Delivered
+                </Button>
+              )}
               <Button
                 variant="secondary"
                 size="sm"
@@ -303,6 +318,34 @@ export function AdminOrdersTab({
               </Button>
             </div>
           </div>
+
+          {showDeliverConfirm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowDeliverConfirm(false)}>
+              <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm mx-4 space-y-4" onClick={(e) => e.stopPropagation()}>
+                <h3 className="text-lg font-semibold">Mark as Delivered</h3>
+                <p className="text-sm text-muted-foreground">
+                  Are you sure you want to mark this order as manually delivered? This will update the delivery status to "delivered".
+                </p>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setShowDeliverConfirm(false)} disabled={loading}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    disabled={loading}
+                    onClick={() => {
+                      setShowDeliverConfirm(false)
+                      onMarkDelivered(selectedOrder.id)
+                    }}
+                    className="gap-2"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Confirm
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="py-4">
             <Tabs defaultValue="overview" className="w-full">

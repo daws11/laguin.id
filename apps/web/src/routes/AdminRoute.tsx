@@ -485,6 +485,21 @@ function AdminRouteLegacy() {
     }
   }
 
+  async function markDelivered(id: string) {
+    if (!token) return
+    setError(null)
+    setLoading(true)
+    try {
+      const updated = await adminApi.adminMarkDelivered(token, id)
+      setSelectedOrder(updated)
+      await refreshOrders()
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to mark as delivered')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function bulkDeleteOrders(ids: string[]) {
     if (!token) return
     setError(null)
@@ -660,6 +675,7 @@ function AdminRouteLegacy() {
               onRetryOrder={(id) => void retryOrder(id)}
               onResendEmail={(id) => void resendEmail(id)}
               onResendWhatsApp={(id) => void resendWhatsApp(id)}
+              onMarkDelivered={(id) => void markDelivered(id)}
               onBulkDelete={bulkDeleteOrders}
               loading={loading}
             />

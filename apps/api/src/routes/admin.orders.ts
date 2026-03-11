@@ -232,6 +232,30 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     return { ok: true, deleted: result.count }
   })
 
+  app.post('/orders/:id/mark-delivered', async (req, reply) => {
+    const params = ParamsIdSchema.safeParse(req.params)
+    if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
+
+    const order = await prisma.order.findUnique({ where: { id: params.data.id } })
+    if (!order) return reply.code(404).send({ error: 'not_found' })
+    if (order.deliveryStatus === 'delivered') return reply.code(400).send({ error: 'already_delivered' })
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        deliveryStatus: 'delivered',
+        deliveredAt: new Date(),
+      },
+    })
+    await addOrderEvent({ orderId: order.id, type: 'admin_mark_delivered', message: 'Manually marked as delivered by admin.' })
+
+    const updated = await prisma.order.findUnique({
+      where: { id: order.id },
+      include: { customer: true, events: { orderBy: { createdAt: 'desc' }, take: 200 } },
+    })
+    return updated
+  })
+
   app.post('/orders/:id/resend-whatsapp', async (req, reply) => {
     const params = ParamsIdSchema.safeParse(req.params)
     if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
