@@ -264,6 +264,8 @@ export function AdminOrdersTab({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showDeliverConfirm, setShowDeliverConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 100
 
   useEffect(() => {
     adminGetThemes(token).then(setThemes).catch(() => {})
@@ -297,6 +299,13 @@ export function AdminOrdersTab({
     })
     return sorted
   }, [orders, query, statusFilter, themeFilter, sortField, sortDir])
+
+  useEffect(() => { setPage(1) }, [query, statusFilter, themeFilter])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const safePage = Math.min(page, totalPages)
+  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  useEffect(() => { if (page > totalPages) setPage(totalPages) }, [filtered.length])
 
   function toggleSort(field: SortField) {
     if (sortField === field) {
@@ -724,7 +733,7 @@ export function AdminOrdersTab({
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t.orders}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {filtered.length} of {orders.length} orders
+            {filtered.length} of {orders.length} orders{totalPages > 1 && ` · Page ${safePage} of ${totalPages}`}
           </p>
         </div>
       </div>
@@ -837,16 +846,16 @@ export function AdminOrdersTab({
                   <input
                     type="checkbox"
                     className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-                    checked={filtered.length > 0 && filtered.every((o) => selected.has(o.id))}
+                    checked={paged.length > 0 && paged.every((o) => selected.has(o.id))}
                     ref={(el) => {
-                      if (el) el.indeterminate = filtered.some((o) => selected.has(o.id)) && !filtered.every((o) => selected.has(o.id))
+                      if (el) el.indeterminate = paged.some((o) => selected.has(o.id)) && !paged.every((o) => selected.has(o.id))
                     }}
                     onChange={(e) => {
                       if (e.target.checked) {
-                        setSelected(new Set([...selected, ...filtered.map((o) => o.id)]))
+                        setSelected(new Set([...selected, ...paged.map((o) => o.id)]))
                       } else {
                         const next = new Set(selected)
-                        filtered.forEach((o) => next.delete(o.id))
+                        paged.forEach((o) => next.delete(o.id))
                         setSelected(next)
                       }
                     }}
@@ -897,7 +906,7 @@ export function AdminOrdersTab({
               </tr>
             </thead>
             <tbody className="divide-y">
-              {filtered.map((o) => (
+              {paged.map((o) => (
                 <tr
                   key={o.id}
                   className={cn(
@@ -1021,7 +1030,7 @@ export function AdminOrdersTab({
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && (
+              {paged.length === 0 && (
                 <tr>
                   <td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">
                     {t.noOrdersFound ?? 'No orders found.'}
@@ -1031,6 +1040,29 @@ export function AdminOrdersTab({
             </tbody>
           </table>
         </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t px-4 py-3">
+            <span className="text-sm text-muted-foreground">
+              Showing {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length}
+            </span>
+            <div className="flex gap-1">
+              <button
+                disabled={safePage <= 1}
+                onClick={() => setPage(p => p - 1)}
+                className="px-3 py-1.5 rounded-md text-xs font-medium border transition-colors disabled:opacity-40 hover:bg-muted"
+              >
+                Previous
+              </button>
+              <button
+                disabled={safePage >= totalPages}
+                onClick={() => setPage(p => p + 1)}
+                className="px-3 py-1.5 rounded-md text-xs font-medium border transition-colors disabled:opacity-40 hover:bg-muted"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -78,6 +78,8 @@ export function AdminCustomersTab({
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 100
 
   const filtered = useMemo(() => {
     let result = customers
@@ -104,6 +106,13 @@ export function AdminCustomersTab({
     })
     return sorted
   }, [customers, query, kindFilter, sortField, sortDir])
+
+  useEffect(() => { setPage(1) }, [query, kindFilter])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const safePage = Math.min(page, totalPages)
+  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  useEffect(() => { if (page > totalPages) setPage(totalPages) }, [filtered.length])
 
   function toggleSort(field: SortField) {
     if (sortField === field) {
@@ -328,7 +337,7 @@ export function AdminCustomersTab({
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t.customers}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {filtered.length} of {customers.length} customers
+            {filtered.length} of {customers.length} customers{totalPages > 1 && ` · Page ${safePage} of ${totalPages}`}
           </p>
         </div>
       </div>
@@ -430,16 +439,16 @@ export function AdminCustomersTab({
                   <input
                     type="checkbox"
                     className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-                    checked={filtered.length > 0 && filtered.every((c) => selected.has(c.id))}
+                    checked={paged.length > 0 && paged.every((c) => selected.has(c.id))}
                     ref={(el) => {
-                      if (el) el.indeterminate = filtered.some((c) => selected.has(c.id)) && !filtered.every((c) => selected.has(c.id))
+                      if (el) el.indeterminate = paged.some((c) => selected.has(c.id)) && !paged.every((c) => selected.has(c.id))
                     }}
                     onChange={(e) => {
                       if (e.target.checked) {
-                        setSelected(new Set([...selected, ...filtered.map((c) => c.id)]))
+                        setSelected(new Set([...selected, ...paged.map((c) => c.id)]))
                       } else {
                         const next = new Set(selected)
-                        filtered.forEach((c) => next.delete(c.id))
+                        paged.forEach((c) => next.delete(c.id))
                         setSelected(next)
                       }
                     }}
@@ -487,7 +496,7 @@ export function AdminCustomersTab({
               </tr>
             </thead>
             <tbody className="divide-y">
-              {filtered.map((c) => (
+              {paged.map((c) => (
                 <tr
                   key={c.id}
                   className={cn(
@@ -563,7 +572,7 @@ export function AdminCustomersTab({
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && (
+              {paged.length === 0 && (
                 <tr>
                   <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
                     {t.noCustomersFound ?? 'No customers found.'}
@@ -573,6 +582,29 @@ export function AdminCustomersTab({
             </tbody>
           </table>
         </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t px-4 py-3">
+            <span className="text-sm text-muted-foreground">
+              Showing {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length}
+            </span>
+            <div className="flex gap-1">
+              <button
+                disabled={safePage <= 1}
+                onClick={() => setPage(p => p - 1)}
+                className="px-3 py-1.5 rounded-md text-xs font-medium border transition-colors disabled:opacity-40 hover:bg-muted"
+              >
+                Previous
+              </button>
+              <button
+                disabled={safePage >= totalPages}
+                onClick={() => setPage(p => p + 1)}
+                className="px-3 py-1.5 rounded-md text-xs font-medium border transition-colors disabled:opacity-40 hover:bg-muted"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
