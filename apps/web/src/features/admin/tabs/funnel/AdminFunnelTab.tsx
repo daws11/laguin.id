@@ -19,21 +19,23 @@ function defaultTo(): string {
 }
 
 const TREND_LINES = [
-  { key: 'step0Pct' as const, label: 'Add to Cart (Step 0)', color: '#f59e0b' },
-  { key: 'orderCreatedPct' as const, label: 'Order Created', color: '#3b82f6' },
-  { key: 'orderConfirmedPct' as const, label: 'Order Confirmed', color: '#10b981' },
+  { key: 'step0Pct' as const, countKey: 'step0' as const, label: 'Add to Cart (Step 0)', color: '#f59e0b' },
+  { key: 'orderCreatedPct' as const, countKey: 'orderCreated' as const, label: 'Order Created', color: '#3b82f6' },
+  { key: 'orderConfirmedPct' as const, countKey: 'orderConfirmed' as const, label: 'Order Confirmed', color: '#10b981' },
 ]
 
-function TrendChart({ days }: { days: { date: string; homepage: number; step0Pct: number; orderCreatedPct: number; orderConfirmedPct: number }[] }) {
+type TrendDay = { date: string; homepage: number; step0: number; orderCreated: number; orderConfirmed: number; step0Pct: number; orderCreatedPct: number; orderConfirmedPct: number }
+
+function TrendChart({ days }: { days: TrendDay[] }) {
   const [hoverIdx, setHoverIdx] = useState<number | null>(null)
   const W = 700
-  const H = 220
-  const PAD = { top: 20, right: 20, bottom: 40, left: 45 }
+  const H = 260
+  const PAD = { top: 30, right: 20, bottom: 40, left: 45 }
   const cw = W - PAD.left - PAD.right
   const ch = H - PAD.top - PAD.bottom
 
   const allVals = days.flatMap(d => [d.step0Pct, d.orderCreatedPct, d.orderConfirmedPct])
-  const maxY = Math.max(10, ...allVals)
+  const maxY = Math.max(10, ...allVals) * 1.15
   const yTicks = [0, Math.round(maxY / 2), Math.ceil(maxY)]
 
   function x(i: number) { return PAD.left + (days.length > 1 ? (i / (days.length - 1)) * cw : cw / 2) }
@@ -66,7 +68,7 @@ function TrendChart({ days }: { days: { date: string; homepage: number; step0Pct
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="w-full"
-        style={{ maxHeight: 260 }}
+        style={{ maxHeight: 300 }}
         onMouseLeave={() => setHoverIdx(null)}
       >
         {yTicks.map(v => (
@@ -93,9 +95,29 @@ function TrendChart({ days }: { days: { date: string; homepage: number; step0Pct
               fill="transparent"
               onMouseEnter={() => setHoverIdx(i)}
             />
-            {TREND_LINES.map(l => (
-              <circle key={l.key} cx={x(i)} cy={y(d[l.key])} r={hoverIdx === i ? 4 : 2} fill={l.color} />
-            ))}
+            {TREND_LINES.map((l, li) => {
+              const val = d[l.key]
+              const yPos = y(val)
+              const offsets = [-12, -12, -12]
+              const otherVals = TREND_LINES.map(ol => y(d[ol.key]))
+              if (li > 0 && Math.abs(otherVals[li] - otherVals[li - 1]) < 10) {
+                offsets[li] = li % 2 === 0 ? -12 : 8
+              }
+              return (
+                <g key={l.key}>
+                  <circle cx={x(i)} cy={yPos} r={hoverIdx === i ? 4 : 2} fill={l.color} />
+                  <text
+                    x={x(i)}
+                    y={yPos + offsets[li]}
+                    textAnchor="middle"
+                    style={{ fontSize: 8, fontWeight: 600 }}
+                    fill={l.color}
+                  >
+                    {val > 0 ? `${val}%` : ''}
+                  </text>
+                </g>
+              )
+            })}
           </g>
         ))}
 
@@ -106,11 +128,13 @@ function TrendChart({ days }: { days: { date: string; homepage: number; step0Pct
         )}
       </svg>
       {hoverIdx !== null && days[hoverIdx] && (
-        <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground border-t pt-2">
+        <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-muted-foreground border-t pt-2">
           <span className="font-medium text-foreground">{days[hoverIdx].date}</span>
-          <span>{days[hoverIdx].homepage} views</span>
+          <span>{days[hoverIdx].homepage} homepage views</span>
           {TREND_LINES.map(l => (
-            <span key={l.key} style={{ color: l.color }}>{l.label}: {days[hoverIdx]![l.key]}%</span>
+            <span key={l.key} style={{ color: l.color }}>
+              {l.label}: {days[hoverIdx]![l.key]}% ({days[hoverIdx]![l.countKey]} orders)
+            </span>
           ))}
         </div>
       )}

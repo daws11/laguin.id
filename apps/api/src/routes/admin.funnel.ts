@@ -135,6 +135,9 @@ export const adminFunnelRoutes: FastifyPluginAsync = async (app) => {
         return {
           date: day,
           homepage,
+          step0: step0,
+          orderCreated: orderCreated,
+          orderConfirmed: orderConfirmed,
           step0Pct: homepage > 0 ? Math.round((step0 / homepage) * 1000) / 10 : 0,
           orderCreatedPct: homepage > 0 ? Math.round((orderCreated / homepage) * 1000) / 10 : 0,
           orderConfirmedPct: homepage > 0 ? Math.round((orderConfirmed / homepage) * 1000) / 10 : 0,

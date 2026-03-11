@@ -105,7 +105,7 @@ export async function adminGetFunnel(token: string, from: string, to: string, th
   return apiGet<FunnelData>(url, { token })
 }
 
-export type TrendDay = { date: string; homepage: number; step0Pct: number; orderCreatedPct: number; orderConfirmedPct: number }
+export type TrendDay = { date: string; homepage: number; step0: number; orderCreated: number; orderConfirmed: number; step0Pct: number; orderCreatedPct: number; orderConfirmedPct: number }
 export type TrendData = { days: TrendDay[] }
 
 export async function adminGetFunnelTrend(token: string, from: string, to: string, themeSlug?: string) {
