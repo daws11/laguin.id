@@ -28,7 +28,7 @@ function formatDate(iso: string) {
     ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
 }
 
-export function AdminTestimonialsTab({ token, t }: Props) {
+export function AdminTestimonialsTab({ token, t: _t }: Props) {
   const [videos, setVideos] = useState<TestimonialVideoItem[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
