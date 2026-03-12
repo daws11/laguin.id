@@ -12,7 +12,7 @@ import { triggerGenerationInBackground } from '../pipeline/triggerGeneration'
 const ParamsSchema = z.object({ id: z.string().min(1) })
 const VerifySchema = z.object({ phone: z.string().min(4) })
 const RegenerationSchema = z.object({
-  phone: z.string().min(4),
+  phone: z.string().optional(),
   revisionType: z.enum(['describe', 'lyrics', 'new_story']),
   description: z.string().max(2000).optional(),
   newLyrics: z.string().max(10000).optional(),
@@ -84,6 +84,53 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
       recipientName: payload.recipientName ?? payload.recipient ?? '',
       createdAt: order.createdAt,
       config: deliveryPageConfig,
+    }
+  })
+
+  app.get('/public/order/:id/content', async (req, reply) => {
+    const params = ParamsSchema.safeParse(req.params)
+    if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
+
+    const o = await prisma.order.findUnique({
+      where: { id: params.data.id },
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        inputPayload: true,
+        lyricsText: true,
+        trackUrl: true,
+        trackMetadata: true,
+        regenerationCount: true,
+        testimonialVideos: {
+          select: { id: true, status: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    })
+
+    if (!o) return reply.code(404).send({ error: 'not_found' })
+
+    const payload = (o.inputPayload && typeof o.inputPayload === 'object' ? o.inputPayload : {}) as Record<string, any>
+    const meta = (o.trackMetadata && typeof o.trackMetadata === 'object' ? o.trackMetadata : {}) as Record<string, any>
+    const kieTracks: string[] = Array.isArray(meta.tracks) ? meta.tracks.filter(Boolean) : o.trackUrl ? [o.trackUrl] : []
+    const storedTracks: string[] = Array.isArray(meta.storedTracks) ? meta.storedTracks.filter(Boolean) : []
+    const tracks = storedTracks.length > 0 ? storedTracks : kieTracks
+
+    return {
+      orders: [{
+        id: o.id,
+        status: o.status,
+        recipientName: payload.recipientName ?? payload.recipient ?? '',
+        createdAt: o.createdAt,
+        tracks,
+        lyricsText: o.lyricsText ?? null,
+        regenerationCount: o.regenerationCount,
+        maxRegenerations: MAX_REGENERATIONS,
+        hasTestimonial: o.testimonialVideos.length > 0,
+        testimonialStatus: o.testimonialVideos[0]?.status ?? null,
+      }],
     }
   })
 
@@ -160,9 +207,6 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
 
     const body = RegenerationSchema.safeParse(req.body)
     if (!body.success) return reply.code(400).send({ error: 'invalid_body', details: body.error.flatten() })
-
-    const verified = await verifyOrderPhone(params.data.id, body.data.phone)
-    if (!verified) return reply.code(403).send({ error: 'phone_mismatch' })
 
     const order = await prisma.order.findUnique({
       where: { id: params.data.id },
@@ -262,15 +306,6 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
 
     const data = await (req as any).file?.()
     if (!data) return reply.code(400).send({ error: 'missing_file' })
-
-    const phoneField = data.fields?.phone
-    const phone = typeof phoneField?.value === 'string' ? phoneField.value : null
-    if (!phone || phone.length < 4) {
-      return reply.code(400).send({ error: 'missing_phone' })
-    }
-
-    const verified = await verifyOrderPhone(params.data.id, phone)
-    if (!verified) return reply.code(403).send({ error: 'phone_mismatch' })
 
     const existing = await prisma.testimonialVideo.findFirst({
       where: { orderId: params.data.id },

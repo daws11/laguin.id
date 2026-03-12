@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import {
-  Music, Download, FileText, Loader2, ShieldCheck, Phone,
+  Music, Download, FileText, Loader2,
   RefreshCw, Video, CheckCircle, ChevronDown, ChevronUp, Upload,
 } from 'lucide-react'
 
@@ -65,13 +65,11 @@ type RevisionType = 'describe' | 'lyrics' | 'new_story'
 function RevisionSection({
   order,
   accent,
-  phone,
   cfg,
   onRegenerated,
 }: {
   order: UnlockedOrder
   accent: string
-  phone: string
   cfg: DeliveryConfig
   onRegenerated: () => void
 }) {
@@ -111,7 +109,6 @@ function RevisionSection({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phone,
           revisionType,
           description: revisionType === 'describe' ? description : undefined,
           newLyrics: revisionType === 'lyrics' ? newLyrics : undefined,
@@ -275,12 +272,10 @@ function RevisionSection({
 function TestimonialSection({
   order,
   accent,
-  phone,
   cfg,
 }: {
   order: UnlockedOrder
   accent: string
-  phone: string
   cfg: DeliveryConfig
 }) {
   const [uploading, setUploading] = useState(false)
@@ -310,7 +305,6 @@ function TestimonialSection({
     try {
       const fd = new FormData()
       fd.append('file', file)
-      fd.append('phone', phone)
 
       const res = await fetch(`/api/public/order/${encodeURIComponent(order.id)}/testimonial`, {
         method: 'POST',
@@ -403,26 +397,25 @@ export function OrderDeliveryRoute() {
   const { orderId } = useParams<{ orderId: string }>()
   const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null)
   const [unlockedOrders, setUnlockedOrders] = useState<UnlockedOrder[] | null>(null)
-  const [phone, setPhone] = useState('')
-  const [verifiedPhone, setVerifiedPhone] = useState('')
-  const [countryCode, setCountryCode] = useState('62')
-  const [error, setError] = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [verifying, setVerifying] = useState(false)
   const [lyricsExpanded, setLyricsExpanded] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (!orderId) return
     setLoading(true)
-    fetch(`/api/public/order/${encodeURIComponent(orderId)}/status`)
-      .then(async (res) => {
-        if (!res.ok) {
+    Promise.all([
+      fetch(`/api/public/order/${encodeURIComponent(orderId)}/status`),
+      fetch(`/api/public/order/${encodeURIComponent(orderId)}/content`),
+    ])
+      .then(async ([statusRes, contentRes]) => {
+        if (!statusRes.ok || !contentRes.ok) {
           setNotFound(true)
           return
         }
-        const data = await res.json()
-        setOrderStatus(data)
+        const [statusData, contentData] = await Promise.all([statusRes.json(), contentRes.json()])
+        setOrderStatus(statusData)
+        setUnlockedOrders(contentData.orders ?? [])
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
@@ -431,49 +424,10 @@ export function OrderDeliveryRoute() {
   const cfg = orderStatus?.config ?? {}
   const accent = cfg.accentColor || '#E11D48'
 
-  const handleVerify = async () => {
-    if (!orderId || !phone.trim()) return
-    setVerifying(true)
-    setError(null)
-
-    const fullNumber = countryCode + phone.replace(/^0+/, '').replace(/\D/g, '')
-
-    try {
-      const res = await fetch(`/api/public/order/${encodeURIComponent(orderId)}/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: fullNumber }),
-      })
-      if (res.status === 429) {
-        setError('Too many attempts. Please try again later.')
-        return
-      }
-      if (res.status === 403) {
-        setError(cfg.phonePromptText ? 'Number does not match our records.' : 'Nomor tidak cocok dengan data kami.')
-        return
-      }
-      if (!res.ok) {
-        setError('Something went wrong. Please try again.')
-        return
-      }
-      const data = await res.json()
-      setUnlockedOrders(data.orders ?? [])
-      setVerifiedPhone(fullNumber)
-    } catch {
-      setError('Connection error. Please try again.')
-    } finally {
-      setVerifying(false)
-    }
-  }
-
   const refreshOrders = async () => {
-    if (!orderId || !verifiedPhone) return
+    if (!orderId) return
     try {
-      const res = await fetch(`/api/public/order/${encodeURIComponent(orderId)}/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: verifiedPhone }),
-      })
+      const res = await fetch(`/api/public/order/${encodeURIComponent(orderId)}/content`)
       if (res.ok) {
         const data = await res.json()
         setUnlockedOrders(data.orders ?? [])
@@ -529,83 +483,6 @@ export function OrderDeliveryRoute() {
           </div>
           <h1 className="text-xl font-semibold text-gray-800">Order Not Found</h1>
           <p className="mt-2 text-sm text-gray-500">The order you're looking for doesn't exist or has been removed.</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!unlockedOrders && orderStatus) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-white px-4 py-12">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            {renderLogo('lg')}
-            <h1 className="text-2xl font-bold text-gray-900">
-              {cfg.pageTitle || 'Your Personalized Song'}
-            </h1>
-            {orderStatus.recipientName && (
-              <p className="mt-1 text-sm text-gray-500">
-                {(cfg.headerText || 'A special song for {recipientName}').replace('{recipientName}', orderStatus.recipientName)}
-              </p>
-            )}
-          </div>
-
-          <div className="rounded-2xl border bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <ShieldCheck className="h-4 w-4 text-gray-400" />
-              <span className="text-sm font-medium text-gray-700">
-                {cfg.phonePromptText || 'Enter your phone number to access your song'}
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">+</span>
-                  <input
-                    type="tel"
-                    value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value.replace(/\D/g, ''))}
-                    className="w-[72px] rounded-lg border bg-gray-50 px-3 pl-6 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-                    style={{ '--tw-ring-color': accent + '60' } as React.CSSProperties}
-                    placeholder="62"
-                  />
-                </div>
-                <div className="relative flex-1">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
-                    className="w-full rounded-lg border bg-gray-50 px-3 pl-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-                    style={{ '--tw-ring-color': accent + '60' } as React.CSSProperties}
-                    placeholder="876543211"
-                  />
-                </div>
-              </div>
-
-              {error && (
-                <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
-              )}
-
-              <button
-                onClick={handleVerify}
-                disabled={verifying || !phone.trim()}
-                className="w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-50"
-                style={{ backgroundColor: accent }}
-              >
-                {verifying ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Verifying...
-                  </span>
-                ) : (
-                  cfg.unlockButtonText || 'Unlock My Song'
-                )}
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     )
@@ -758,7 +635,6 @@ export function OrderDeliveryRoute() {
                   <RevisionSection
                     order={order}
                     accent={accent}
-                    phone={verifiedPhone}
                     cfg={cfg}
                     onRegenerated={refreshOrders}
                   />
@@ -766,7 +642,6 @@ export function OrderDeliveryRoute() {
                   <TestimonialSection
                     order={order}
                     accent={accent}
-                    phone={verifiedPhone}
                     cfg={cfg}
                   />
                 </div>

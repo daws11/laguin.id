@@ -37,10 +37,11 @@ The project uses a monorepo structure with `npm workspaces`, separating the fron
 
 **Order Delivery Page (`/order/:orderId`):**
 - Public page for customers to download their completed song and lyrics.
-- Phone number verification gate (simple match against customer's WhatsApp number, with smart normalization).
+- No phone gate — song content loads immediately on page visit (orderId itself acts as access token).
+- New `GET /api/public/order/:id/content` endpoint returns song data without phone verification.
 - Shows "song is being created" message for in-progress orders.
 - All page text is editable via global admin settings (Settings → Delivery Page).
-- Rate-limited verify endpoint (5 attempts per 15 minutes per IP+order).
+- Legacy `POST /api/public/order/:id/verify` endpoint still exists for backward compatibility.
 
 **Song Regeneration:**
 - Customers can request up to 2 regenerations from the delivery page.
