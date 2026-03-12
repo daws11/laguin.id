@@ -131,6 +131,10 @@ export async function adminBulkDeleteOrders(token: string, ids: string[]) {
   return apiPost<{ ok: true; deleted: number }>('/api/admin/orders/bulk-delete', { ids }, { token })
 }
 
+export async function adminBulkResendWhatsApp(token: string, ids: string[]) {
+  return apiPost<{ ok: boolean; sent: number; failed: number }>('/api/admin/orders/bulk-resend-whatsapp', { ids }, { token })
+}
+
 export async function adminBulkClearTracks(token: string, ids: string[]) {
   return apiPost<{ ok: true; cleared: number; ordersProcessed: number }>('/api/admin/orders/bulk-clear-tracks', { ids }, { token })
 }

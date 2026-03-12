@@ -531,6 +531,20 @@ function AdminRouteLegacy() {
     }
   }
 
+  async function bulkResendWhatsApp(ids: string[]) {
+    if (!token) return
+    setError(null)
+    setLoading(true)
+    try {
+      await adminApi.adminBulkResendWhatsApp(token, ids)
+      setOrdersRefreshTrigger((n) => n + 1)
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to resend WhatsApp messages')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function bulkDeleteCustomers(ids: string[]) {
     if (!token) return
     setError(null)
@@ -697,6 +711,7 @@ function AdminRouteLegacy() {
               onMarkDelivered={(id) => void markDelivered(id)}
               onBulkDelete={bulkDeleteOrders}
               onBulkClearTracks={bulkClearTracks}
+              onBulkResendWhatsApp={bulkResendWhatsApp}
               loading={loading}
               refreshTrigger={ordersRefreshTrigger}
             />

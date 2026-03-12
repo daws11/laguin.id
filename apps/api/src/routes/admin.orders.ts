@@ -15,7 +15,7 @@ const ListQuerySchema = z.object({
   search: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(200).default(100),
-  sortField: z.enum(['createdAt', 'status', 'customer']).default('createdAt'),
+  sortField: z.enum(['createdAt', 'status', 'customer', 'deliveryStatus']).default('createdAt'),
   sortDir: z.enum(['asc', 'desc']).default('desc'),
 })
 
@@ -61,6 +61,8 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
         ? { customer: { name: sortDir } }
         : sortField === 'status'
         ? [{ status: sortDir }, { createdAt: 'desc' }]
+        : sortField === 'deliveryStatus'
+        ? [{ deliveryStatus: sortDir }, { createdAt: 'desc' }]
         : { createdAt: sortDir }
 
     const [orders, total, statusGroups] = await Promise.all([
@@ -349,6 +351,28 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     }
 
     return { ok: true, cleared: totalDeleted, ordersProcessed: orders.length }
+  })
+
+  app.post('/orders/bulk-resend-whatsapp', async (req, reply) => {
+    const schema = z.object({ ids: z.array(z.string().min(1)).min(1).max(100) })
+    const parsed = schema.safeParse(req.body)
+    if (!parsed.success) return reply.code(400).send({ error: 'invalid_body', message: 'Provide an array of order IDs (max 100).' })
+
+    let sent = 0
+    let failed = 0
+    for (const id of parsed.data.ids) {
+      try {
+        const order = await prisma.order.findUnique({ where: { id }, include: { customer: true } })
+        if (!order) { failed++; continue }
+        await sendWhatsAppReminderForOrder(order as any)
+        await addOrderEvent({ orderId: id, type: 'admin_resend_whatsapp', message: 'Admin bulk resend WhatsApp reminder.' })
+        sent++
+      } catch {
+        failed++
+      }
+    }
+
+    return { ok: true, sent, failed }
   })
 
   app.post('/orders/:id/mark-delivered', async (req, reply) => {

@@ -226,7 +226,7 @@ function statusVariant(status: string): 'default' | 'secondary' | 'destructive' 
   return 'secondary'
 }
 
-type SortField = 'createdAt' | 'status' | 'customer'
+type SortField = 'createdAt' | 'status' | 'customer' | 'deliveryStatus'
 type SortDir = 'asc' | 'desc'
 
 export function AdminOrdersTab({
@@ -241,6 +241,7 @@ export function AdminOrdersTab({
   onMarkDelivered,
   onBulkDelete,
   onBulkClearTracks,
+  onBulkResendWhatsApp,
   loading,
   refreshTrigger,
 }: {
@@ -255,11 +256,13 @@ export function AdminOrdersTab({
   onMarkDelivered: (id: string) => void
   onBulkDelete: (ids: string[]) => Promise<void>
   onBulkClearTracks: (ids: string[]) => Promise<void>
+  onBulkResendWhatsApp: (ids: string[]) => Promise<void>
   loading: boolean
   refreshTrigger?: number
 }) {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [deliveryFilter, setDeliveryFilter] = useState<string>('all')
   const [themeFilter, setThemeFilter] = useState<string>('all')
   const [sortField, setSortField] = useState<SortField>('createdAt')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -270,6 +273,7 @@ export function AdminOrdersTab({
   const [deleting, setDeleting] = useState(false)
   const [showClearTracksConfirm, setShowClearTracksConfirm] = useState(false)
   const [clearingTracks, setClearingTracks] = useState(false)
+  const [sendingBulkWA, setSendingBulkWA] = useState(false)
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 100
 
@@ -296,7 +300,7 @@ export function AdminOrdersTab({
   }, [query])
 
   // Reset page when non-search filters change
-  useEffect(() => { setPage(1) }, [statusFilter, themeFilter, sortField, sortDir])
+  useEffect(() => { setPage(1) }, [statusFilter, deliveryFilter, themeFilter, sortField, sortDir])
 
   // Fetch orders from server whenever params change
   useEffect(() => {
@@ -306,6 +310,7 @@ export function AdminOrdersTab({
     params.set('pageSize', String(PAGE_SIZE))
     if (debouncedQuery.trim()) params.set('search', debouncedQuery.trim())
     if (statusFilter !== 'all') params.set('status', statusFilter)
+    if (deliveryFilter !== 'all') params.set('deliveryStatus', deliveryFilter)
     if (themeFilter !== 'all') params.set('themeSlug', themeFilter)
     params.set('sortField', sortField)
     params.set('sortDir', sortDir)
@@ -319,7 +324,7 @@ export function AdminOrdersTab({
       })
       .catch(() => {})
       .finally(() => setFetchLoading(false))
-  }, [token, page, debouncedQuery, statusFilter, themeFilter, sortField, sortDir, refreshTrigger])
+  }, [token, page, debouncedQuery, statusFilter, deliveryFilter, themeFilter, sortField, sortDir, refreshTrigger])
 
   // Derived pagination
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
@@ -814,6 +819,18 @@ export function AdminOrdersTab({
         </div>
 
         <select
+          value={deliveryFilter}
+          onChange={(e) => setDeliveryFilter(e.target.value)}
+          className="rounded-md border bg-background px-3 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500/40"
+        >
+          <option value="all">All Delivery</option>
+          <option value="delivery_pending">Delivery Pending</option>
+          <option value="delivery_scheduled">Delivery Scheduled</option>
+          <option value="delivered">Delivered</option>
+          <option value="delivery_failed">Delivery Failed</option>
+        </select>
+
+        <select
           value={themeFilter}
           onChange={(e) => setThemeFilter(e.target.value)}
           className="rounded-md border bg-background px-3 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500/40"
@@ -921,6 +938,24 @@ export function AdminOrdersTab({
               </Button>
             </div>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs gap-1.5 border-green-300 text-green-700 hover:bg-green-50"
+            disabled={sendingBulkWA}
+            onClick={async () => {
+              setSendingBulkWA(true)
+              try {
+                await onBulkResendWhatsApp(Array.from(selected))
+                setSelected(new Set())
+              } finally {
+                setSendingBulkWA(false)
+              }
+            }}
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+            {sendingBulkWA ? 'Sending...' : 'Resend WhatsApp'}
+          </Button>
         </div>
       )}
 
@@ -978,8 +1013,13 @@ export function AdminOrdersTab({
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
                   Theme
                 </th>
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
-                  Delivery
+                <th
+                  className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider cursor-pointer select-none"
+                  onClick={() => toggleSort('deliveryStatus')}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    Delivery <SortIcon field="deliveryStatus" />
+                  </span>
                 </th>
                 <th className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
                   Payment
