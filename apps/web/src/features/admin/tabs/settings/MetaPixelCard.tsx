@@ -3,8 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
 import { Save } from 'lucide-react'
 import type { Settings } from '@/features/admin/types'
 
@@ -121,14 +119,17 @@ export function MetaPixelCard({ settings, saveSettings, loading }: Props) {
 
         <div className="pt-2 border-t space-y-3">
           <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Conversions API (Server-side)</div>
-          <div className="flex items-center gap-2">
-            <Switch
-              id="capi-enabled"
-              checked={capiEnabled}
-              onCheckedChange={setCapiEnabled}
-            />
-            <Label htmlFor="capi-enabled" className="text-xs cursor-pointer">Enable server-side CAPI events</Label>
-          </div>
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <div
+              role="switch"
+              aria-checked={capiEnabled}
+              onClick={() => setCapiEnabled(v => !v)}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${capiEnabled ? 'bg-primary' : 'bg-input'}`}
+            >
+              <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-lg transition-transform ${capiEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+            </div>
+            <span className="text-xs">Enable server-side CAPI events</span>
+          </label>
           <div className="space-y-0.5">
             <div className="text-[10px] font-medium text-muted-foreground">
               Access Token{settings.hasMetaCapiToken ? ' (token set — paste to replace)' : ''}
