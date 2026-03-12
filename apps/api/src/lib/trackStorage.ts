@@ -1,6 +1,6 @@
 import { uploadBuffer, deleteObject } from './objectStorage'
 
-const ALLOWED_HOSTS = ['api.kieai.com', 'cdn.kieai.com', 'kieai.com', 'storage.googleapis.com']
+const ALLOWED_HOSTS = ['api.kieai.com', 'cdn.kieai.com', 'kieai.com', 'aiquickdraw.com', 'storage.googleapis.com']
 
 function isAllowedTrackUrl(url: string): boolean {
   try {
