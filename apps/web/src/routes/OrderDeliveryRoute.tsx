@@ -115,8 +115,8 @@ export function OrderDeliveryRoute() {
 
     if (cfg.logoUrl) {
       return (
-        <div className={`mx-auto mb-4 flex ${dimension} items-center justify-center rounded-full overflow-hidden`}>
-          <img src={cfg.logoUrl} alt="Logo" className="h-full w-full object-cover" />
+        <div className="mx-auto mb-4 flex items-center justify-center">
+          <img src={cfg.logoUrl} alt="Logo" className={size === 'lg' ? 'max-h-16' : 'max-h-10'} style={{ objectFit: 'contain' }} />
         </div>
       )
     }
@@ -313,8 +313,8 @@ export function OrderDeliveryRoute() {
                     <div key={`${order.id}-${idx}`} className="rounded-2xl border bg-white p-5 shadow-sm">
                       <div className="flex items-center gap-3 mb-3">
                         {cfg.logoUrl ? (
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full overflow-hidden">
-                            <img src={cfg.logoUrl} alt="Logo" className="h-full w-full object-cover" />
+                          <div className="flex h-10 w-10 items-center justify-center">
+                            <img src={cfg.logoUrl} alt="Logo" className="max-h-10 max-w-10" style={{ objectFit: 'contain' }} />
                           </div>
                         ) : (
                           <div className="flex h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: accent + '15' }}>
