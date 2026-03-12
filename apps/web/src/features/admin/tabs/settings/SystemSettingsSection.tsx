@@ -14,7 +14,7 @@ import { DeliveryPageCard } from './DeliveryPageCard'
 interface SystemSettingsSectionProps {
   settings: Settings
   setSettings: React.Dispatch<React.SetStateAction<Settings | null>>
-  saveSettings: (partial: Partial<Settings> & { openaiApiKey?: string; kaiAiApiKey?: string; ycloudApiKey?: string }) => Promise<Settings | null>
+  saveSettings: (partial: Partial<Settings> & { openaiApiKey?: string; kaiAiApiKey?: string; ycloudApiKey?: string; ycloudWebhookSecret?: string }) => Promise<Settings | null>
   loading: boolean
   t: any
   token: string | null

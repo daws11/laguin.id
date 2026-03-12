@@ -11,7 +11,7 @@ export async function adminGetSettings(token: string) {
 
 export async function adminSaveSettings(
   token: string,
-  partial: Partial<Settings> & { openaiApiKey?: string; kaiAiApiKey?: string; ycloudApiKey?: string },
+  partial: Partial<Settings> & { openaiApiKey?: string; kaiAiApiKey?: string; ycloudApiKey?: string; ycloudWebhookSecret?: string },
 ) {
   return apiPut<Settings>('/api/admin/settings', partial, { token })
 }

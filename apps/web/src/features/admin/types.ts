@@ -43,6 +43,9 @@ export type Settings = {
   ycloudTemplateName: string | null
   ycloudTemplateLangCode: string | null
   hasYcloudKey: boolean
+  hasYcloudWebhookSecret: boolean
+  siteUrl: string | null
+  ycloudWebhookUrl: string | null
 
   hasXenditKey: boolean
   xenditWebhookToken: string | null

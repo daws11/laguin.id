@@ -57,6 +57,14 @@ const translations = importedTranslations
     ycloudTemplateLang: 'YCloud Template Language Code (contoh: id atau en_US)',
     ycloudApiKey: 'Set YCloud API key (disimpan terenkripsi)',
     ycloudKeyStatus: 'YCloud API key saat ini: {status}.',
+    ycloudWebhookSecretLabel: 'Webhook Secret',
+    ycloudWebhookSecretPlaceholder: 'Set webhook secret (disimpan terenkripsi)',
+    ycloudWebhookSecretStatus: 'Webhook secret saat ini: {status}.',
+    ycloudWebhookUrlLabel: 'Webhook URL (konfigurasikan di YCloud)',
+    siteUrlLabel: 'Site URL',
+    siteUrlPlaceholder: 'contoh: https://laguin.id',
+    siteUrlHelp: 'Digunakan untuk membangun link pengiriman di WhatsApp.',
+    copied: 'Disalin!',
     updateSettings: 'Update',
     apiKeys: 'API Keys',
     apiKeysDesc: 'Disimpan terenkripsi (kompatibel MVP). Saat ini: OpenAI={openai}, kai.ai={kaiai}.',
@@ -180,6 +188,14 @@ const translations = importedTranslations
     ycloudTemplateLang: 'YCloud Template Language Code (e.g. id or en_US)',
     ycloudApiKey: 'Set YCloud API key (stored encrypted)',
     ycloudKeyStatus: 'Current YCloud API key: {status}.',
+    ycloudWebhookSecretLabel: 'Webhook Secret',
+    ycloudWebhookSecretPlaceholder: 'Set webhook secret (stored encrypted)',
+    ycloudWebhookSecretStatus: 'Current webhook secret: {status}.',
+    ycloudWebhookUrlLabel: 'Webhook URL (configure in YCloud)',
+    siteUrlLabel: 'Site URL',
+    siteUrlPlaceholder: 'e.g. https://laguin.id',
+    siteUrlHelp: 'Used to build delivery links in WhatsApp messages.',
+    copied: 'Copied!',
     updateSettings: 'Update',
     apiKeys: 'API Keys',
     apiKeysDesc: 'Stored encrypted (MVP compatible). Current: OpenAI={openai}, kai.ai={kaiai}.',
@@ -343,7 +359,7 @@ function AdminRouteLegacy() {
   }, [token])
 
   async function saveSettings(
-    partial: Partial<Settings> & { openaiApiKey?: string; kaiAiApiKey?: string; ycloudApiKey?: string },
+    partial: Partial<Settings> & { openaiApiKey?: string; kaiAiApiKey?: string; ycloudApiKey?: string; ycloudWebhookSecret?: string },
   ) {
     if (!token) return null
     setError(null)
