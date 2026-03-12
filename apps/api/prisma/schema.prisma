@@ -55,6 +55,9 @@ model Settings {
   metaPixelStep1Script String?
   metaPixelStep4Script String?
   metaPixelConfirmScript String?
+  metaCapiEnabled  Boolean  @default(false)
+  metaCapiAccessTokenEnc String?
+  metaCapiTestEventCode  String?
   xenditSecretKeyEnc String?
   xenditWebhookToken String?
   allowMultipleOrdersPerWhatsapp Boolean @default(false)

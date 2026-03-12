@@ -34,6 +34,9 @@ export type Settings = {
   metaPixelStep1Script: string | null
   metaPixelStep4Script: string | null
   metaPixelConfirmScript: string | null
+  metaCapiEnabled: boolean
+  hasMetaCapiToken: boolean
+  metaCapiTestEventCode: string | null
 
   // YCloud WhatsApp gateway settings (safe fields only)
   ycloudFrom: string | null

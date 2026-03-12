@@ -1,4 +1,5 @@
 import crypto from 'node:crypto'
+import { getOrCreateSettings, maybeDecrypt } from './settings'
 
 type MetaCapiEventName = 'PageView' | 'ViewContent' | 'InitiateCheckout' | 'Lead' | 'CompleteRegistration' | 'Purchase'
 
@@ -33,20 +34,31 @@ function getEventSourceUrl(req: any) {
   const referer = String(req?.headers?.referer ?? '').trim()
   if (referer) return referer
   const origin = String(req?.headers?.origin ?? '').trim()
-  // If no referer, at least give Meta the site origin.
   return origin || undefined
 }
 
-export function isMetaCapiEnabled() {
-  return envBool(process.env.META_CAPI_ENABLED)
-}
+async function resolveCapiConfig(): Promise<{ enabled: boolean; pixelId: string; accessToken: string; testEventCode: string | undefined }> {
+  // Env vars take precedence (backwards compat)
+  const envEnabled = envBool(process.env.META_CAPI_ENABLED)
+  const envPixelId = (process.env.META_PIXEL_ID ?? '').trim()
+  const envAccessToken = (process.env.META_CAPI_ACCESS_TOKEN ?? '').trim()
+  const envTestCode = (process.env.META_CAPI_TEST_EVENT_CODE ?? '').trim() || undefined
 
-export function getMetaPixelId() {
-  return (process.env.META_PIXEL_ID ?? '').trim()
-}
+  if (envEnabled && envPixelId && envAccessToken) {
+    return { enabled: true, pixelId: envPixelId, accessToken: envAccessToken, testEventCode: envTestCode }
+  }
 
-export function getMetaCapiAccessToken() {
-  return (process.env.META_CAPI_ACCESS_TOKEN ?? '').trim()
+  // Fall back to DB settings
+  try {
+    const s = await getOrCreateSettings()
+    const dbEnabled = (s as any).metaCapiEnabled === true
+    const dbPixelId = (s.metaPixelId ?? '').trim()
+    const dbAccessToken = maybeDecrypt((s as any).metaCapiAccessTokenEnc) ?? ''
+    const dbTestCode = ((s as any).metaCapiTestEventCode ?? '').trim() || undefined
+    return { enabled: dbEnabled, pixelId: dbPixelId, accessToken: dbAccessToken.trim(), testEventCode: dbTestCode }
+  } catch {
+    return { enabled: false, pixelId: '', accessToken: '', testEventCode: undefined }
+  }
 }
 
 export async function sendMetaCapiEvent(params: {
@@ -58,11 +70,8 @@ export async function sendMetaCapiEvent(params: {
   externalId?: string | null
   customData?: Record<string, any>
 }) {
-  if (!isMetaCapiEnabled()) return
-
-  const pixelId = getMetaPixelId()
-  const accessToken = getMetaCapiAccessToken()
-  if (!pixelId || !accessToken) return
+  const { enabled, pixelId, accessToken, testEventCode } = await resolveCapiConfig()
+  if (!enabled || !pixelId || !accessToken) return
 
   const { req, eventName, eventId, email, phone, externalId, customData } = params
 
@@ -104,8 +113,7 @@ export async function sendMetaCapiEvent(params: {
         custom_data: customData,
       },
     ],
-    // Optional: allows validating events in Events Manager without impacting production reporting
-    test_event_code: (process.env.META_CAPI_TEST_EVENT_CODE ?? '').trim() || undefined,
+    test_event_code: testEventCode,
   }
 
   const url = `https://graph.facebook.com/v20.0/${encodeURIComponent(pixelId)}/events?access_token=${encodeURIComponent(accessToken)}`

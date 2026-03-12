@@ -23,6 +23,9 @@ const UpdateSchema = z.object({
   metaPixelStep1Script: z.string().optional().nullable(),
   metaPixelStep4Script: z.string().optional().nullable(),
   metaPixelConfirmScript: z.string().optional().nullable(),
+  metaCapiEnabled: z.boolean().optional(),
+  metaCapiAccessToken: z.string().min(1).optional(),
+  metaCapiTestEventCode: z.string().optional().nullable(),
 
   openaiApiKey: z.string().min(1).optional(),
   openaiModel: z.string().optional().nullable(),
@@ -80,6 +83,9 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       metaPixelStep1Script: (s as any).metaPixelStep1Script ?? null,
       metaPixelStep4Script: (s as any).metaPixelStep4Script ?? null,
       metaPixelConfirmScript: (s as any).metaPixelConfirmScript ?? null,
+      metaCapiEnabled: (s as any).metaCapiEnabled ?? false,
+      hasMetaCapiToken: Boolean(maybeDecrypt((s as any).metaCapiAccessTokenEnc)),
+      metaCapiTestEventCode: (s as any).metaCapiTestEventCode ?? null,
       hasXenditKey: Boolean(maybeDecrypt((s as any).xenditSecretKeyEnc)),
       xenditWebhookToken: (s as any).xenditWebhookToken ?? null,
       allowMultipleOrdersPerWhatsapp: (s as any).allowMultipleOrdersPerWhatsapp ?? false,
@@ -154,6 +160,8 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       metaPixelStep1Script: parsed.data.metaPixelStep1Script,
       metaPixelStep4Script: parsed.data.metaPixelStep4Script,
       metaPixelConfirmScript: parsed.data.metaPixelConfirmScript,
+      metaCapiEnabled: parsed.data.metaCapiEnabled,
+      metaCapiTestEventCode: parsed.data.metaCapiTestEventCode,
       allowMultipleOrdersPerWhatsapp: parsed.data.allowMultipleOrdersPerWhatsapp,
     }
 
@@ -172,6 +180,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
     if (parsed.data.smtpFrom !== undefined) data.smtpFrom = parsed.data.smtpFrom
     if (parsed.data.resendApiKey) data.resendApiKeyEnc = encryptString(parsed.data.resendApiKey)
     if (parsed.data.resendFrom !== undefined) data.resendFrom = parsed.data.resendFrom
+    if (parsed.data.metaCapiAccessToken) data.metaCapiAccessTokenEnc = encryptString(parsed.data.metaCapiAccessToken)
 
     const updated = await prisma.settings.update({
       where: { id: s.id },
@@ -205,6 +214,9 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       metaPixelStep1Script: (updated as any).metaPixelStep1Script ?? null,
       metaPixelStep4Script: (updated as any).metaPixelStep4Script ?? null,
       metaPixelConfirmScript: (updated as any).metaPixelConfirmScript ?? null,
+      metaCapiEnabled: (updated as any).metaCapiEnabled ?? false,
+      hasMetaCapiToken: Boolean(maybeDecrypt((updated as any).metaCapiAccessTokenEnc)),
+      metaCapiTestEventCode: (updated as any).metaCapiTestEventCode ?? null,
       allowMultipleOrdersPerWhatsapp: (updated as any).allowMultipleOrdersPerWhatsapp ?? false,
       kieAiCallbackUrl: process.env.KIE_AI_CALLBACK_URL || null,
 
