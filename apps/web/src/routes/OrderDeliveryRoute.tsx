@@ -512,11 +512,6 @@ export function OrderDeliveryRoute() {
     )
   }
 
-  const _trackSubtitle = (recipientName: string) => {
-    const template = cfg.trackSubtitleText || 'Personalized for {recipientName}'
-    return template.replace('{recipientName}', recipientName || 'you')
-  }
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-white">
