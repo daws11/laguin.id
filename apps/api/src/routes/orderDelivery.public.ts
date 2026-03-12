@@ -92,7 +92,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(403).send({ error: 'phone_mismatch' })
     }
 
-    const ip = (order.inputPayload && typeof order.inputPayload === 'object' ? order.inputPayload : {}) as Record<string, any>
+    const payload = (order.inputPayload && typeof order.inputPayload === 'object' ? order.inputPayload : {}) as Record<string, any>
     const meta = (order.trackMetadata && typeof order.trackMetadata === 'object' ? order.trackMetadata : {}) as Record<string, any>
 
     const kieTracks: string[] = Array.isArray(meta.tracks) ? meta.tracks.filter(Boolean) : order.trackUrl ? [order.trackUrl] : []
@@ -102,7 +102,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
     return {
       id: order.id,
       status: order.status,
-      recipientName: ip.recipientName ?? ip.recipient ?? '',
+      recipientName: payload.recipientName ?? payload.recipient ?? '',
       createdAt: order.createdAt,
       tracks,
       lyricsText: order.lyricsText ?? null,
