@@ -26,6 +26,10 @@ type DeliveryConfig = {
   revisionSubmitButtonText?: string
   revisionUsedTitle?: string
   revisionUsedMessage?: string
+  // Voice labels for revision form
+  voiceKeepLabel?: string
+  voiceFemaleLabel?: string
+  voiceMaleLabel?: string
   // Testimonial section
   testimonialSectionTitle?: string
   testimonialSectionDescription?: string
@@ -238,9 +242,9 @@ function RevisionSection({
             className="w-full rounded-lg border bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-transparent appearance-none"
             style={{ '--tw-ring-color': accent + '60' } as React.CSSProperties}
           >
-            <option value="keep">Keep current</option>
-            <option value="Female">Female</option>
-            <option value="Male">Male</option>
+            <option value="keep">{cfg.voiceKeepLabel || 'Tetap saat ini'}</option>
+            <option value="female">{cfg.voiceFemaleLabel || 'Wanita'}</option>
+            <option value="male">{cfg.voiceMaleLabel || 'Pria'}</option>
           </select>
         </div>
       </div>

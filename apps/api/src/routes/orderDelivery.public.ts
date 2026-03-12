@@ -186,6 +186,12 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
     const currentPayload = (order.inputPayload && typeof order.inputPayload === 'object' ? order.inputPayload : {}) as Record<string, any>
     const updatedPayload = { ...currentPayload }
 
+    if (body.data.revisionType === 'describe' && body.data.description) {
+      updatedPayload.revisionDescription = body.data.description
+    } else {
+      delete updatedPayload.revisionDescription
+    }
+
     if (body.data.musicStyle && body.data.musicStyle !== 'keep') {
       updatedPayload.musicPreferences = {
         ...(updatedPayload.musicPreferences ?? {}),
@@ -195,7 +201,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
     if (body.data.voiceStyle && body.data.voiceStyle !== 'keep') {
       updatedPayload.musicPreferences = {
         ...(updatedPayload.musicPreferences ?? {}),
-        voiceStyle: body.data.voiceStyle,
+        voiceStyle: body.data.voiceStyle.toLowerCase(),
       }
     }
 
@@ -215,11 +221,9 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
         trackMetadata: null,
         generationStartedAt: null,
         generationCompletedAt: null,
-        moodDescription: body.data.revisionType === 'describe' && body.data.description
-          ? body.data.description
-          : body.data.revisionType === 'new_story'
-            ? null
-            : undefined,
+        moodDescription: (body.data.revisionType === 'describe' || body.data.revisionType === 'new_story')
+          ? null
+          : undefined,
         ...(body.data.revisionType === 'new_story' ? { lyricsText: null } : {}),
       },
     })

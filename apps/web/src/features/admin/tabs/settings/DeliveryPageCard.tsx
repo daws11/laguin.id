@@ -35,6 +35,10 @@ type DeliveryPageConfig = {
   revisionSubmitButtonText?: string
   revisionUsedTitle?: string
   revisionUsedMessage?: string
+  // Voice labels for revision form
+  voiceKeepLabel?: string
+  voiceFemaleLabel?: string
+  voiceMaleLabel?: string
   // Testimonial section
   testimonialSectionTitle?: string
   testimonialSectionDescription?: string
@@ -102,6 +106,10 @@ export function DeliveryPageCard({ settings, saveSettings, loading, token }: Del
     { key: 'revisionSubmitButtonText', label: 'Submit Button Text', placeholder: 'Submit Revision' },
     { key: 'revisionUsedTitle', label: 'All Revisions Used — Title', placeholder: 'Revisions Used' },
     { key: 'revisionUsedMessage', label: 'All Revisions Used — Message', placeholder: "You've used all available revisions." },
+    { section: 'Voice Labels (Revision Form)' },
+    { key: 'voiceKeepLabel', label: 'Keep Current Label', placeholder: 'Tetap saat ini' },
+    { key: 'voiceFemaleLabel', label: 'Female Voice Label', placeholder: 'Wanita' },
+    { key: 'voiceMaleLabel', label: 'Male Voice Label', placeholder: 'Pria' },
     { section: 'Testimonial Section' },
     { key: 'testimonialSectionTitle', label: 'Section Title', placeholder: 'Share your experience' },
     { key: 'testimonialSectionDescription', label: 'Section Description', placeholder: 'Record a short video telling us about your experience...', multiline: true },

@@ -113,6 +113,12 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       ...input,
       ...(typeof input.email === 'string' ? { email: input.email.trim() } : {}),
       whatsappNumber,
+      musicPreferences: {
+        ...input.musicPreferences,
+        ...(typeof input.musicPreferences.voiceStyle === 'string'
+          ? { voiceStyle: input.musicPreferences.voiceStyle.toLowerCase() }
+          : {}),
+      },
     }
 
     let customer: { id: string }

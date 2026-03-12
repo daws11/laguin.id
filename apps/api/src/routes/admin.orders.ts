@@ -98,7 +98,11 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     if (body.data.story !== undefined) { updatedPayload.story = body.data.story; editedFields.push('story') }
     if (body.data.musicPreferences !== undefined) {
       const existingPrefs = (typeof existingPayload.musicPreferences === 'object' && existingPayload.musicPreferences) ? existingPayload.musicPreferences as Record<string, unknown> : {}
-      updatedPayload.musicPreferences = { ...existingPrefs, ...body.data.musicPreferences }
+      const incomingPrefs = { ...body.data.musicPreferences }
+      if (typeof incomingPrefs.voiceStyle === 'string') {
+        incomingPrefs.voiceStyle = incomingPrefs.voiceStyle.toLowerCase()
+      }
+      updatedPayload.musicPreferences = { ...existingPrefs, ...incomingPrefs }
       editedFields.push('musicPreferences')
     }
 
