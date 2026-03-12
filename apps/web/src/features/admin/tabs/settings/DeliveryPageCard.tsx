@@ -18,6 +18,7 @@ type DeliveryPageConfig = {
   pageTitle?: string
   headerText?: string
   phonePromptText?: string
+  unlockButtonText?: string
   processingMessage?: string
   downloadButtonText?: string
   lyricsButtonText?: string
@@ -25,6 +26,22 @@ type DeliveryPageConfig = {
   accentColor?: string
   logoUrl?: string
   trackSubtitleText?: string
+  // Revision section
+  revisionSectionTitle?: string
+  revisionSectionDescription?: string
+  revisionTabDescribe?: string
+  revisionTabLyrics?: string
+  revisionTabNewStory?: string
+  revisionSubmitButtonText?: string
+  revisionUsedTitle?: string
+  revisionUsedMessage?: string
+  // Testimonial section
+  testimonialSectionTitle?: string
+  testimonialSectionDescription?: string
+  testimonialUploadButtonText?: string
+  testimonialSuccessTitle?: string
+  testimonialSuccessMessage?: string
+  testimonialApprovedMessage?: string
 }
 
 export function DeliveryPageCard({ settings, saveSettings, loading, token }: DeliveryPageCardProps) {
@@ -63,16 +80,35 @@ export function DeliveryPageCard({ settings, saveSettings, loading, token }: Del
     }
   }
 
-  const fields: { key: keyof DeliveryPageConfig; label: string; placeholder: string; hint?: string; multiline?: boolean }[] = [
+  type FieldDef = { key: keyof DeliveryPageConfig; label: string; placeholder: string; hint?: string; multiline?: boolean }
+  type SectionDef = { section: string }
+  const fieldGroups: (FieldDef | SectionDef)[] = [
     { key: 'pageTitle', label: 'Page Title', placeholder: 'Your Personalized Song' },
     { key: 'headerText', label: 'Header Subtitle', placeholder: 'A special song for {recipientName}', hint: 'Use {recipientName} as a placeholder' },
-    { key: 'trackSubtitleText', label: 'Track Subtitle Text', placeholder: 'Personalized for {recipientName}', hint: 'Text under each track title. Use {recipientName} as a placeholder' },
+    { key: 'trackSubtitleText', label: 'Track Subtitle Text', placeholder: 'Personalized for {recipientName}', hint: 'Use {recipientName} as a placeholder' },
     { key: 'phonePromptText', label: 'Phone Prompt Text', placeholder: 'Enter your phone number to access your song' },
+    { key: 'unlockButtonText', label: 'Unlock Button Text', placeholder: 'Unlock My Song' },
     { key: 'processingMessage', label: 'Processing Message', placeholder: 'Your song is being created!' },
     { key: 'successMessage', label: 'Success Message', placeholder: 'Your Song is Ready!' },
     { key: 'downloadButtonText', label: 'Download Button Text', placeholder: 'Download Song' },
     { key: 'lyricsButtonText', label: 'Lyrics Button Text', placeholder: 'Download .txt' },
     { key: 'accentColor', label: 'Accent Color', placeholder: '#E11D48' },
+    { section: 'Revision Section' },
+    { key: 'revisionSectionTitle', label: 'Section Title', placeholder: 'Want to make changes?' },
+    { key: 'revisionSectionDescription', label: 'Section Description', placeholder: "Tell us what you'd like to change and we'll create a new version of your song.", multiline: true },
+    { key: 'revisionTabDescribe', label: 'Tab: Describe Changes', placeholder: 'Describe changes' },
+    { key: 'revisionTabLyrics', label: 'Tab: Edit Lyrics', placeholder: 'Edit lyrics' },
+    { key: 'revisionTabNewStory', label: 'Tab: New Story', placeholder: 'New story' },
+    { key: 'revisionSubmitButtonText', label: 'Submit Button Text', placeholder: 'Submit Revision' },
+    { key: 'revisionUsedTitle', label: 'All Revisions Used — Title', placeholder: 'Revisions Used' },
+    { key: 'revisionUsedMessage', label: 'All Revisions Used — Message', placeholder: "You've used all available revisions." },
+    { section: 'Testimonial Section' },
+    { key: 'testimonialSectionTitle', label: 'Section Title', placeholder: 'Share your experience' },
+    { key: 'testimonialSectionDescription', label: 'Section Description', placeholder: 'Record a short video telling us about your experience...', multiline: true },
+    { key: 'testimonialUploadButtonText', label: 'Upload Button Text', placeholder: 'Upload Video Testimonial' },
+    { key: 'testimonialSuccessTitle', label: 'Upload Success — Title', placeholder: 'Video uploaded!' },
+    { key: 'testimonialSuccessMessage', label: 'Upload Success — Pending Message', placeholder: 'Our team is reviewing your video. Thank you for sharing!' },
+    { key: 'testimonialApprovedMessage', label: 'Upload Success — Approved Message', placeholder: 'Your testimonial has been approved. Thank you!' },
   ]
 
   return (
@@ -129,27 +165,37 @@ export function DeliveryPageCard({ settings, saveSettings, loading, token }: Del
           </div>
         </div>
 
-        {fields.map(f => (
-          <div key={f.key} className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">{f.label}</label>
-            {f.multiline ? (
-              <Textarea
-                value={form[f.key] ?? ''}
-                onChange={(e) => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                placeholder={f.placeholder}
-                className="text-sm min-h-[60px]"
-              />
-            ) : (
-              <Input
-                value={form[f.key] ?? ''}
-                onChange={(e) => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                placeholder={f.placeholder}
-                className="text-sm h-8"
-              />
-            )}
-            {f.hint && <p className="text-[10px] text-muted-foreground">{f.hint}</p>}
-          </div>
-        ))}
+        {fieldGroups.map((item, idx) => {
+          if ('section' in item) {
+            return (
+              <div key={`section-${idx}`} className="pt-2 pb-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground border-b pb-1">{item.section}</p>
+              </div>
+            )
+          }
+          const f = item as FieldDef
+          return (
+            <div key={f.key} className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">{f.label}</label>
+              {f.multiline ? (
+                <Textarea
+                  value={form[f.key] ?? ''}
+                  onChange={(e) => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                  placeholder={f.placeholder}
+                  className="text-sm min-h-[60px]"
+                />
+              ) : (
+                <Input
+                  value={form[f.key] ?? ''}
+                  onChange={(e) => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                  placeholder={f.placeholder}
+                  className="text-sm h-8"
+                />
+              )}
+              {f.hint && <p className="text-[10px] text-muted-foreground">{f.hint}</p>}
+            </div>
+          )
+        })}
         <Button
           size="sm"
           className="gap-1.5 mt-2"

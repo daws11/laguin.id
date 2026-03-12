@@ -16,6 +16,23 @@ type DeliveryConfig = {
   accentColor?: string
   logoUrl?: string
   trackSubtitleText?: string
+  unlockButtonText?: string
+  // Revision section
+  revisionSectionTitle?: string
+  revisionSectionDescription?: string
+  revisionTabDescribe?: string
+  revisionTabLyrics?: string
+  revisionTabNewStory?: string
+  revisionSubmitButtonText?: string
+  revisionUsedTitle?: string
+  revisionUsedMessage?: string
+  // Testimonial section
+  testimonialSectionTitle?: string
+  testimonialSectionDescription?: string
+  testimonialUploadButtonText?: string
+  testimonialSuccessTitle?: string
+  testimonialSuccessMessage?: string
+  testimonialApprovedMessage?: string
 }
 
 type OrderStatus = {
@@ -45,11 +62,13 @@ function RevisionSection({
   order,
   accent,
   phone,
+  cfg,
   onRegenerated,
 }: {
   order: UnlockedOrder
   accent: string
   phone: string
+  cfg: DeliveryConfig
   onRegenerated: () => void
 }) {
   const [revisionType, setRevisionType] = useState<RevisionType>('describe')
@@ -70,8 +89,8 @@ function RevisionSection({
           <div className="flex items-center gap-3">
             <RefreshCw className="h-5 w-5 text-gray-400" />
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">Revisions Used</h3>
-              <p className="text-xs text-gray-500">You've used all {order.maxRegenerations} available revisions.</p>
+              <h3 className="text-sm font-semibold text-gray-900">{cfg.revisionUsedTitle || 'Revisions Used'}</h3>
+              <p className="text-xs text-gray-500">{cfg.revisionUsedMessage || `You've used all ${order.maxRegenerations} available revisions.`}</p>
             </div>
           </div>
         </div>
@@ -110,9 +129,9 @@ function RevisionSection({
   }
 
   const tabs: { key: RevisionType; label: string }[] = [
-    { key: 'describe', label: 'Describe changes' },
-    { key: 'lyrics', label: 'Edit lyrics' },
-    { key: 'new_story', label: 'New story' },
+    { key: 'describe', label: cfg.revisionTabDescribe || 'Describe changes' },
+    { key: 'lyrics', label: cfg.revisionTabLyrics || 'Edit lyrics' },
+    { key: 'new_story', label: cfg.revisionTabNewStory || 'New story' },
   ]
 
   return (
@@ -120,7 +139,7 @@ function RevisionSection({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <RefreshCw className="h-5 w-5" style={{ color: accent }} />
-          <h3 className="text-sm font-semibold text-gray-900">Want to make changes?</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{cfg.revisionSectionTitle || 'Want to make changes?'}</h3>
         </div>
         <span
           className="rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
@@ -131,7 +150,7 @@ function RevisionSection({
       </div>
 
       <p className="text-xs text-gray-500 mb-4">
-        Tell us what you'd like to change and we'll create a new version of your song. You can also change the music style or voice.
+        {cfg.revisionSectionDescription || "Tell us what you'd like to change and we'll create a new version of your song. You can also change the music style or voice."}
       </p>
 
       <div className="flex gap-1 mb-4 border-b">
@@ -242,7 +261,7 @@ function RevisionSection({
             Submitting...
           </span>
         ) : (
-          'Submit Revision'
+          cfg.revisionSubmitButtonText || 'Submit Revision'
         )}
       </button>
     </div>
@@ -253,10 +272,12 @@ function TestimonialSection({
   order,
   accent,
   phone,
+  cfg,
 }: {
   order: UnlockedOrder
   accent: string
   phone: string
+  cfg: DeliveryConfig
 }) {
   const [uploading, setUploading] = useState(false)
   const [uploaded, setUploaded] = useState(order.hasTestimonial)
@@ -319,11 +340,11 @@ function TestimonialSection({
         <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-green-50">
           <CheckCircle className="h-7 w-7 text-green-600" />
         </div>
-        <h3 className="text-base font-bold text-gray-900">Video uploaded!</h3>
+        <h3 className="text-base font-bold text-gray-900">{cfg.testimonialSuccessTitle || 'Video uploaded!'}</h3>
         <p className="mt-1 text-sm text-gray-500">
           {testimonialStatus === 'approved'
-            ? 'Your testimonial has been approved. Thank you!'
-            : 'Our team is reviewing your video. Thank you for sharing!'}
+            ? (cfg.testimonialApprovedMessage || 'Your testimonial has been approved. Thank you!')
+            : (cfg.testimonialSuccessMessage || 'Our team is reviewing your video. Thank you for sharing!')}
         </p>
       </div>
     )
@@ -333,10 +354,10 @@ function TestimonialSection({
     <div className="rounded-2xl border bg-white p-5 shadow-sm">
       <div className="flex items-center gap-2 mb-3">
         <Video className="h-5 w-5" style={{ color: accent }} />
-        <h3 className="text-sm font-semibold text-gray-900">Share your experience</h3>
+        <h3 className="text-sm font-semibold text-gray-900">{cfg.testimonialSectionTitle || 'Share your experience'}</h3>
       </div>
       <p className="text-xs text-gray-500 mb-4">
-        Record a short video telling us about your experience with your personalized song. We'd love to hear from you!
+        {cfg.testimonialSectionDescription || "Record a short video telling us about your experience with your personalized song. We'd love to hear from you!"}
       </p>
 
       {error && (
@@ -365,7 +386,7 @@ function TestimonialSection({
         ) : (
           <>
             <Upload className="h-4 w-4" />
-            Upload Video Testimonial
+            {cfg.testimonialUploadButtonText || 'Upload Video Testimonial'}
           </>
         )}
       </button>
@@ -581,7 +602,7 @@ export function OrderDeliveryRoute() {
                     Verifying...
                   </span>
                 ) : (
-                  'Unlock My Song'
+                  cfg.unlockButtonText || 'Unlock My Song'
                 )}
               </button>
             </div>
@@ -739,6 +760,7 @@ export function OrderDeliveryRoute() {
                     order={order}
                     accent={accent}
                     phone={verifiedPhone}
+                    cfg={cfg}
                     onRegenerated={refreshOrders}
                   />
 
@@ -746,6 +768,7 @@ export function OrderDeliveryRoute() {
                     order={order}
                     accent={accent}
                     phone={verifiedPhone}
+                    cfg={cfg}
                   />
                 </div>
               )
