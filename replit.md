@@ -42,11 +42,25 @@ The project uses a monorepo structure with `npm workspaces`, separating the fron
 - All page text is editable via global admin settings (Settings → Delivery Page).
 - Rate-limited verify endpoint (5 attempts per 15 minutes per IP+order).
 
+**Song Regeneration:**
+- Customers can request up to 2 regenerations from the delivery page.
+- 3 revision types: describe changes, edit lyrics, new story.
+- Music style + voice selectors; re-triggers generation pipeline.
+- Tracks `regenerationCount` on Order model.
+
+**Testimonial Video Upload:**
+- Customers can upload testimonial videos from the delivery page after phone verification.
+- `TestimonialVideo` DB model with orderId, videoUrl, status (pending/approved/rejected), createdAt.
+- Public endpoint `POST /api/public/order/:id/testimonial` with multipart upload.
+- Stored in object storage under `testimonials/` prefix.
+- Admin endpoints: `GET /api/admin/testimonial-videos`, `POST /api/admin/testimonial-videos/:id/approve`, `POST /api/admin/testimonial-videos/:id/reject`.
+
 **Admin Features:**
 - CRUD operations for themes with a visual editor.
 - Settings management for global configurations like API keys, WhatsApp integration, Meta Pixel IDs, and delivery page text.
 - Orders and Customers tabs with search, filter, sorting, and bulk actions.
 - Funnel analytics to track user journeys from homepage to order confirmation.
+- Order detail includes `regenerationCount` and `testimonialVideos`.
 
 ## External Dependencies
 - **PostgreSQL:** For data storage.

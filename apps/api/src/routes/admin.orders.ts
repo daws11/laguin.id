@@ -50,6 +50,7 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
       trackUrl: o.trackUrl,
       errorMessage: o.errorMessage,
       themeSlug: o.themeSlug ?? null,
+      regenerationCount: o.regenerationCount,
     }))
   })
 
@@ -62,6 +63,7 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
       include: {
         customer: true,
         events: { orderBy: { createdAt: 'desc' }, take: 200 },
+        testimonialVideos: { orderBy: { createdAt: 'desc' } },
       },
     })
     if (!order) return reply.code(404).send({ error: 'not_found' })
@@ -401,6 +403,66 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
       .header('Content-Type', 'text/csv; charset=utf-8')
       .header('Content-Disposition', `attachment; filename="stories_${query.from ?? 'all'}_to_${query.to ?? 'now'}.csv"`)
       .send(csv)
+  })
+
+  app.get('/testimonial-videos', async (_req, reply) => {
+    const videos = await prisma.testimonialVideo.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+      include: {
+        order: {
+          select: {
+            id: true,
+            inputPayload: true,
+            customer: { select: { name: true, whatsappNumber: true } },
+          },
+        },
+      },
+    })
+
+    return videos.map((v) => {
+      const ip = (v.order.inputPayload && typeof v.order.inputPayload === 'object' ? v.order.inputPayload : {}) as Record<string, any>
+      return {
+        id: v.id,
+        orderId: v.orderId,
+        videoUrl: v.videoUrl,
+        status: v.status,
+        createdAt: v.createdAt,
+        customerName: v.order.customer?.name ?? '',
+        customerPhone: v.order.customer?.whatsappNumber ?? '',
+        recipientName: ip.recipientName ?? ip.recipient ?? '',
+      }
+    })
+  })
+
+  app.post('/testimonial-videos/:id/approve', async (req, reply) => {
+    const params = ParamsIdSchema.safeParse(req.params)
+    if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
+
+    const video = await prisma.testimonialVideo.findUnique({ where: { id: params.data.id } })
+    if (!video) return reply.code(404).send({ error: 'not_found' })
+
+    await prisma.testimonialVideo.update({
+      where: { id: params.data.id },
+      data: { status: 'approved' },
+    })
+
+    return { ok: true }
+  })
+
+  app.post('/testimonial-videos/:id/reject', async (req, reply) => {
+    const params = ParamsIdSchema.safeParse(req.params)
+    if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
+
+    const video = await prisma.testimonialVideo.findUnique({ where: { id: params.data.id } })
+    if (!video) return reply.code(404).send({ error: 'not_found' })
+
+    await prisma.testimonialVideo.update({
+      where: { id: params.data.id },
+      data: { status: 'rejected' },
+    })
+
+    return { ok: true }
   })
 }
 

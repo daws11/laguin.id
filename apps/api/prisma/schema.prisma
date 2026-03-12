@@ -157,8 +157,11 @@ model Order {
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
+  regenerationCount  Int            @default(0)
+
   events             OrderEvent[]
   xenditWebhookLogs  XenditWebhookLog[]
+  testimonialVideos  TestimonialVideo[]
 
   @@index([status])
   @@index([deliveryStatus])
@@ -226,3 +229,14 @@ model PageView {
   @@index([themeSlug])
 }
 
+model TestimonialVideo {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  videoUrl  String
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([status])
+}
