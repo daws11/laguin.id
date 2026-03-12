@@ -16,6 +16,7 @@ import { orderDraftsRoutes } from './routes/orderDrafts.public'
 import { kieCallbackRoutes } from './routes/kie.callback'
 import { emailVerificationRoutes } from './routes/emailVerification.public'
 import { trackingRoutes } from './routes/tracking.public'
+import { orderDeliveryRoutes } from './routes/orderDelivery.public'
 import { adminAuthRoutes } from './routes/admin.auth'
 import { adminPromptRoutes } from './routes/admin.prompts'
 import { adminSettingsRoutes } from './routes/admin.settings'
@@ -122,6 +123,7 @@ await app.register(publicOrdersRoutes, { prefix: '/api' })
 await app.register(orderDraftsRoutes, { prefix: '/api' })
 await app.register(emailVerificationRoutes, { prefix: '/api' })
 await app.register(trackingRoutes, { prefix: '/api' })
+await app.register(orderDeliveryRoutes, { prefix: '/api' })
 await app.register(kieCallbackRoutes, { prefix: '/api' })
 await app.register(xenditWebhookRoutes, { prefix: '/api' })
 await app.register(adminAuthRoutes, { prefix: '/api/admin' })

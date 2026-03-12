@@ -13,7 +13,7 @@ The project uses a monorepo structure with `npm workspaces`, separating the fron
 - Built with React 19, Vite, TailwindCSS, React Router, React Hook Form, and `shadcn/ui`.
 - Supports a multi-theme system where each theme has a unique slug and configurable settings (colors, hero media, player, reviews, promo banners, config steps, logo, text content).
 - Themes define custom CSS variables (`--theme-accent`, `--theme-bg`) for consistent branding.
-- Public routes: `/:themeSlug` (landing page), `/:themeSlug/config` (song configurator). The root `/` path renders the default theme.
+- Public routes: `/:themeSlug` (landing page), `/:themeSlug/config` (song configurator), `/order/:orderId` (delivery page with phone verification). The root `/` path renders the default theme.
 - Optimized for performance with self-hosted fonts, WebP image compression, lazy loading, and code splitting.
 
 **Backend (`apps/api`):**
@@ -35,9 +35,16 @@ The project uses a monorepo structure with `npm workspaces`, separating the fron
 - An AI theme content generator is integrated to automatically populate text fields based on prompts using OpenRouter.
 - Admin interface includes a comprehensive theme editor for visual configuration of all theme-specific settings.
 
+**Order Delivery Page (`/order/:orderId`):**
+- Public page for customers to download their completed song and lyrics.
+- Phone number verification gate (simple match against customer's WhatsApp number, with smart normalization).
+- Shows "song is being created" message for in-progress orders.
+- All page text is editable via global admin settings (Settings → Delivery Page).
+- Rate-limited verify endpoint (5 attempts per 15 minutes per IP+order).
+
 **Admin Features:**
 - CRUD operations for themes with a visual editor.
-- Settings management for global configurations like API keys, WhatsApp integration, and Meta Pixel IDs.
+- Settings management for global configurations like API keys, WhatsApp integration, Meta Pixel IDs, and delivery page text.
 - Orders and Customers tabs with search, filter, sorting, and bulk actions.
 - Funnel analytics to track user journeys from homepage to order confirmation.
 
