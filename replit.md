@@ -56,6 +56,15 @@ The project uses a monorepo structure with `npm workspaces`, separating the fron
 - Stored in object storage under `testimonials/` prefix.
 - Admin endpoints: `GET /api/admin/testimonial-videos`, `POST /api/admin/testimonial-videos/:id/approve`, `POST /api/admin/testimonial-videos/:id/reject`.
 
+**Automated WhatsApp Song Delivery (Two-Step Flow via YCloud):**
+- Step 1: When song is complete, backend auto-sends `song_delivery` template with button "Dengarkan Sekarang"
+- Step 2: Customer taps button → YCloud sends "Dengarkan Sekarang" reply → `POST /api/ycloud/webhook` receives it → Backend sends delivery link as text message
+- Webhook handler: `apps/api/src/routes/ycloud.webhook.ts` — detects button reply, looks up customer, sends `/order/:id` URL
+- Idempotent: only sends the link once per order (`whatsapp_link_sent` event guards re-sends)
+- Admin settings: `siteUrl` (stored in `whatsappConfig.siteUrl`) used to build delivery links; falls back to `APP_BASE_URL` env var
+- Optional webhook security: set `ycloudWebhookSecret` in admin, append `?token=<secret>` to YCloud webhook URL
+- Webhook URL to configure in YCloud: `<your-domain>/api/ycloud/webhook` (optionally with `?token=<secret>`)
+
 **Admin Features:**
 - CRUD operations for themes with a visual editor.
 - Settings management for global configurations like API keys, WhatsApp integration, Meta Pixel IDs, and delivery page text.

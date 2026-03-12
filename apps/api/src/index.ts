@@ -27,6 +27,7 @@ import { adminUploadsRoutes } from './routes/admin.uploads'
 import { adminFunnelRoutes } from './routes/admin.funnel'
 import { adminThemeRoutes } from './routes/admin.themes'
 import { xenditWebhookRoutes } from './routes/xendit.webhook'
+import { ycloudWebhookRoutes } from './routes/ycloud.webhook'
 
 const app = Fastify({ logger: true })
 
@@ -126,6 +127,7 @@ await app.register(trackingRoutes, { prefix: '/api' })
 await app.register(orderDeliveryRoutes, { prefix: '/api' })
 await app.register(kieCallbackRoutes, { prefix: '/api' })
 await app.register(xenditWebhookRoutes, { prefix: '/api' })
+await app.register(ycloudWebhookRoutes, { prefix: '/api' })
 await app.register(adminAuthRoutes, { prefix: '/api/admin' })
 await app.register(async (adminApp) => {
   adminApp.addHook('preHandler', adminAuth)

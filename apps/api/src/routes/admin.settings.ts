@@ -40,6 +40,10 @@ const UpdateSchema = z.object({
   ycloudTemplateName: z.string().min(1).optional(),
   ycloudTemplateLangCode: z.string().min(1).optional(),
   ycloudApiKey: z.string().min(1).optional(),
+  ycloudWebhookSecret: z.string().min(1).optional(),
+
+  // Site base URL used for WhatsApp delivery links (stored in whatsappConfig.siteUrl)
+  siteUrl: z.string().url().optional().nullable(),
 
   // Email settings
   emailProvider: z.enum(['smtp', 'resend']).optional(),
@@ -76,6 +80,9 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       ycloudTemplateName: typeof ycloud.templateName === 'string' ? ycloud.templateName : null,
       ycloudTemplateLangCode: typeof ycloud.templateLangCode === 'string' ? ycloud.templateLangCode : null,
       hasYcloudKey: Boolean(maybeDecrypt(ycloud.apiKeyEnc ?? ycloud.apiKey)),
+      hasYcloudWebhookSecret: Boolean(maybeDecrypt(ycloud.webhookSecretEnc)),
+      siteUrl: typeof cfg.siteUrl === 'string' ? cfg.siteUrl : null,
+      ycloudWebhookUrl: '/api/ycloud/webhook',
       defaultThemeSlug: s.defaultThemeSlug ?? null,
       showThemesInFooter: s.showThemesInFooter ?? false,
       metaPixelId: s.metaPixelId ?? null,
@@ -134,14 +141,15 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
     if (parsed.data.ycloudTemplateName) nextYcloud.templateName = parsed.data.ycloudTemplateName
     if (parsed.data.ycloudTemplateLangCode) nextYcloud.templateLangCode = parsed.data.ycloudTemplateLangCode
     if (parsed.data.ycloudApiKey) nextYcloud.apiKeyEnc = encryptString(parsed.data.ycloudApiKey)
+    if (parsed.data.ycloudWebhookSecret) nextYcloud.webhookSecretEnc = encryptString(parsed.data.ycloudWebhookSecret)
+
+    const nextCfg: any = { ...currentCfg, ycloud: nextYcloud }
+    if (parsed.data.siteUrl !== undefined) nextCfg.siteUrl = parsed.data.siteUrl ?? null
 
     const mergedWhatsappConfig =
       parsed.data.whatsappConfig !== undefined
         ? (parsed.data.whatsappConfig as any)
-        : ({
-            ...currentCfg,
-            ycloud: nextYcloud,
-          } as any)
+        : nextCfg
 
     const data: any = {
       instantEnabled: parsed.data.instantEnabled,
@@ -207,6 +215,9 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       ycloudTemplateName: typeof ycloud.templateName === 'string' ? ycloud.templateName : null,
       ycloudTemplateLangCode: typeof ycloud.templateLangCode === 'string' ? ycloud.templateLangCode : null,
       hasYcloudKey: Boolean(maybeDecrypt(ycloud.apiKeyEnc ?? ycloud.apiKey)),
+      hasYcloudWebhookSecret: Boolean(maybeDecrypt(ycloud.webhookSecretEnc)),
+      siteUrl: typeof (cfg as any).siteUrl === 'string' ? (cfg as any).siteUrl : null,
+      ycloudWebhookUrl: '/api/ycloud/webhook',
       defaultThemeSlug: updated.defaultThemeSlug ?? null,
       showThemesInFooter: updated.showThemesInFooter ?? false,
       metaPixelId: updated.metaPixelId ?? null,
