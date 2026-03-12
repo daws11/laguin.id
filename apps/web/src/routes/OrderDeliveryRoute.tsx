@@ -560,7 +560,7 @@ export function OrderDeliveryRoute() {
                     onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
                     className="w-full rounded-lg border bg-gray-50 px-3 pl-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
                     style={{ '--tw-ring-color': accent + '60' } as React.CSSProperties}
-                    placeholder="8113883884"
+                    placeholder="876543211"
                   />
                 </div>
               </div>
