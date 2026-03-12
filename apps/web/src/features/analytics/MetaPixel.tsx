@@ -92,12 +92,33 @@ export function trackWishlist(pixelId: string, params?: Record<string, unknown>)
   }
 }
 
-export function executePixelScript(script: string | null | undefined) {
+/**
+ * Fire a pixel event with an optional eventID for server-side (CAPI) deduplication.
+ * Passes {eventID} as the 4th argument to fbq('track', ...) per Meta's deduplication spec.
+ */
+export function trackPixelEvent(eventName: string, data: Record<string, unknown>, eventId?: string) {
+  const args: unknown[] = ['track', eventName, data]
+  if (eventId) args.push({ eventID: eventId })
+  _trackPixel(...(args as [string, ...any[]]))
+}
+
+/**
+ * Execute an admin-provided pixel script string.
+ * Pass vars to inject named variables into the script scope (e.g. { eventID: 'order_confirmed:xxx' })
+ * so admin scripts can call: fbq('track', 'Purchase', {...}, {eventID: eventID})
+ */
+export function executePixelScript(script: string | null | undefined, vars?: Record<string, unknown>) {
   if (!script || typeof script !== 'string') return
   const cleaned = script.replace(/<\/?script[^>]*>/gi, '').trim()
   if (!cleaned) return
   try {
-    new Function(cleaned)()
+    if (vars && Object.keys(vars).length > 0) {
+      const names = Object.keys(vars)
+      const values = names.map(k => vars[k])
+      new Function(...names, cleaned)(...values)
+    } else {
+      new Function(cleaned)()
+    }
   } catch (e) {
     console.warn('[MetaPixel] Script execution error:', e)
   }

@@ -111,11 +111,11 @@ export function MetaPixelCard({ settings, saveSettings, loading }: Props) {
             <div className="text-[10px] font-medium text-muted-foreground">Script — Payment Confirmed</div>
             <Textarea
               className="text-xs font-mono min-h-[60px]"
-              placeholder={"fbq('track', 'Purchase', {\n  value: 497000,\n  currency: 'IDR'\n});"}
+              placeholder={"fbq('track', 'Purchase', {\n  value: 497000,\n  currency: 'IDR'\n}, { eventID: eventID });"}
               value={confirmScript}
               onChange={(e) => setConfirmScript(e.target.value)}
             />
-            <p className="text-[10px] text-muted-foreground">Fires on the payment confirmation page when the processing animation starts.</p>
+            <p className="text-[10px] text-muted-foreground">Fires on the payment confirmation page. Use <code className="font-mono bg-muted px-0.5 rounded">eventID</code> variable (auto-injected) for CAPI deduplication.</p>
           </div>
         </div>
 

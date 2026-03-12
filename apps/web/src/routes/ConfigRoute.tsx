@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { OrderInputSchema, type OrderInput } from 'shared'
 import { apiGet, apiPost } from '@/lib/http'
 import { useThemeSlug } from '@/features/theme/ThemeContext'
-import { ensureMetaPixelLoaded, trackWishlist, executePixelScript } from '@/features/analytics/MetaPixel'
+import { ensureMetaPixelLoaded, trackWishlist, executePixelScript, trackPixelEvent } from '@/features/analytics/MetaPixel'
 
 import { CountdownTimer } from '@/components/landing/CountdownTimer'
 import { Button } from '@/components/ui/button'
@@ -963,6 +963,9 @@ export function ConfigRoute() {
       if (agreementEnabled) (payload as Record<string, unknown>).agreementAccepted = true
       const res = await apiPost<{ orderId: string; xenditInvoiceUrl?: string }>('/api/orders/draft', { ...payload, themeSlug: themeSlug ?? null })
       clearDraft()
+
+      // Fire browser Lead pixel with the same eventID as server-side CAPI for deduplication.
+      trackPixelEvent('Lead', { content_name: 'Lagu Personal', currency: 'IDR', value: 0 }, `order_created:${res.orderId}`)
 
       if (wishlistPixelId) {
         ensureMetaPixelLoaded(wishlistPixelId)

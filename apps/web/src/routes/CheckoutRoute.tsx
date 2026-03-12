@@ -31,9 +31,14 @@ type OrderSummary = {
   xenditInvoiceUrl?: string | null
 }
 
-function trackFbq(eventName: string, params: Record<string, unknown>) {
+function trackFbq(eventName: string, params: Record<string, unknown>, eventId?: string) {
   const fbq = (window as unknown as { fbq?: (...args: unknown[]) => void }).fbq
-  fbq?.('track', eventName, params)
+  if (!fbq) return
+  if (eventId) {
+    fbq('track', eventName, params, { eventID: eventId })
+  } else {
+    fbq('track', eventName, params)
+  }
 }
 
 function ChecklistItem({ label, status }: { label: string; status: 'pending' | 'loading' | 'completed' }) {
@@ -218,12 +223,10 @@ export function CheckoutRoute() {
 
       // Meta Pixel: track Purchase only when checkout/confirm succeeds.
       // Guard to avoid double fire (auto-confirm + retries).
+      // eventID matches server-side CAPI so Meta can deduplicate the two.
       if (!hasTrackedPurchase.current) {
         hasTrackedPurchase.current = true
-        trackFbq('Purchase', {
-          value: paymentAmount,
-          currency: 'IDR',
-        })
+        trackFbq('Purchase', { value: paymentAmount, currency: 'IDR' }, `order_confirmed:${orderId}`)
       }
 
       const refreshed = await apiGet<OrderSummary>(`/api/orders/${encodeURIComponent(orderId)}`)
@@ -242,9 +245,11 @@ export function CheckoutRoute() {
   useEffect(() => {
     if (showProgressUI && pixelConfirmScript && !pixelConfirmFired.current) {
       pixelConfirmFired.current = true
-      executePixelScript(pixelConfirmScript)
+      // Inject eventID so admin scripts can call fbq('track', 'Purchase', {...}, {eventID: eventID})
+      // for proper deduplication with server-side CAPI.
+      executePixelScript(pixelConfirmScript, { eventID: `order_confirmed:${orderId}` })
     }
-  }, [showProgressUI, pixelConfirmScript])
+  }, [showProgressUI, pixelConfirmScript, orderId])
 
   return (
     <div className="min-h-screen bg-[var(--theme-accent-soft)] font-sans pb-32 pt-10 px-4" style={themeStyle}>
