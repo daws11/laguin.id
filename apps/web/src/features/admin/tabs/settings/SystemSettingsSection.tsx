@@ -17,6 +17,7 @@ interface SystemSettingsSectionProps {
   saveSettings: (partial: Partial<Settings> & { openaiApiKey?: string; kaiAiApiKey?: string; ycloudApiKey?: string }) => Promise<Settings | null>
   loading: boolean
   t: any
+  token: string | null
 }
 
 export function SystemSettingsSection({
@@ -25,6 +26,7 @@ export function SystemSettingsSection({
   saveSettings,
   loading,
   t,
+  token,
 }: SystemSettingsSectionProps) {
   const [activeTab, setActiveTab] = useState('email')
 
@@ -174,6 +176,7 @@ export function SystemSettingsSection({
                 settings={settings}
                 saveSettings={saveSettings}
                 loading={loading}
+                token={token}
               />
             </div>
           )}

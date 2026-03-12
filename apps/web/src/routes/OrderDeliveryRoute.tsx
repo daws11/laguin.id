@@ -11,6 +11,8 @@ type DeliveryConfig = {
   lyricsButtonText?: string
   successMessage?: string
   accentColor?: string
+  logoUrl?: string
+  trackSubtitleText?: string
 }
 
 type OrderStatus = {
@@ -33,7 +35,7 @@ type UnlockedOrder = {
 export function OrderDeliveryRoute() {
   const { orderId } = useParams<{ orderId: string }>()
   const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null)
-  const [unlockedOrder, setUnlockedOrder] = useState<UnlockedOrder | null>(null)
+  const [unlockedOrders, setUnlockedOrders] = useState<UnlockedOrder[] | null>(null)
   const [phone, setPhone] = useState('')
   const [countryCode, setCountryCode] = useState('62')
   const [error, setError] = useState<string | null>(null)
@@ -58,6 +60,7 @@ export function OrderDeliveryRoute() {
   }, [orderId])
 
   const cfg = orderStatus?.config ?? {}
+  const accent = cfg.accentColor || '#E11D48'
 
   const handleVerify = async () => {
     if (!orderId || !phone.trim()) return
@@ -85,7 +88,7 @@ export function OrderDeliveryRoute() {
         return
       }
       const data = await res.json()
-      setUnlockedOrder(data)
+      setUnlockedOrders(data.orders ?? [])
     } catch {
       setError('Connection error. Please try again.')
     } finally {
@@ -93,20 +96,41 @@ export function OrderDeliveryRoute() {
     }
   }
 
-  const downloadLyrics = () => {
-    if (!unlockedOrder?.lyricsText) return
-    const blob = new Blob([unlockedOrder.lyricsText], { type: 'text/plain;charset=utf-8' })
+  const downloadLyrics = (order: UnlockedOrder) => {
+    if (!order.lyricsText) return
+    const blob = new Blob([order.lyricsText], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `lyrics-${unlockedOrder.recipientName || orderId}.txt`
+    a.download = `lyrics-${order.recipientName || order.id}.txt`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
   }
 
-  const accent = cfg.accentColor || '#E11D48'
+  const renderLogo = (size: 'lg' | 'sm' = 'lg') => {
+    const dimension = size === 'lg' ? 'h-16 w-16' : 'h-10 w-10'
+    const iconSize = size === 'lg' ? 'h-8 w-8' : 'h-5 w-5'
+
+    if (cfg.logoUrl) {
+      return (
+        <div className={`mx-auto mb-4 flex ${dimension} items-center justify-center rounded-full overflow-hidden`}>
+          <img src={cfg.logoUrl} alt="Logo" className="h-full w-full object-cover" />
+        </div>
+      )
+    }
+    return (
+      <div className={`mx-auto mb-4 flex ${dimension} items-center justify-center rounded-full`} style={{ backgroundColor: accent + '15' }}>
+        <Music className={iconSize} style={{ color: accent }} />
+      </div>
+    )
+  }
+
+  const trackSubtitle = (recipientName: string) => {
+    const template = cfg.trackSubtitleText || 'Personalized for {recipientName}'
+    return template.replace('{recipientName}', recipientName || 'you')
+  }
 
   if (loading) {
     return (
@@ -130,14 +154,12 @@ export function OrderDeliveryRoute() {
     )
   }
 
-  if (!unlockedOrder && orderStatus) {
+  if (!unlockedOrders && orderStatus) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-white px-4 py-12">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: accent + '15' }}>
-              <Music className="h-8 w-8" style={{ color: accent }} />
-            </div>
+            {renderLogo('lg')}
             <h1 className="text-2xl font-bold text-gray-900">
               {cfg.pageTitle || 'Your Personalized Song'}
             </h1>
@@ -209,10 +231,22 @@ export function OrderDeliveryRoute() {
     )
   }
 
-  if (unlockedOrder) {
-    const isProcessing = unlockedOrder.status !== 'completed'
+  if (unlockedOrders && unlockedOrders.length === 0) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-white px-4">
+        <div className="text-center max-w-sm">
+          {renderLogo('lg')}
+          <h1 className="text-xl font-semibold text-gray-800">No Orders Found</h1>
+          <p className="mt-2 text-sm text-gray-500">We couldn't find any orders for your account.</p>
+        </div>
+      </div>
+    )
+  }
 
-    if (isProcessing) {
+  if (unlockedOrders && unlockedOrders.length > 0) {
+    const allProcessing = unlockedOrders.every((o) => o.status !== 'completed')
+
+    if (allProcessing) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-white px-4">
           <div className="text-center max-w-md">
@@ -231,75 +265,111 @@ export function OrderDeliveryRoute() {
     }
 
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-white px-4 py-12">
+      <div className="flex min-h-screen justify-center bg-gradient-to-b from-gray-50 to-white px-4 py-12">
         <div className="w-full max-w-lg">
           <div className="text-center mb-8">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: accent + '15' }}>
-              <Music className="h-8 w-8" style={{ color: accent }} />
-            </div>
+            {renderLogo('lg')}
             <h1 className="text-2xl font-bold text-gray-900">
               {cfg.successMessage || 'Your Song is Ready!'}
             </h1>
-            {unlockedOrder.recipientName && (
-              <p className="mt-1 text-sm text-gray-500">
-                A special song for {unlockedOrder.recipientName}
-              </p>
-            )}
           </div>
 
-          <div className="space-y-4">
-            {unlockedOrder.tracks.map((url, idx) => (
-              <div key={idx} className="rounded-2xl border bg-white p-5 shadow-sm">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: accent + '15' }}>
-                    <Music className="h-5 w-5" style={{ color: accent }} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900">
-                      {unlockedOrder.tracks.length > 1 ? `Track ${idx + 1}` : 'Your Song'}
-                    </h3>
-                    <p className="text-xs text-gray-500">Personalized for {unlockedOrder.recipientName || 'you'}</p>
-                  </div>
-                </div>
+          <div className="space-y-6">
+            {unlockedOrders.map((order) => {
+              const isProcessing = order.status !== 'completed'
 
-                <audio controls className="w-full mb-3 h-10" preload="metadata">
-                  <source src={url} />
-                </audio>
-
-                <a
-                  href={url}
-                  download
-                  className="flex items-center justify-center gap-2 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90"
-                  style={{ backgroundColor: accent }}
-                >
-                  <Download className="h-4 w-4" />
-                  {cfg.downloadButtonText || 'Download Song'}
-                </a>
-              </div>
-            ))}
-
-            {unlockedOrder.lyricsText && (
-              <div className="rounded-2xl border bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50">
-                      <FileText className="h-5 w-5 text-amber-600" />
+              if (isProcessing) {
+                return (
+                  <div key={order.id} className="rounded-2xl border bg-white p-5 shadow-sm">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: accent + '15' }}>
+                        <Loader2 className="h-5 w-5 animate-spin" style={{ color: accent }} />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900">
+                          {order.recipientName ? `Song for ${order.recipientName}` : 'Your Song'}
+                        </h3>
+                        <p className="text-xs text-gray-500">{cfg.processingMessage || 'Being created...'}</p>
+                      </div>
                     </div>
-                    <h3 className="text-sm font-semibold text-gray-900">Lyrics</h3>
                   </div>
-                  <button
-                    onClick={downloadLyrics}
-                    className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    {cfg.lyricsButtonText || 'Download .txt'}
-                  </button>
+                )
+              }
+
+              return (
+                <div key={order.id} className="space-y-4">
+                  {unlockedOrders.length > 1 && order.recipientName && (
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-sm font-semibold text-gray-700">
+                        {(cfg.headerText || 'A special song for {recipientName}').replace('{recipientName}', order.recipientName)}
+                      </h2>
+                      <span className="text-xs text-gray-400">
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
+
+                  {order.tracks.map((url, idx) => (
+                    <div key={`${order.id}-${idx}`} className="rounded-2xl border bg-white p-5 shadow-sm">
+                      <div className="flex items-center gap-3 mb-3">
+                        {cfg.logoUrl ? (
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full overflow-hidden">
+                            <img src={cfg.logoUrl} alt="Logo" className="h-full w-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full" style={{ backgroundColor: accent + '15' }}>
+                            <Music className="h-5 w-5" style={{ color: accent }} />
+                          </div>
+                        )}
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900">
+                            {order.tracks.length > 1 ? `Track ${idx + 1}` : 'Your Song'}
+                          </h3>
+                          <p className="text-xs text-gray-500">{trackSubtitle(order.recipientName)}</p>
+                        </div>
+                      </div>
+
+                      <audio controls className="w-full mb-3 h-10" preload="metadata">
+                        <source src={url} />
+                      </audio>
+
+                      <a
+                        href={url}
+                        download
+                        className="flex items-center justify-center gap-2 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90"
+                        style={{ backgroundColor: accent }}
+                      >
+                        <Download className="h-4 w-4" />
+                        {cfg.downloadButtonText || 'Download Song'}
+                      </a>
+                    </div>
+                  ))}
+
+                  {order.lyricsText && (
+                    <div className="rounded-2xl border bg-white p-5 shadow-sm">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50">
+                            <FileText className="h-5 w-5 text-amber-600" />
+                          </div>
+                          <h3 className="text-sm font-semibold text-gray-900">Lyrics</h3>
+                        </div>
+                        <button
+                          onClick={() => downloadLyrics(order)}
+                          className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          {cfg.lyricsButtonText || 'Download .txt'}
+                        </button>
+                      </div>
+                      <div className="rounded-lg bg-gray-50 p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto">
+                        {order.lyricsText}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="rounded-lg bg-gray-50 p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto">
-                  {unlockedOrder.lyricsText}
-                </div>
-              </div>
-            )}
+              )
+            })}
           </div>
         </div>
       </div>

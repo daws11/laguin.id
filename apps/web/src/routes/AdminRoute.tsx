@@ -635,6 +635,7 @@ function AdminRouteLegacy() {
                 saveSettings={saveSettings}
                 loading={loading}
                 t={t}
+                token={token}
               />
             ) : (
               <Card className="h-full shadow-sm flex items-center justify-center p-6">

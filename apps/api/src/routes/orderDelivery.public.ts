@@ -41,7 +41,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
 
     if (!order) return reply.code(404).send({ error: 'not_found' })
 
-    const ip = (order.inputPayload && typeof order.inputPayload === 'object' ? order.inputPayload : {}) as Record<string, any>
+    const payload = (order.inputPayload && typeof order.inputPayload === 'object' ? order.inputPayload : {}) as Record<string, any>
 
     const settings = await getOrCreateSettings()
     const psc = (settings.publicSiteConfig && typeof settings.publicSiteConfig === 'object' ? settings.publicSiteConfig : {}) as Record<string, any>
@@ -50,7 +50,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
     return {
       id: order.id,
       status: order.status,
-      recipientName: ip.recipientName ?? ip.recipient ?? '',
+      recipientName: payload.recipientName ?? payload.recipient ?? '',
       createdAt: order.createdAt,
       config: deliveryPageConfig,
     }
@@ -60,8 +60,8 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
     const params = ParamsSchema.safeParse(req.params)
     if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
 
-    const ip = req.ip ?? 'unknown'
-    const rateLimitKey = `${ip}:${params.data.id}`
+    const clientIp = req.ip ?? 'unknown'
+    const rateLimitKey = `${clientIp}:${params.data.id}`
     if (!checkRateLimit(rateLimitKey)) {
       return reply.code(429).send({ error: 'too_many_attempts' })
     }
@@ -73,13 +73,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
       where: { id: params.data.id },
       select: {
         id: true,
-        status: true,
-        createdAt: true,
-        inputPayload: true,
-        lyricsText: true,
-        trackUrl: true,
-        trackMetadata: true,
-        customer: { select: { whatsappNumber: true } },
+        customer: { select: { id: true, whatsappNumber: true } },
       },
     })
 
@@ -92,20 +86,38 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(403).send({ error: 'phone_mismatch' })
     }
 
-    const payload = (order.inputPayload && typeof order.inputPayload === 'object' ? order.inputPayload : {}) as Record<string, any>
-    const meta = (order.trackMetadata && typeof order.trackMetadata === 'object' ? order.trackMetadata : {}) as Record<string, any>
+    const allOrders = await prisma.order.findMany({
+      where: { customerId: order.customer!.id },
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+        inputPayload: true,
+        lyricsText: true,
+        trackUrl: true,
+        trackMetadata: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    })
 
-    const kieTracks: string[] = Array.isArray(meta.tracks) ? meta.tracks.filter(Boolean) : order.trackUrl ? [order.trackUrl] : []
-    const storedTracks: string[] = Array.isArray(meta.storedTracks) ? meta.storedTracks.filter(Boolean) : []
-    const tracks = storedTracks.length > 0 ? storedTracks : kieTracks
+    const orders = allOrders.map((o) => {
+      const payload = (o.inputPayload && typeof o.inputPayload === 'object' ? o.inputPayload : {}) as Record<string, any>
+      const meta = (o.trackMetadata && typeof o.trackMetadata === 'object' ? o.trackMetadata : {}) as Record<string, any>
 
-    return {
-      id: order.id,
-      status: order.status,
-      recipientName: payload.recipientName ?? payload.recipient ?? '',
-      createdAt: order.createdAt,
-      tracks,
-      lyricsText: order.lyricsText ?? null,
-    }
+      const kieTracks: string[] = Array.isArray(meta.tracks) ? meta.tracks.filter(Boolean) : o.trackUrl ? [o.trackUrl] : []
+      const storedTracks: string[] = Array.isArray(meta.storedTracks) ? meta.storedTracks.filter(Boolean) : []
+      const tracks = storedTracks.length > 0 ? storedTracks : kieTracks
+
+      return {
+        id: o.id,
+        status: o.status,
+        recipientName: payload.recipientName ?? payload.recipient ?? '',
+        createdAt: o.createdAt,
+        tracks,
+        lyricsText: o.lyricsText ?? null,
+      }
+    })
+
+    return { orders }
   })
 }
