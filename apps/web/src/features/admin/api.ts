@@ -87,6 +87,10 @@ export async function adminBulkDeleteOrders(token: string, ids: string[]) {
   return apiPost<{ ok: true; deleted: number }>('/api/admin/orders/bulk-delete', { ids }, { token })
 }
 
+export async function adminBulkClearTracks(token: string, ids: string[]) {
+  return apiPost<{ ok: true; cleared: number; ordersProcessed: number }>('/api/admin/orders/bulk-clear-tracks', { ids }, { token })
+}
+
 export async function adminBulkDeleteCustomers(token: string, ids: string[]) {
   return apiPost<{ ok: true; deleted: number }>('/api/admin/customers/bulk-delete', { ids }, { token })
 }

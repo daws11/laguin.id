@@ -28,6 +28,8 @@ import {
   Pencil,
   Save,
   CheckCircle2,
+  HardDrive,
+  Cloud,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -239,6 +241,7 @@ export function AdminOrdersTab({
   onResendWhatsApp,
   onMarkDelivered,
   onBulkDelete,
+  onBulkClearTracks,
   loading,
 }: {
   t: any
@@ -252,6 +255,7 @@ export function AdminOrdersTab({
   onResendWhatsApp: (id: string) => void
   onMarkDelivered: (id: string) => void
   onBulkDelete: (ids: string[]) => Promise<void>
+  onBulkClearTracks: (ids: string[]) => Promise<void>
   loading: boolean
 }) {
   const [query, setQuery] = useState('')
@@ -264,6 +268,8 @@ export function AdminOrdersTab({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showDeliverConfirm, setShowDeliverConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [showClearTracksConfirm, setShowClearTracksConfirm] = useState(false)
+  const [clearingTracks, setClearingTracks] = useState(false)
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 100
 
@@ -517,16 +523,16 @@ export function AdminOrdersTab({
                     <CardContent className="p-3 pt-1">
                       {(() => {
                         const meta = selectedOrder.trackMetadata as any
-                        const tracks = Array.isArray(meta?.tracks)
+                        const kieTracks = Array.isArray(meta?.tracks)
                           ? (meta.tracks as string[]).filter(Boolean)
-                          : []
-                        const links = tracks.length
-                          ? tracks
                           : selectedOrder.trackUrl
                             ? [selectedOrder.trackUrl]
                             : []
+                        const storedTracks: string[] = Array.isArray(meta?.storedTracks)
+                          ? (meta.storedTracks as string[]).filter(Boolean)
+                          : []
 
-                        if (!links.length)
+                        if (!kieTracks.length && !storedTracks.length)
                           return (
                             <span className="text-sm text-muted-foreground italic">
                               {t.noTrackYet ?? 'No track generated yet'}
@@ -534,19 +540,54 @@ export function AdminOrdersTab({
                           )
 
                         return (
-                          <div className="space-y-1">
-                            {links.map((url: string, idx: number) => (
-                              <a
-                                key={idx}
-                                href={url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center gap-2 text-sm font-medium text-primary hover:underline p-1.5 rounded-md hover:bg-primary/5 transition-colors"
-                              >
-                                <Music className="h-3.5 w-3.5" />
-                                {links.length > 1 ? `${t.songLink} ${idx + 1}` : t.songLink}
-                              </a>
-                            ))}
+                          <div className="space-y-3">
+                            {kieTracks.length > 0 && (
+                              <div>
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <Cloud className="h-3 w-3 text-muted-foreground" />
+                                  <span className="text-[11px] font-medium text-muted-foreground uppercase">Kie.ai</span>
+                                </div>
+                                <div className="space-y-1">
+                                  {kieTracks.map((url: string, idx: number) => (
+                                    <a
+                                      key={idx}
+                                      href={url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="flex items-center gap-2 text-sm font-medium text-primary hover:underline p-1.5 rounded-md hover:bg-primary/5 transition-colors"
+                                    >
+                                      <Music className="h-3.5 w-3.5" />
+                                      {kieTracks.length > 1 ? `${t.songLink ?? 'Song Link'} ${idx + 1}` : t.songLink ?? 'Song Link'}
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {storedTracks.length > 0 && (
+                              <div>
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <HardDrive className="h-3 w-3 text-muted-foreground" />
+                                  <span className="text-[11px] font-medium text-muted-foreground uppercase">Stored Backup</span>
+                                </div>
+                                <div className="space-y-1">
+                                  {storedTracks.map((url: string, idx: number) => (
+                                    <a
+                                      key={idx}
+                                      href={url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="flex items-center gap-2 text-sm font-medium text-emerald-700 hover:underline p-1.5 rounded-md hover:bg-emerald-50 transition-colors"
+                                    >
+                                      <Music className="h-3.5 w-3.5" />
+                                      {storedTracks.length > 1 ? `Backup ${idx + 1}` : 'Backup'}
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {kieTracks.length > 0 && !storedTracks.length && (
+                              <p className="text-[11px] text-muted-foreground italic">No backup stored yet</p>
+                            )}
                           </div>
                         )
                       })()}
@@ -829,6 +870,47 @@ export function AdminOrdersTab({
                 size="sm"
                 className="h-7 text-xs"
                 onClick={() => setShowDeleteConfirm(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
+          {!showClearTracksConfirm ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs gap-1.5"
+              onClick={() => setShowClearTracksConfirm(true)}
+            >
+              <HardDrive className="h-3.5 w-3.5" />
+              Clear Stored Tracks
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-amber-700 font-medium">Clear backups?</span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs border-amber-300 text-amber-700 hover:bg-amber-50"
+                disabled={clearingTracks}
+                onClick={async () => {
+                  setClearingTracks(true)
+                  try {
+                    await onBulkClearTracks(Array.from(selected))
+                    setSelected(new Set())
+                    setShowClearTracksConfirm(false)
+                  } finally {
+                    setClearingTracks(false)
+                  }
+                }}
+              >
+                {clearingTracks ? 'Clearing...' : 'Confirm Clear'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setShowClearTracksConfirm(false)}
               >
                 Cancel
               </Button>

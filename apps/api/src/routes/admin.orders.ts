@@ -256,6 +256,36 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     return { ok: true, deleted: result.count }
   })
 
+  app.post('/orders/bulk-clear-tracks', async (req, reply) => {
+    const schema = z.object({ ids: z.array(z.string().min(1)).min(1).max(100) })
+    const parsed = schema.safeParse(req.body)
+    if (!parsed.success) return reply.code(400).send({ error: 'invalid_body', message: 'Provide an array of order IDs (max 100).' })
+
+    const { deleteStoredTracks } = await import('../lib/trackStorage')
+
+    const orders = await prisma.order.findMany({
+      where: { id: { in: parsed.data.ids } },
+      select: { id: true, trackMetadata: true },
+    })
+
+    let totalDeleted = 0
+    for (const order of orders) {
+      const meta: any = order.trackMetadata && typeof order.trackMetadata === 'object' ? order.trackMetadata : {}
+      const storedTracks: string[] = Array.isArray(meta?.storedTracks) ? meta.storedTracks.filter(Boolean) : []
+      if (storedTracks.length > 0) {
+        const count = await deleteStoredTracks(order.id, storedTracks)
+        totalDeleted += count
+        const { storedTracks: _removed, ...restMeta } = meta
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { trackMetadata: restMeta as any },
+        })
+      }
+    }
+
+    return { ok: true, cleared: totalDeleted, ordersProcessed: orders.length }
+  })
+
   app.post('/orders/:id/mark-delivered', async (req, reply) => {
     const params = ParamsIdSchema.safeParse(req.params)
     if (!params.success) return reply.code(400).send({ error: 'invalid_params' })

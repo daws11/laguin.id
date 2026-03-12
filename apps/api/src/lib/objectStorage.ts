@@ -57,6 +57,13 @@ export async function downloadBuffer(objectKey: string): Promise<{ buffer: Buffe
   }
 }
 
+export async function deleteObject(objectKey: string): Promise<boolean> {
+  const prefix = getPrefix()
+  const fullKey = `${prefix}uploads/${objectKey}`
+  const result = await client.delete(fullKey)
+  return result.ok
+}
+
 function mimeFromExt(ext: string): string {
   const map: Record<string, string> = {
     mp3: 'audio/mpeg',

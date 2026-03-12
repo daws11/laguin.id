@@ -515,6 +515,20 @@ function AdminRouteLegacy() {
     }
   }
 
+  async function bulkClearTracks(ids: string[]) {
+    if (!token) return
+    setError(null)
+    setLoading(true)
+    try {
+      await adminApi.adminBulkClearTracks(token, ids)
+      await refreshOrders()
+    } catch (e: any) {
+      setError(e?.message ?? 'Failed to clear tracks')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function bulkDeleteCustomers(ids: string[]) {
     if (!token) return
     setError(null)
@@ -677,6 +691,7 @@ function AdminRouteLegacy() {
               onResendWhatsApp={(id) => void resendWhatsApp(id)}
               onMarkDelivered={(id) => void markDelivered(id)}
               onBulkDelete={bulkDeleteOrders}
+              onBulkClearTracks={bulkClearTracks}
               loading={loading}
             />
           </div>

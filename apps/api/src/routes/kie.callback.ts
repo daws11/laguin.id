@@ -5,6 +5,7 @@ import { prisma } from '../lib/prisma'
 import { addOrderEvent } from '../lib/events'
 import { completeOrder } from '../pipeline/generation'
 import { tryDeliverOrder } from '../pipeline/triggerGeneration'
+import { storeAllTracks } from '../lib/trackStorage'
 
 function verifyKieWebhookSignature(params: {
   webhookHmacKey: string
@@ -32,8 +33,10 @@ export const kieCallbackRoutes: FastifyPluginAsync = async (app) => {
     const timestamp = req.headers['x-webhook-timestamp']
     const signature = req.headers['x-webhook-signature']
 
-    // Optional signature verification (recommended in prod).
-    if (webhookHmacKey && typeof timestamp === 'string' && typeof signature === 'string') {
+    if (webhookHmacKey) {
+      if (typeof timestamp !== 'string' || typeof signature !== 'string') {
+        return reply.code(401).send({ error: 'missing_signature' })
+      }
       const ok = verifyKieWebhookSignature({
         webhookHmacKey,
         taskId,
@@ -107,6 +110,28 @@ export const kieCallbackRoutes: FastifyPluginAsync = async (app) => {
 
       setImmediate(async () => {
         try {
+          if (mergedTracks.length > 0) {
+            try {
+              const { localUrls, errors } = await storeAllTracks(order.id, mergedTracks)
+              if (localUrls.length > 0) {
+                const freshOrder = await prisma.order.findUnique({ where: { id: order.id } })
+                const meta: any = (freshOrder?.trackMetadata && typeof freshOrder.trackMetadata === 'object' ? freshOrder.trackMetadata : {})
+                await prisma.order.update({
+                  where: { id: order.id },
+                  data: {
+                    trackMetadata: {
+                      ...meta,
+                      storedTracks: localUrls,
+                    } as any,
+                  },
+                })
+                await addOrderEvent({ orderId: order.id, type: 'tracks_stored', data: { count: localUrls.length, errors } })
+              }
+            } catch (storeErr: any) {
+              app.log.warn({ orderId: order.id, error: storeErr?.message }, 'Failed to store tracks in object storage (non-fatal)')
+            }
+          }
+
           const result = await completeOrder(order.id)
           app.log.info({ orderId: order.id, result }, 'Order completion attempted via Kie.ai callback')
 
