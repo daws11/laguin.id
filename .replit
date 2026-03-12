@@ -55,3 +55,7 @@ KIE_AI_CALLBACK_URL = "https://262c5f1e-18e0-4f63-8704-8343cc9f332c-00-3459vzkbo
 
 [userenv.production]
 KIE_AI_CALLBACK_URL = "https://laguin.id/api/kie/callback"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 120000
