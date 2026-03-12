@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Settings as SettingsIcon, MessageSquare, Users, ShoppingBag, BarChart3, Palette } from 'lucide-react'
+import { Settings as SettingsIcon, MessageSquare, Users, ShoppingBag, BarChart3, Palette, Video } from 'lucide-react'
 
 import { AdminApp } from '@/features/admin/AdminApp'
 import * as adminApi from '@/features/admin/api'
@@ -18,6 +18,7 @@ import { AdminOrdersTab } from '@/features/admin/tabs/orders/AdminOrdersTab'
 import { AdminSettingsTab } from '@/features/admin/tabs/settings/AdminSettingsTab'
 import { AdminFunnelTab } from '@/features/admin/tabs/funnel/AdminFunnelTab'
 import { AdminThemesTab } from '@/features/admin/tabs/themes/AdminThemesTab'
+import { AdminTestimonialsTab } from '@/features/admin/tabs/testimonials/AdminTestimonialsTab'
 
 const translations = importedTranslations
 /*
@@ -296,7 +297,7 @@ function AdminRouteLegacy() {
   const [authError, setAuthError] = useState<string | null>(null)
   const [loadingAuth, setLoadingAuth] = useState(false)
 
-    const [tab, setTab] = useState<'settings' | 'prompts' | 'customers' | 'orders' | 'funnel' | 'themes'>('orders')
+    const [tab, setTab] = useState<'settings' | 'prompts' | 'customers' | 'orders' | 'funnel' | 'themes' | 'testimonials'>('orders')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [lang, setLang] = useState<AdminLang>('en')
@@ -610,6 +611,7 @@ function AdminRouteLegacy() {
         { value: 'settings', icon: SettingsIcon, label: t.settings },
         { value: 'prompts', icon: MessageSquare, label: t.prompts },
         { value: 'themes', icon: Palette, label: t.themes },
+        { value: 'testimonials', icon: Video, label: t.testimonials },
       ]}
       activeNav={tab}
       onSelectNav={(v) => {
@@ -715,6 +717,12 @@ function AdminRouteLegacy() {
             await saveSettings({ defaultThemeSlug: slug } as any)
           }}
         />
+      )}
+
+      {tab === 'testimonials' && token && (
+        <AdminSettingsTab>
+          <AdminTestimonialsTab token={token} t={t} />
+        </AdminSettingsTab>
       )}
     </AdminLayout>
   )

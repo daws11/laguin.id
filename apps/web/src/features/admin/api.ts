@@ -5,6 +5,29 @@ export async function adminLogin(password: string) {
   return apiPost<{ token: string }>('/api/admin/login', { password })
 }
 
+export type TestimonialVideoItem = {
+  id: string
+  orderId: string
+  videoUrl: string
+  status: 'pending' | 'approved' | 'rejected'
+  createdAt: string
+  customerName: string
+  customerPhone: string
+  recipientName: string
+}
+
+export async function adminGetTestimonialVideos(token: string) {
+  return apiGet<TestimonialVideoItem[]>('/api/admin/testimonial-videos', { token })
+}
+
+export async function adminApproveTestimonialVideo(token: string, id: string) {
+  return apiPost<{ ok: boolean }>(`/api/admin/testimonial-videos/${encodeURIComponent(id)}/approve`, {}, { token })
+}
+
+export async function adminRejectTestimonialVideo(token: string, id: string) {
+  return apiPost<{ ok: boolean }>(`/api/admin/testimonial-videos/${encodeURIComponent(id)}/reject`, {}, { token })
+}
+
 export async function adminGetSettings(token: string) {
   return apiGet<Settings>('/api/admin/settings', { token })
 }
