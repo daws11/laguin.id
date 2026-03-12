@@ -91,8 +91,8 @@ function RevisionSection({
           <div className="flex items-center gap-3">
             <RefreshCw className="h-5 w-5 text-gray-400" />
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">{cfg.revisionUsedTitle || 'Revisions Used'}</h3>
-              <p className="text-xs text-gray-500">{cfg.revisionUsedMessage || `You've used all ${order.maxRegenerations} available revisions.`}</p>
+              <h3 className="text-sm font-semibold text-gray-900">{cfg.revisionUsedTitle || 'Revisi Digunakan'}</h3>
+              <p className="text-xs text-gray-500">{cfg.revisionUsedMessage || `Anda telah menggunakan semua ${order.maxRegenerations} revisi yang tersedia.`}</p>
             </div>
           </div>
         </div>
@@ -118,21 +118,21 @@ function RevisionSection({
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        setError(data.error === 'max_regenerations_reached' ? 'No revisions remaining.' : 'Something went wrong. Please try again.')
+        setError(data.error === 'max_regenerations_reached' ? 'Tidak ada revisi yang tersisa.' : 'Terjadi kesalahan. Silakan coba lagi.')
         return
       }
       onRegenerated()
     } catch {
-      setError('Connection error. Please try again.')
+      setError('Kesalahan koneksi. Silakan coba lagi.')
     } finally {
       setSubmitting(false)
     }
   }
 
   const tabs: { key: RevisionType; label: string }[] = [
-    { key: 'describe', label: cfg.revisionTabDescribe || 'Describe changes' },
-    { key: 'lyrics', label: cfg.revisionTabLyrics || 'Edit lyrics' },
-    { key: 'new_story', label: cfg.revisionTabNewStory || 'New story' },
+    { key: 'describe', label: cfg.revisionTabDescribe || 'Jelaskan perubahan' },
+    { key: 'lyrics', label: cfg.revisionTabLyrics || 'Edit lirik' },
+    { key: 'new_story', label: cfg.revisionTabNewStory || 'Cerita baru' },
   ]
 
   return (
@@ -140,18 +140,18 @@ function RevisionSection({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <RefreshCw className="h-5 w-5" style={{ color: accent }} />
-          <h3 className="text-sm font-semibold text-gray-900">{cfg.revisionSectionTitle || 'Want to make changes?'}</h3>
+          <h3 className="text-sm font-semibold text-gray-900">{cfg.revisionSectionTitle || 'Ingin membuat perubahan?'}</h3>
         </div>
         <span
           className="rounded-full px-2.5 py-0.5 text-xs font-semibold text-white"
           style={{ backgroundColor: accent }}
         >
-          {revisionsLeft} revision{revisionsLeft !== 1 ? 's' : ''} left
+          {revisionsLeft} revisi {revisionsLeft !== 1 ? 'tersisa' : 'tersisa'}
         </span>
       </div>
 
       <p className="text-xs text-gray-500 mb-4">
-        {cfg.revisionSectionDescription || "Tell us what you'd like to change and we'll create a new version of your song. You can also change the music style or voice."}
+        {cfg.revisionSectionDescription || "Beritahu kami apa yang ingin Anda ubah dan kami akan membuat versi baru lagu Anda. Anda juga dapat mengubah gaya musik atau suara."}
       </p>
 
       <div className="flex gap-1 mb-4 border-b">
@@ -173,11 +173,11 @@ function RevisionSection({
 
       {revisionType === 'describe' && (
         <div className="space-y-2 mb-4">
-          <label className="text-xs text-gray-500">Just tell us what to change — we'll handle the rest.</label>
+          <label className="text-xs text-gray-500">Beritahu kami apa yang ingin diubah — kami akan menangani sisanya.</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder={"Examples:\n- Change the name from John to Jonathan\n- Make the chorus more joyful\n- Add a mention of our trip to Paris"}
+            placeholder={"Contoh:\n- Ubah nama dari John menjadi Jonathan\n- Buat chorus lebih ceria\n- Tambahkan penyebutan perjalanan kami ke Paris"}
             className="w-full rounded-lg border bg-gray-50 p-3 text-sm min-h-[100px] resize-y focus:outline-none focus:ring-2 focus:border-transparent"
             style={{ '--tw-ring-color': accent + '60' } as React.CSSProperties}
           />
@@ -186,7 +186,7 @@ function RevisionSection({
 
       {revisionType === 'lyrics' && (
         <div className="space-y-2 mb-4">
-          <label className="text-xs text-gray-500">Edit the lyrics directly below.</label>
+          <label className="text-xs text-gray-500">Edit lirik di bawah ini.</label>
           <textarea
             value={newLyrics}
             onChange={(e) => setNewLyrics(e.target.value)}
@@ -198,11 +198,11 @@ function RevisionSection({
 
       {revisionType === 'new_story' && (
         <div className="space-y-2 mb-4">
-          <label className="text-xs text-gray-500">We'll generate completely new lyrics and music from scratch.</label>
+          <label className="text-xs text-gray-500">Kami akan menghasilkan lirik dan musik baru sepenuhnya dari awal.</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Tell us the new story or theme you'd like for the song..."
+            placeholder="Beritahu kami cerita atau tema baru yang Anda inginkan untuk lagu..."
             className="w-full rounded-lg border bg-gray-50 p-3 text-sm min-h-[100px] resize-y focus:outline-none focus:ring-2 focus:border-transparent"
             style={{ '--tw-ring-color': accent + '60' } as React.CSSProperties}
           />
@@ -211,14 +211,14 @@ function RevisionSection({
 
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div>
-          <label className="text-xs font-medium text-gray-600 mb-1 block">MUSIC STYLE</label>
+          <label className="text-xs font-medium text-gray-600 mb-1 block">GAYA MUSIK</label>
           <select
             value={musicStyle}
             onChange={(e) => setMusicStyle(e.target.value)}
             className="w-full rounded-lg border bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-transparent appearance-none"
             style={{ '--tw-ring-color': accent + '60' } as React.CSSProperties}
           >
-            <option value="keep">Keep current</option>
+            <option value="keep">Tetap saat ini</option>
             <option value="Pop">Pop</option>
             <option value="R&B">R&B</option>
             <option value="Acoustic">Acoustic</option>
@@ -232,7 +232,7 @@ function RevisionSection({
           </select>
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-600 mb-1 block">VOICE</label>
+          <label className="text-xs font-medium text-gray-600 mb-1 block">SUARA</label>
           <select
             value={voiceStyle}
             onChange={(e) => setVoiceStyle(e.target.value)}
@@ -259,10 +259,10 @@ function RevisionSection({
         {submitting ? (
           <span className="flex items-center justify-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Submitting...
+            Mengirim...
           </span>
         ) : (
-          cfg.revisionSubmitButtonText || 'Submit Revision'
+          cfg.revisionSubmitButtonText || 'Kirim Revisi'
         )}
       </button>
     </div>
@@ -291,11 +291,11 @@ function TestimonialSection({
     if (!file) return
 
     if (!file.type.startsWith('video/')) {
-      setError('Please select a video file.')
+      setError('Silakan pilih file video.')
       return
     }
     if (file.size > 100 * 1024 * 1024) {
-      setError('Video must be under 100MB.')
+      setError('Video harus di bawah 100MB.')
       return
     }
 
@@ -318,14 +318,14 @@ function TestimonialSection({
           setTestimonialStatus('pending')
           return
         }
-        setError(data.error === 'invalid_file_type' ? 'Please upload a video file.' : 'Upload failed. Please try again.')
+        setError(data.error === 'invalid_file_type' ? 'Silakan unggah file video.' : 'Unggahan gagal. Silakan coba lagi.')
         return
       }
 
       setUploaded(true)
       setTestimonialStatus('pending')
     } catch {
-      setError('Connection error. Please try again.')
+      setError('Kesalahan koneksi. Silakan coba lagi.')
     } finally {
       setUploading(false)
       if (fileRef.current) fileRef.current.value = ''
@@ -338,11 +338,11 @@ function TestimonialSection({
         <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-green-50">
           <CheckCircle className="h-7 w-7 text-green-600" />
         </div>
-        <h3 className="text-base font-bold text-gray-900">{cfg.testimonialSuccessTitle || 'Video uploaded!'}</h3>
+        <h3 className="text-base font-bold text-gray-900">{cfg.testimonialSuccessTitle || 'Video telah diunggah!'}</h3>
         <p className="mt-1 text-sm text-gray-500">
           {testimonialStatus === 'approved'
-            ? (cfg.testimonialApprovedMessage || 'Your testimonial has been approved. Thank you!')
-            : (cfg.testimonialSuccessMessage || 'Our team is reviewing your video. Thank you for sharing!')}
+            ? (cfg.testimonialApprovedMessage || 'Testimonial Anda telah disetujui. Terima kasih!')
+            : (cfg.testimonialSuccessMessage || 'Tim kami sedang meninjau video Anda. Terima kasih telah berbagi!')}
         </p>
       </div>
     )
@@ -352,10 +352,10 @@ function TestimonialSection({
     <div className="rounded-2xl border bg-white p-5 shadow-sm">
       <div className="flex items-center gap-2 mb-3">
         <Video className="h-5 w-5" style={{ color: accent }} />
-        <h3 className="text-sm font-semibold text-gray-900">{cfg.testimonialSectionTitle || 'Share your experience'}</h3>
+        <h3 className="text-sm font-semibold text-gray-900">{cfg.testimonialSectionTitle || 'Bagikan pengalaman Anda'}</h3>
       </div>
       <p className="text-xs text-gray-500 mb-4">
-        {cfg.testimonialSectionDescription || "Record a short video telling us about your experience with your personalized song. We'd love to hear from you!"}
+        {cfg.testimonialSectionDescription || "Rekam video pendek yang menceritakan pengalaman Anda dengan lagu pribadi Anda. Kami ingin mendengar dari Anda!"}
       </p>
 
       {error && (
@@ -379,16 +379,16 @@ function TestimonialSection({
         {uploading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Uploading video...
+            Mengunggah video...
           </>
         ) : (
           <>
             <Upload className="h-4 w-4" />
-            {cfg.testimonialUploadButtonText || 'Upload Video Testimonial'}
+            {cfg.testimonialUploadButtonText || 'Unggah Video Testimonial'}
           </>
         )}
       </button>
-      <p className="text-[10px] text-gray-400 mt-2 text-center">Max 100MB. Supported formats: MP4, MOV, WebM</p>
+      <p className="text-[10px] text-gray-400 mt-2 text-center">Maks 100MB. Format yang didukung: MP4, MOV, WebM</p>
     </div>
   )
 }
@@ -481,8 +481,8 @@ export function OrderDeliveryRoute() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
             <Music className="h-8 w-8 text-gray-400" />
           </div>
-          <h1 className="text-xl font-semibold text-gray-800">Order Not Found</h1>
-          <p className="mt-2 text-sm text-gray-500">The order you're looking for doesn't exist or has been removed.</p>
+          <h1 className="text-xl font-semibold text-gray-800">Pesanan Tidak Ditemukan</h1>
+          <p className="mt-2 text-sm text-gray-500">Pesanan yang Anda cari tidak ada atau telah dihapus.</p>
         </div>
       </div>
     )
@@ -493,8 +493,8 @@ export function OrderDeliveryRoute() {
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-white px-4">
         <div className="text-center max-w-sm">
           {renderLogo('lg')}
-          <h1 className="text-xl font-semibold text-gray-800">No Orders Found</h1>
-          <p className="mt-2 text-sm text-gray-500">We couldn't find any orders for your account.</p>
+          <h1 className="text-xl font-semibold text-gray-800">Tidak Ada Pesanan yang Ditemukan</h1>
+          <p className="mt-2 text-sm text-gray-500">Kami tidak dapat menemukan pesanan untuk akun Anda.</p>
         </div>
       </div>
     )
@@ -511,10 +511,10 @@ export function OrderDeliveryRoute() {
               <Loader2 className="h-8 w-8 animate-spin" style={{ color: accent }} />
             </div>
             <h1 className="text-xl font-semibold text-gray-800">
-              {cfg.processingMessage || 'Your song is being created!'}
+              {cfg.processingMessage || 'Lagu Anda sedang dibuat!'}
             </h1>
             <p className="mt-2 text-sm text-gray-500">
-              We're working on your personalized song. Please check back soon.
+              Kami sedang mengerjakan lagu pribadi Anda. Silakan periksa kembali segera.
             </p>
           </div>
         </div>
@@ -527,7 +527,7 @@ export function OrderDeliveryRoute() {
           <div className="text-center mb-8">
             {renderLogo('lg')}
             <h1 className="text-2xl font-bold text-gray-900">
-              {cfg.successMessage || 'Your Song is Ready!'}
+              {cfg.successMessage || 'Lagu Anda Siap!'}
             </h1>
           </div>
 
@@ -544,9 +544,9 @@ export function OrderDeliveryRoute() {
                       </div>
                       <div>
                         <h3 className="text-sm font-semibold text-gray-900">
-                          {order.recipientName ? `Song for ${order.recipientName}` : 'Your Song'}
+                          {order.recipientName ? `Lagu untuk ${order.recipientName}` : 'Lagu Anda'}
                         </h3>
-                        <p className="text-xs text-gray-500">{cfg.processingMessage || 'Being created...'}</p>
+                        <p className="text-xs text-gray-500">{cfg.processingMessage || 'Sedang dibuat...'}</p>
                       </div>
                     </div>
                   </div>
@@ -560,7 +560,7 @@ export function OrderDeliveryRoute() {
                   {unlockedOrders.length > 1 && order.recipientName && (
                     <div className="flex items-center gap-2">
                       <h2 className="text-sm font-semibold text-gray-700">
-                        {(cfg.headerText || 'A special song for {recipientName}').replace('{recipientName}', order.recipientName)}
+                        {(cfg.headerText || 'Lagu spesial untuk {recipientName}').replace('{recipientName}', order.recipientName)}
                       </h2>
                       <span className="text-xs text-gray-400">
                         {new Date(order.createdAt).toLocaleDateString()}
@@ -571,7 +571,7 @@ export function OrderDeliveryRoute() {
                   <div className="rounded-2xl border bg-white p-5 shadow-sm">
                     <div className="flex items-center gap-2 mb-4">
                       <Music className="h-5 w-5" style={{ color: accent }} />
-                      <h3 className="text-sm font-semibold text-gray-900">Listen to your song</h3>
+                      <h3 className="text-sm font-semibold text-gray-900">Dengarkan lagu Anda</h3>
                     </div>
 
                     <div className={order.tracks.length > 1 ? 'grid grid-cols-1 gap-4' : ''}>
@@ -579,7 +579,7 @@ export function OrderDeliveryRoute() {
                         <div key={`${order.id}-${idx}`} className="space-y-2">
                           {order.tracks.length > 1 && (
                             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                              Version {idx + 1}
+                              Versi {idx + 1}
                             </span>
                           )}
                           <audio controls className="w-full h-10" preload="metadata">
@@ -592,7 +592,7 @@ export function OrderDeliveryRoute() {
                             style={{ backgroundColor: accent }}
                           >
                             <Download className="h-4 w-4" />
-                            {cfg.downloadButtonText || 'Download MP3'}
+                            {cfg.downloadButtonText || 'Unduh MP3'}
                           </a>
                         </div>
                       ))}
@@ -607,7 +607,7 @@ export function OrderDeliveryRoute() {
                       >
                         <div className="flex items-center gap-2">
                           <FileText className="h-5 w-5 text-amber-600" />
-                          <h3 className="text-sm font-semibold text-gray-900">See the lyrics</h3>
+                          <h3 className="text-sm font-semibold text-gray-900">Lihat lirik</h3>
                         </div>
                         {isLyricsOpen ? (
                           <ChevronUp className="h-4 w-4 text-gray-400" />
@@ -625,7 +625,7 @@ export function OrderDeliveryRoute() {
                             className="mt-3 flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                           >
                             <Download className="h-3.5 w-3.5" />
-                            {cfg.lyricsButtonText || 'Download .txt'}
+                            {cfg.lyricsButtonText || 'Unduh .txt'}
                           </button>
                         </div>
                       )}
