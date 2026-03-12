@@ -512,7 +512,7 @@ export function OrderDeliveryRoute() {
     )
   }
 
-  const trackSubtitle = (recipientName: string) => {
+  const _trackSubtitle = (recipientName: string) => {
     const template = cfg.trackSubtitleText || 'Personalized for {recipientName}'
     return template.replace('{recipientName}', recipientName || 'you')
   }
