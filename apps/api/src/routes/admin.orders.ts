@@ -12,46 +12,105 @@ const ListQuerySchema = z.object({
   status: z.enum(['created', 'processing', 'completed', 'failed']).optional(),
   deliveryStatus: z.enum(['delivery_pending', 'delivery_scheduled', 'delivered', 'delivery_failed']).optional(),
   themeSlug: z.string().optional(),
+  search: z.string().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(200).default(100),
+  sortField: z.enum(['createdAt', 'status', 'customer']).default('createdAt'),
+  sortDir: z.enum(['asc', 'desc']).default('desc'),
 })
 
 const ParamsIdSchema = z.object({ id: z.string().min(1) })
+
+function buildSearchWhere(search: string | undefined) {
+  if (!search || !search.trim()) return {}
+  const s = search.trim()
+  return {
+    OR: [
+      { id: { contains: s, mode: 'insensitive' as const } },
+      { customer: { name: { contains: s, mode: 'insensitive' as const } } },
+      { customer: { whatsappNumber: { contains: s } } },
+    ],
+  }
+}
 
 export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
   app.get('/orders', async (req, reply) => {
     const q = ListQuerySchema.safeParse(req.query)
     if (!q.success) return reply.code(400).send({ error: 'invalid_query' })
 
-    const orders = await prisma.order.findMany({
-      where: {
-        status: q.data.status,
-        deliveryStatus: q.data.deliveryStatus,
-        themeSlug: q.data.themeSlug,
-      },
-      orderBy: { createdAt: 'desc' },
-      include: { customer: true },
-      take: 200,
-    })
+    const { page, pageSize, sortField, sortDir, search, status, deliveryStatus, themeSlug } = q.data
 
-    return orders.map((o) => ({
-      id: o.id,
-      customer: {
-        id: o.customer.id,
-        name: o.customer.name,
-        whatsappNumber: o.customer.whatsappNumber,
-      },
-      status: o.status,
-      deliveryStatus: o.deliveryStatus,
-      paymentStatus: o.paymentStatus,
-      createdAt: o.createdAt,
-      confirmedAt: o.confirmedAt,
-      generationCompletedAt: o.generationCompletedAt,
-      deliveryScheduledAt: o.deliveryScheduledAt,
-      deliveredAt: o.deliveredAt,
-      trackUrl: o.trackUrl,
-      errorMessage: o.errorMessage,
-      themeSlug: o.themeSlug ?? null,
-      regenerationCount: o.regenerationCount,
-    }))
+    const searchWhere = buildSearchWhere(search)
+
+    // Where clause without status filter — used for per-status counts
+    const baseWhere: any = {
+      ...(deliveryStatus ? { deliveryStatus } : {}),
+      ...(themeSlug ? { themeSlug } : {}),
+      ...searchWhere,
+    }
+
+    // Full where clause including status filter
+    const fullWhere: any = {
+      ...baseWhere,
+      ...(status ? { status } : {}),
+    }
+
+    // Sort order
+    const orderBy: any =
+      sortField === 'customer'
+        ? { customer: { name: sortDir } }
+        : sortField === 'status'
+        ? [{ status: sortDir }, { createdAt: 'desc' }]
+        : { createdAt: sortDir }
+
+    const [orders, total, statusGroups] = await Promise.all([
+      prisma.order.findMany({
+        where: fullWhere,
+        orderBy,
+        include: { customer: true },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.order.count({ where: fullWhere }),
+      prisma.order.groupBy({
+        by: ['status'],
+        where: baseWhere,
+        _count: { _all: true },
+      }),
+    ])
+
+    const statusCounts: Record<string, number> = { all: 0 }
+    for (const g of statusGroups) {
+      statusCounts[g.status] = g._count._all
+      statusCounts.all += g._count._all
+    }
+
+    return {
+      orders: orders.map((o) => ({
+        id: o.id,
+        customer: {
+          id: o.customer.id,
+          name: o.customer.name,
+          whatsappNumber: o.customer.whatsappNumber,
+        },
+        status: o.status,
+        deliveryStatus: o.deliveryStatus,
+        paymentStatus: o.paymentStatus,
+        createdAt: o.createdAt,
+        confirmedAt: o.confirmedAt,
+        generationCompletedAt: o.generationCompletedAt,
+        deliveryScheduledAt: o.deliveryScheduledAt,
+        deliveredAt: o.deliveredAt,
+        trackUrl: o.trackUrl,
+        errorMessage: o.errorMessage,
+        themeSlug: o.themeSlug ?? null,
+        regenerationCount: o.regenerationCount,
+      })),
+      total,
+      page,
+      pageSize,
+      statusCounts,
+    }
   })
 
   app.get('/orders/:id', async (req, reply) => {

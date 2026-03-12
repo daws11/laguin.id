@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 
-import type { CustomerDetail, CustomerListItem, DraftDetail, OrderDetail, OrderListItem, PromptTemplate, Settings } from '@/features/admin/types'
+import type { CustomerDetail, CustomerListItem, DraftDetail, OrderDetail, PromptTemplate, Settings } from '@/features/admin/types'
 import { AdminLayout } from '@/features/admin/components/AdminLayout'
 import { SystemSettingsSection } from '@/features/admin/tabs/settings/SystemSettingsSection'
 import { AdminPromptsTab } from '@/features/admin/tabs/prompts/AdminPromptsTab'
@@ -290,7 +290,7 @@ function AdminRouteLegacy() {
   const [settings, setSettings] = useState<Settings | null>(null)
   const [templates, setTemplates] = useState<PromptTemplate[]>([])
   const [customers, setCustomers] = useState<CustomerListItem[]>([])
-  const [orders, setOrders] = useState<OrderListItem[]>([])
+  const [ordersRefreshTrigger, setOrdersRefreshTrigger] = useState(0)
   const [selectedCustomer, setSelectedCustomer] = useState<(CustomerDetail | DraftDetail) | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null)
 
@@ -317,7 +317,6 @@ function AdminRouteLegacy() {
     setSettings(null)
     setTemplates([])
     setCustomers([])
-    setOrders([])
     setSelectedCustomer(null)
     setSelectedOrder(null)
   }
@@ -341,17 +340,11 @@ function AdminRouteLegacy() {
     setCustomers(items.map((c: any) => ({ kind: c?.kind ?? 'customer', ...c })))
   }
 
-  async function refreshOrders() {
-    if (!token) return
-    const items = await adminApi.adminGetOrders(token)
-    setOrders(items)
-  }
-
   useEffect(() => {
     if (!token) return
     setLoading(true)
     setError(null)
-    Promise.all([refreshSettings(), refreshTemplates(), refreshCustomers(), refreshOrders()])
+    Promise.all([refreshSettings(), refreshTemplates(), refreshCustomers()])
       .catch((e) => setError(e?.message ?? t.failedLoadAdmin))
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -507,7 +500,7 @@ function AdminRouteLegacy() {
     try {
       await adminApi.adminBulkDeleteOrders(token, ids)
       setSelectedOrder(null)
-      await refreshOrders()
+      setOrdersRefreshTrigger((n) => n + 1)
     } catch (e: any) {
       setError(e?.message ?? 'Failed to delete orders')
     } finally {
@@ -521,7 +514,7 @@ function AdminRouteLegacy() {
     setLoading(true)
     try {
       await adminApi.adminBulkClearTracks(token, ids)
-      await refreshOrders()
+      setOrdersRefreshTrigger((n) => n + 1)
     } catch (e: any) {
       setError(e?.message ?? 'Failed to clear tracks')
     } finally {
@@ -683,7 +676,6 @@ function AdminRouteLegacy() {
             <AdminOrdersTab
               t={t}
               token={token ?? ''}
-              orders={orders}
               selectedOrder={selectedOrder}
               onSelectOrder={setSelectedOrder}
               onOpenOrder={(id) => void openOrder(id)}
@@ -694,6 +686,7 @@ function AdminRouteLegacy() {
               onBulkDelete={bulkDeleteOrders}
               onBulkClearTracks={bulkClearTracks}
               loading={loading}
+              refreshTrigger={ordersRefreshTrigger}
             />
           </div>
         </AdminSettingsTab>

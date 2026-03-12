@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import type { OrderDetail, OrderListItem } from '@/features/admin/types'
-import { adminGetThemes, adminUpdateOrderInput, type ThemeItem } from '@/features/admin/api'
+import { adminGetOrders, adminGetThemes, adminUpdateOrderInput, type ThemeItem } from '@/features/admin/api'
 import {
   Search,
   RotateCcw,
@@ -232,7 +232,6 @@ type SortDir = 'asc' | 'desc'
 export function AdminOrdersTab({
   t,
   token,
-  orders,
   selectedOrder,
   onSelectOrder,
   onOpenOrder,
@@ -243,10 +242,10 @@ export function AdminOrdersTab({
   onBulkDelete,
   onBulkClearTracks,
   loading,
+  refreshTrigger,
 }: {
   t: any
   token: string
-  orders: OrderListItem[]
   selectedOrder: OrderDetail | null
   onSelectOrder: (o: OrderDetail | null) => void
   onOpenOrder: (id: string) => void
@@ -257,6 +256,7 @@ export function AdminOrdersTab({
   onBulkDelete: (ids: string[]) => Promise<void>
   onBulkClearTracks: (ids: string[]) => Promise<void>
   loading: boolean
+  refreshTrigger?: number
 }) {
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -273,45 +273,58 @@ export function AdminOrdersTab({
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 100
 
+  // Server-side data state
+  const [orders, setOrders] = useState<OrderListItem[]>([])
+  const [total, setTotal] = useState(0)
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({ all: 0 })
+  const [fetchLoading, setFetchLoading] = useState(false)
+  const [debouncedQuery, setDebouncedQuery] = useState('')
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   useEffect(() => {
     adminGetThemes(token).then(setThemes).catch(() => {})
   }, [token])
 
-  const filtered = useMemo(() => {
-    let result = orders
-    const q = query.trim().toLowerCase()
-    if (q) {
-      result = result.filter((o) => {
-        const hay = `${o.id} ${o.customer?.name ?? ''} ${o.customer?.whatsappNumber ?? ''}`.toLowerCase()
-        return hay.includes(q)
+  // Debounce search input
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    debounceTimer.current = setTimeout(() => {
+      setDebouncedQuery(query)
+      setPage(1)
+    }, 350)
+    return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current) }
+  }, [query])
+
+  // Reset page when non-search filters change
+  useEffect(() => { setPage(1) }, [statusFilter, themeFilter, sortField, sortDir])
+
+  // Fetch orders from server whenever params change
+  useEffect(() => {
+    if (!token) return
+    const params = new URLSearchParams()
+    params.set('page', String(page))
+    params.set('pageSize', String(PAGE_SIZE))
+    if (debouncedQuery.trim()) params.set('search', debouncedQuery.trim())
+    if (statusFilter !== 'all') params.set('status', statusFilter)
+    if (themeFilter !== 'all') params.set('themeSlug', themeFilter)
+    params.set('sortField', sortField)
+    params.set('sortDir', sortDir)
+
+    setFetchLoading(true)
+    adminGetOrders(token, params)
+      .then((res) => {
+        setOrders(res.orders)
+        setTotal(res.total)
+        setStatusCounts(res.statusCounts)
       })
-    }
-    if (statusFilter !== 'all') {
-      result = result.filter((o) => o.status === statusFilter)
-    }
-    if (themeFilter !== 'all') {
-      result = result.filter((o) => (o.themeSlug ?? '') === themeFilter)
-    }
-    const sorted = [...result].sort((a, b) => {
-      let cmp = 0
-      if (sortField === 'createdAt') {
-        cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      } else if (sortField === 'status') {
-        cmp = a.status.localeCompare(b.status)
-      } else if (sortField === 'customer') {
-        cmp = (a.customer?.name ?? '').localeCompare(b.customer?.name ?? '')
-      }
-      return sortDir === 'asc' ? cmp : -cmp
-    })
-    return sorted
-  }, [orders, query, statusFilter, themeFilter, sortField, sortDir])
+      .catch(() => {})
+      .finally(() => setFetchLoading(false))
+  }, [token, page, debouncedQuery, statusFilter, themeFilter, sortField, sortDir, refreshTrigger])
 
-  useEffect(() => { setPage(1) }, [query, statusFilter, themeFilter])
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  // Derived pagination
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const safePage = Math.min(page, totalPages)
-  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
-  useEffect(() => { if (page > totalPages) setPage(totalPages) }, [filtered.length])
+  const paged = orders
 
   function toggleSort(field: SortField) {
     if (sortField === field) {
@@ -330,14 +343,6 @@ export function AdminOrdersTab({
       <ChevronDown className="h-3 w-3" />
     )
   }
-
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: orders.length }
-    orders.forEach((o) => {
-      counts[o.status] = (counts[o.status] || 0) + 1
-    })
-    return counts
-  }, [orders])
 
   if (selectedOrder) {
     return (
@@ -774,7 +779,7 @@ export function AdminOrdersTab({
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t.orders}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {filtered.length} of {orders.length} orders{totalPages > 1 && ` · Page ${safePage} of ${totalPages}`}
+            {fetchLoading ? 'Loading…' : `${total} order${total !== 1 ? 's' : ''}${totalPages > 1 ? ` · Page ${safePage} of ${totalPages}` : ''}`}
           </p>
         </div>
       </div>
@@ -1125,7 +1130,7 @@ export function AdminOrdersTab({
         {totalPages > 1 && (
           <div className="flex items-center justify-between border-t px-4 py-3 shrink-0 bg-card">
             <span className="text-sm text-muted-foreground">
-              Showing {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length}
+              Showing {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, total)} of {total}
             </span>
             <div className="flex gap-1">
               <button

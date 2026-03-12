@@ -55,8 +55,17 @@ export async function adminGetOrderDraft(token: string, id: string) {
   return apiGet<DraftDetail>(`/api/admin/order-drafts/${encodeURIComponent(id)}`, { token })
 }
 
-export async function adminGetOrders(token: string) {
-  return apiGet<OrderListItem[]>('/api/admin/orders', { token })
+export type OrdersPage = {
+  orders: OrderListItem[]
+  total: number
+  page: number
+  pageSize: number
+  statusCounts: Record<string, number>
+}
+
+export async function adminGetOrders(token: string, params?: URLSearchParams) {
+  const url = params?.toString() ? `/api/admin/orders?${params.toString()}` : '/api/admin/orders'
+  return apiGet<OrdersPage>(url, { token })
 }
 
 export async function adminGetOrder(token: string, id: string) {
