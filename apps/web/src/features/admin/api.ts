@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiUpload } from '@/lib/http'
+import { apiGet, apiPost, apiPut, apiUpload, apiDelete } from '@/lib/http'
 import type { CustomerDetail, CustomerListItem, DraftDetail, OrderDetail, OrderListItem, PromptTemplate, Settings } from './types'
 
 export async function adminLogin(password: string) {
@@ -26,6 +26,10 @@ export async function adminApproveTestimonialVideo(token: string, id: string) {
 
 export async function adminRejectTestimonialVideo(token: string, id: string) {
   return apiPost<{ ok: boolean }>(`/api/admin/testimonial-videos/${encodeURIComponent(id)}/reject`, {}, { token })
+}
+
+export async function adminDeleteTestimonialVideo(token: string, id: string) {
+  return apiDelete<{ ok: boolean }>(`/api/admin/testimonial-videos/${encodeURIComponent(id)}`, { token })
 }
 
 export async function adminGetSettings(token: string) {

@@ -527,5 +527,17 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
 
     return { ok: true }
   })
+
+  app.delete('/testimonial-videos/:id', async (req, reply) => {
+    const params = ParamsIdSchema.safeParse(req.params)
+    if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
+
+    const video = await prisma.testimonialVideo.findUnique({ where: { id: params.data.id } })
+    if (!video) return reply.code(404).send({ error: 'not_found' })
+
+    await prisma.testimonialVideo.delete({ where: { id: params.data.id } })
+
+    return { ok: true }
+  })
 }
 

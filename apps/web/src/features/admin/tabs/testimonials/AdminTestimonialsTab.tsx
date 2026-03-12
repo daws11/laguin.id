@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Check, X, ExternalLink, RefreshCw, Video } from 'lucide-react'
+import { Check, X, ExternalLink, RefreshCw, Video, Trash2, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import {
   adminGetTestimonialVideos,
   adminApproveTestimonialVideo,
   adminRejectTestimonialVideo,
+  adminDeleteTestimonialVideo,
   type TestimonialVideoItem,
 } from '@/features/admin/api'
 
@@ -24,8 +26,11 @@ function statusBadge(status: string) {
 
 function formatDate(iso: string) {
   const d = new Date(iso)
-  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) +
-    ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+  return (
+    d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) +
+    ' ' +
+    d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+  )
 }
 
 export function AdminTestimonialsTab({ token, t: _t }: Props) {
@@ -34,6 +39,8 @@ export function AdminTestimonialsTab({ token, t: _t }: Props) {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
   const [playingId, setPlayingId] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   async function load() {
     setLoading(true)
@@ -47,13 +54,15 @@ export function AdminTestimonialsTab({ token, t: _t }: Props) {
     }
   }
 
-  useEffect(() => { void load() }, [token])
+  useEffect(() => {
+    void load()
+  }, [token])
 
   async function approve(id: string) {
     setActionLoading(id + '-approve')
     try {
       await adminApproveTestimonialVideo(token, id)
-      setVideos((vs) => vs.map((v) => v.id === id ? { ...v, status: 'approved' } : v))
+      setVideos((vs) => vs.map((v) => (v.id === id ? { ...v, status: 'approved' } : v)))
     } finally {
       setActionLoading(null)
     }
@@ -63,13 +72,34 @@ export function AdminTestimonialsTab({ token, t: _t }: Props) {
     setActionLoading(id + '-reject')
     try {
       await adminRejectTestimonialVideo(token, id)
-      setVideos((vs) => vs.map((v) => v.id === id ? { ...v, status: 'rejected' } : v))
+      setVideos((vs) => vs.map((v) => (v.id === id ? { ...v, status: 'rejected' } : v)))
     } finally {
       setActionLoading(null)
     }
   }
 
-  const filtered = filter === 'all' ? videos : videos.filter((v) => v.status === filter)
+  async function deleteVideo(id: string) {
+    setActionLoading(id + '-delete')
+    try {
+      await adminDeleteTestimonialVideo(token, id)
+      setVideos((vs) => vs.filter((v) => v.id !== id))
+      setConfirmDeleteId(null)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const q = search.trim().toLowerCase()
+  const byStatus = filter === 'all' ? videos : videos.filter((v) => v.status === filter)
+  const filtered = q
+    ? byStatus.filter(
+        (v) =>
+          v.customerName.toLowerCase().includes(q) ||
+          v.customerPhone.includes(q) ||
+          v.recipientName.toLowerCase().includes(q),
+      )
+    : byStatus
+
   const counts = {
     all: videos.length,
     pending: videos.filter((v) => v.status === 'pending').length,
@@ -92,6 +122,25 @@ export function AdminTestimonialsTab({ token, t: _t }: Props) {
         </Button>
       </div>
 
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+        <Input
+          className="h-8 text-xs pl-8"
+          placeholder="Cari nama pelanggan, nomor HP, atau nama penerima..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        {search && (
+          <button
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            onClick={() => setSearch('')}
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
       {/* Filter tabs */}
       <div className="flex gap-1 flex-wrap">
         {(['all', 'pending', 'approved', 'rejected'] as const).map((f) => (
@@ -104,7 +153,13 @@ export function AdminTestimonialsTab({ token, t: _t }: Props) {
                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
             }`}
           >
-            {f === 'all' ? 'Semua' : f === 'pending' ? 'Pending' : f === 'approved' ? 'Disetujui' : 'Ditolak'}
+            {f === 'all'
+              ? 'Semua'
+              : f === 'pending'
+                ? 'Pending'
+                : f === 'approved'
+                  ? 'Disetujui'
+                  : 'Ditolak'}
             <span className="ml-1 opacity-60">({counts[f]})</span>
           </button>
         ))}
@@ -115,7 +170,9 @@ export function AdminTestimonialsTab({ token, t: _t }: Props) {
         <div className="text-xs text-muted-foreground py-8 text-center">Memuat...</div>
       ) : filtered.length === 0 ? (
         <div className="text-xs text-muted-foreground py-8 text-center">
-          Tidak ada video testimonial{filter !== 'all' ? ` dengan status "${filter}"` : ''}.
+          {q
+            ? `Tidak ada hasil untuk "${search}".`
+            : `Tidak ada video testimonial${filter !== 'all' ? ` dengan status "${filter}"` : ''}.`}
         </div>
       ) : (
         <div className="space-y-3">
@@ -233,6 +290,44 @@ export function AdminTestimonialsTab({ token, t: _t }: Props) {
                     >
                       Order
                     </a>
+
+                    {/* Delete — two-step confirm */}
+                    {confirmDeleteId === v.id ? (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          className="h-7 text-xs bg-red-600 hover:bg-red-700 text-white gap-1"
+                          disabled={actionLoading !== null}
+                          onClick={() => void deleteVideo(v.id)}
+                        >
+                          {actionLoading === v.id + '-delete' ? (
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3 h-3" />
+                          )}
+                          Yakin hapus?
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          onClick={() => setConfirmDeleteId(null)}
+                        >
+                          Batal
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs text-muted-foreground hover:text-red-600 hover:border-red-200 gap-1"
+                        disabled={actionLoading !== null}
+                        onClick={() => setConfirmDeleteId(v.id)}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Hapus
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>

@@ -79,6 +79,26 @@ export async function apiPut<T>(path: string, body: unknown, opts?: { token?: st
   return (await parseJson(res)) as T
 }
 
+export async function apiDelete<T>(path: string, opts?: { token?: string }) {
+  const res = await fetch(API_BASE + path, {
+    method: 'DELETE',
+    headers: {
+      ...(opts?.token ? { Authorization: `Bearer ${opts.token}` } : {}),
+    },
+  })
+  if (!res.ok) {
+    const payload = await parseJson(res)
+    throw new Error(
+      typeof payload === 'string'
+        ? payload
+        : (typeof payload?.message === 'string' ? payload.message : null) ??
+            payload?.error ??
+            `Request failed (${res.status})`,
+    )
+  }
+  return (await parseJson(res)) as T
+}
+
 export async function apiUpload<T>(
   path: string,
   formData: FormData,
