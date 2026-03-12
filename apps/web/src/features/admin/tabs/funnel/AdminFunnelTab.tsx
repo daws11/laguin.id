@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Download } from 'lucide-react'
 import { adminGetFunnel, adminGetFunnelTrend, adminGetThemes, type FunnelData, type TrendData, type ThemeItem } from '@/features/admin/api'
 
 function formatDate(d: Date): string {
@@ -149,6 +150,7 @@ export function AdminFunnelTab({ t, token }: { t: any; token: string }) {
   const [data, setData] = useState<FunnelData | null>(null)
   const [trend, setTrend] = useState<TrendData | null>(null)
   const [loading, setLoading] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [themes, setThemes] = useState<ThemeItem[]>([])
   const [themeFilter, setThemeFilter] = useState<string>('')
@@ -232,6 +234,39 @@ export function AdminFunnelTab({ t, token }: { t: any; token: string }) {
             ))}
           </select>
         </div>
+        <div className="flex-1" />
+        <button
+          disabled={exporting}
+          onClick={async () => {
+            setExporting(true)
+            try {
+              const tzOffset = new Date().getTimezoneOffset()
+              const params = new URLSearchParams({ from, to, tzOffset: String(tzOffset) })
+              if (themeFilter) params.set('themeSlug', themeFilter)
+              const res = await fetch(`/api/admin/orders/export-stories?${params.toString()}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              })
+              if (!res.ok) throw new Error('Export failed')
+              const blob = await res.blob()
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = `stories_${from}_to_${to}.csv`
+              document.body.appendChild(a)
+              a.click()
+              document.body.removeChild(a)
+              URL.revokeObjectURL(url)
+            } catch {
+              setError('Failed to export stories')
+            } finally {
+              setExporting(false)
+            }
+          }}
+          className="flex items-center gap-1.5 rounded-md border bg-background px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-muted transition-colors disabled:opacity-50"
+        >
+          <Download className="h-3.5 w-3.5" />
+          {exporting ? 'Exporting…' : 'Export Stories CSV'}
+        </button>
       </div>
 
       {loading && (

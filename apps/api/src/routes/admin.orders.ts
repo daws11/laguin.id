@@ -327,5 +327,80 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     const result = await sendWhatsAppReminderForOrder(order.id, { force: true })
     return { ok: true, orderId: order.id, result }
   })
+
+  const ExportQuerySchema = z.object({
+    from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    themeSlug: z.string().optional(),
+    tzOffset: z.coerce.number().int().min(-840).max(840).optional(),
+  })
+
+  app.get('/orders/export-stories', async (req, reply) => {
+    const parsed = ExportQuerySchema.safeParse(req.query)
+    if (!parsed.success) return reply.code(400).send({ error: 'invalid_query' })
+    const query = parsed.data
+
+    const offsetMs = (query.tzOffset ?? 0) * 60 * 1000
+
+    const now = new Date()
+    const defaultFrom = new Date(now)
+    defaultFrom.setDate(defaultFrom.getDate() - 7)
+    defaultFrom.setHours(0, 0, 0, 0)
+
+    const fromDate = query.from ? new Date(new Date(query.from + 'T00:00:00.000Z').getTime() + offsetMs) : defaultFrom
+    const toDate = query.to ? new Date(new Date(query.to + 'T23:59:59.999Z').getTime() + offsetMs) : now
+
+    const where: Prisma.OrderWhereInput = {
+      createdAt: { gte: fromDate, lte: toDate },
+      ...(query.themeSlug ? { themeSlug: query.themeSlug } : {}),
+    }
+
+    const orders = await prisma.order.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 10000,
+      select: {
+        id: true,
+        createdAt: true,
+        themeSlug: true,
+        inputPayload: true,
+        status: true,
+        customer: { select: { name: true, email: true, whatsappNumber: true } },
+      },
+    })
+
+    function sanitize(val: string): string {
+      let s = val
+      if (/^[=+\-@\t\r]/.test(s)) s = "'" + s
+      if (s.includes('"') || s.includes(',') || s.includes('\n') || s.includes('\r')) {
+        return '"' + s.replace(/"/g, '""') + '"'
+      }
+      return s
+    }
+
+    const header = ['Order ID', 'Created At', 'Theme', 'Customer Name', 'Email', 'WhatsApp', 'Status', 'Recipient', 'Relationship', 'Story']
+    const rows = orders.map(o => {
+      const ip = (o.inputPayload && typeof o.inputPayload === 'object' ? o.inputPayload : {}) as Record<string, any>
+      return [
+        o.id,
+        o.createdAt.toISOString(),
+        o.themeSlug ?? '',
+        o.customer?.name ?? '',
+        o.customer?.email ?? '',
+        o.customer?.whatsappNumber ?? '',
+        o.status,
+        ip.recipientName ?? ip.recipient ?? '',
+        ip.relationship ?? '',
+        ip.story ?? '',
+      ].map(v => sanitize(String(v)))
+    })
+
+    const csv = [header.join(','), ...rows.map(r => r.join(','))].join('\r\n')
+
+    reply
+      .header('Content-Type', 'text/csv; charset=utf-8')
+      .header('Content-Disposition', `attachment; filename="stories_${query.from ?? 'all'}_to_${query.to ?? 'now'}.csv"`)
+      .send(csv)
+  })
 }
 
