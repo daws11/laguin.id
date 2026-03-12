@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 
-import type { CustomerDetail, CustomerListItem, DraftDetail, OrderDetail, PromptTemplate, Settings } from '@/features/admin/types'
+import type { CustomerDetail, DraftDetail, OrderDetail, PromptTemplate, Settings } from '@/features/admin/types'
 import { AdminLayout } from '@/features/admin/components/AdminLayout'
 import { SystemSettingsSection } from '@/features/admin/tabs/settings/SystemSettingsSection'
 import { AdminPromptsTab } from '@/features/admin/tabs/prompts/AdminPromptsTab'
@@ -289,8 +289,8 @@ function AdminRouteLegacy() {
 
   const [settings, setSettings] = useState<Settings | null>(null)
   const [templates, setTemplates] = useState<PromptTemplate[]>([])
-  const [customers, setCustomers] = useState<CustomerListItem[]>([])
   const [ordersRefreshTrigger, setOrdersRefreshTrigger] = useState(0)
+  const [customersRefreshTrigger, setCustomersRefreshTrigger] = useState(0)
   const [selectedCustomer, setSelectedCustomer] = useState<(CustomerDetail | DraftDetail) | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null)
 
@@ -316,7 +316,6 @@ function AdminRouteLegacy() {
     setToken(null)
     setSettings(null)
     setTemplates([])
-    setCustomers([])
     setSelectedCustomer(null)
     setSelectedOrder(null)
   }
@@ -333,18 +332,11 @@ function AdminRouteLegacy() {
     setTemplates(items)
   }
 
-  async function refreshCustomers() {
-    if (!token) return
-    const items = await adminApi.adminGetCustomers(token)
-    // Backward compatibility: older API might not send `kind`.
-    setCustomers(items.map((c: any) => ({ kind: c?.kind ?? 'customer', ...c })))
-  }
-
   useEffect(() => {
     if (!token) return
     setLoading(true)
     setError(null)
-    Promise.all([refreshSettings(), refreshTemplates(), refreshCustomers()])
+    Promise.all([refreshSettings(), refreshTemplates()])
       .catch((e) => setError(e?.message ?? t.failedLoadAdmin))
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -439,7 +431,7 @@ function AdminRouteLegacy() {
     setLoading(true)
     try {
       await adminApi.adminRetryOrder(token, id)
-      await refreshOrders()
+      setOrdersRefreshTrigger((n) => n + 1)
       await openOrder(id)
     } catch (e: any) {
       setError(e?.message ?? t.failedRetryOrder)
@@ -454,7 +446,7 @@ function AdminRouteLegacy() {
     setLoading(true)
     try {
       await adminApi.adminResendEmail(token, id)
-      await refreshOrders()
+      setOrdersRefreshTrigger((n) => n + 1)
       await openOrder(id)
     } catch (e: any) {
       setError(e?.message ?? t.failedResendEmail)
@@ -469,7 +461,7 @@ function AdminRouteLegacy() {
     setLoading(true)
     try {
       await adminApi.adminResendWhatsApp(token, id)
-      await refreshOrders()
+      setOrdersRefreshTrigger((n) => n + 1)
       await openOrder(id)
     } catch (e: any) {
       setError(e?.message ?? t.failedResendWhatsApp)
@@ -485,7 +477,7 @@ function AdminRouteLegacy() {
     try {
       const updated = await adminApi.adminMarkDelivered(token, id)
       setSelectedOrder(updated)
-      await refreshOrders()
+      setOrdersRefreshTrigger((n) => n + 1)
     } catch (e: any) {
       setError(e?.message ?? 'Failed to mark as delivered')
     } finally {
@@ -529,7 +521,8 @@ function AdminRouteLegacy() {
     try {
       await adminApi.adminBulkDeleteCustomers(token, ids)
       setSelectedCustomer(null)
-      await Promise.all([refreshCustomers(), refreshOrders()])
+      setCustomersRefreshTrigger((n) => n + 1)
+      setOrdersRefreshTrigger((n) => n + 1)
     } catch (e: any) {
       setError(e?.message ?? 'Failed to delete customers')
     } finally {
@@ -658,13 +651,14 @@ function AdminRouteLegacy() {
           <div className="h-[calc(100vh-140px)]">
             <AdminCustomersTab
               t={t}
-              customers={customers}
+              token={token ?? ''}
               selectedCustomer={selectedCustomer}
               onSelectCustomer={setSelectedCustomer}
               onOpenCustomer={(id) => void openCustomer(id)}
               onOpenOrder={(id) => void openOrder(id)}
               onBulkDelete={bulkDeleteCustomers}
               loading={loading}
+              refreshTrigger={customersRefreshTrigger}
             />
           </div>
         </AdminSettingsTab>

@@ -5,32 +5,75 @@ import { prisma } from '../lib/prisma'
 
 const ParamsIdSchema = z.object({ id: z.string().min(1) })
 
+const ListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(500).default(100),
+  search: z.string().optional(),
+  kind: z.enum(['all', 'customer', 'draft']).default('all'),
+  sortField: z.enum(['createdAt', 'name', 'kind']).default('createdAt'),
+  sortDir: z.enum(['asc', 'desc']).default('desc'),
+})
+
 export const adminCustomerRoutes: FastifyPluginAsync = async (app) => {
-  app.get('/customers', async () => {
-    const customers = await prisma.customer.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        _count: { select: { orders: true } },
-        orders: { orderBy: { createdAt: 'desc' }, take: 1, select: { status: true, deliveryStatus: true } },
-      },
-      take: 200,
-    })
+  app.get('/customers', async (req) => {
+    const parsed = ListQuerySchema.safeParse(req.query)
+    const { page, pageSize, search, kind, sortField, sortDir } = parsed.success
+      ? parsed.data
+      : { page: 1, pageSize: 100, search: undefined, kind: 'all' as const, sortField: 'createdAt' as const, sortDir: 'desc' as const }
 
-    const drafts = await prisma.orderDraft.findMany({
-      orderBy: { updatedAt: 'desc' },
-      take: 200,
-      select: {
-        id: true,
-        step: true,
-        formValues: true,
-        whatsappNumber: true,
-        emailLower: true,
-        createdAt: true,
-        updatedAt: true,
-        convertedOrderId: true,
-      },
-    })
+    const q = search?.trim().toLowerCase() ?? ''
 
+    // --- Customers ---
+    const fetchCustomers = kind === 'all' || kind === 'customer'
+    let customers: any[] = []
+    if (fetchCustomers) {
+      const customerWhere: any = q
+        ? {
+            OR: [
+              { name: { contains: q, mode: 'insensitive' } },
+              { whatsappNumber: { contains: q } },
+              { email: { contains: q, mode: 'insensitive' } },
+            ],
+          }
+        : {}
+      customers = await prisma.customer.findMany({
+        where: customerWhere,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          _count: { select: { orders: true } },
+          orders: { orderBy: { createdAt: 'desc' }, take: 1, select: { status: true, deliveryStatus: true } },
+        },
+      })
+    }
+
+    // --- Drafts ---
+    const fetchDrafts = kind === 'all' || kind === 'draft'
+    let drafts: any[] = []
+    if (fetchDrafts) {
+      const draftWhere: any = { convertedOrderId: null }
+      if (q) {
+        draftWhere.OR = [
+          { whatsappNumber: { contains: q } },
+          { emailLower: { contains: q } },
+        ]
+      }
+      drafts = await prisma.orderDraft.findMany({
+        where: draftWhere,
+        orderBy: { updatedAt: 'desc' },
+        select: {
+          id: true,
+          step: true,
+          formValues: true,
+          whatsappNumber: true,
+          emailLower: true,
+          createdAt: true,
+          updatedAt: true,
+          convertedOrderId: true,
+        },
+      })
+    }
+
+    // Build customer items
     const customerItems = customers.map((c) => ({
       kind: 'customer' as const,
       id: c.id,
@@ -46,16 +89,13 @@ export const adminCustomerRoutes: FastifyPluginAsync = async (app) => {
     }))
 
     const existingWhatsapps = new Set(
-      customers
-        .map((c) => c.whatsappNumber?.trim())
-        .filter((w): w is string => !!w && w.length > 0),
+      customers.map((c) => c.whatsappNumber?.trim()).filter((w): w is string => !!w && w.length > 0),
     )
     const existingEmails = new Set(
-      customers
-        .map((c) => c.email?.trim().toLowerCase())
-        .filter((e): e is string => !!e && e.length > 0),
+      customers.map((c) => c.email?.trim().toLowerCase()).filter((e): e is string => !!e && e.length > 0),
     )
 
+    // Build draft items (exclude those that match an existing customer)
     const draftItems = drafts
       .filter((d) => !d.convertedOrderId)
       .map((d) => {
@@ -63,7 +103,6 @@ export const adminCustomerRoutes: FastifyPluginAsync = async (app) => {
         const nameRaw = String(fv?.recipientName ?? fv?.yourName ?? '').trim()
         const emailRaw = String(fv?.email ?? '').trim()
         const whatsappRaw = String(fv?.whatsappNumber ?? d.whatsappNumber ?? '').trim()
-
         return {
           kind: 'draft' as const,
           id: `draft:${d.id}`,
@@ -83,16 +122,34 @@ export const adminCustomerRoutes: FastifyPluginAsync = async (app) => {
         if (d.email && existingEmails.has(d.email.toLowerCase())) return false
         return true
       })
+      // Additional in-memory name search for drafts (name is inside JSON)
+      .filter((d) => {
+        if (!q) return true
+        const hay = `${d.name} ${d.whatsappNumber ?? ''} ${d.email ?? ''}`.toLowerCase()
+        return hay.includes(q)
+      })
 
+    // Combine and sort
     const combined = [...draftItems, ...customerItems]
-    // Sort by recency (draft uses updatedAt, customer uses createdAt)
     combined.sort((a, b) => {
-      const aTime = (a.kind === 'draft' ? (a.draftUpdatedAt ?? a.createdAt) : a.createdAt).getTime()
-      const bTime = (b.kind === 'draft' ? (b.draftUpdatedAt ?? b.createdAt) : b.createdAt).getTime()
-      return bTime - aTime
+      let cmp = 0
+      if (sortField === 'createdAt') {
+        const aTime = (a.kind === 'draft' ? (a.draftUpdatedAt ?? a.createdAt) : a.createdAt).getTime()
+        const bTime = (b.kind === 'draft' ? (b.draftUpdatedAt ?? b.createdAt) : b.createdAt).getTime()
+        cmp = aTime - bTime
+      } else if (sortField === 'name') {
+        cmp = (a.name ?? '').localeCompare(b.name ?? '')
+      } else if (sortField === 'kind') {
+        cmp = (a.kind ?? '').localeCompare(b.kind ?? '')
+      }
+      return sortDir === 'asc' ? cmp : -cmp
     })
 
-    return combined
+    const total = combined.length
+    const skip = (page - 1) * pageSize
+    const items = combined.slice(skip, skip + pageSize)
+
+    return { items, total, page, pageSize }
   })
 
   app.post('/customers/bulk-delete', async (req, reply) => {
@@ -151,4 +208,3 @@ export const adminCustomerRoutes: FastifyPluginAsync = async (app) => {
     return customer
   })
 }
-

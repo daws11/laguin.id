@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { CustomerDetail, CustomerListItem } from '@/features/admin/types'
+import { adminGetCustomers } from '@/features/admin/api'
 import {
   Search,
   ChevronDown,
@@ -52,26 +53,31 @@ function StatusBadge({ value }: { value: string }) {
 type SortField = 'createdAt' | 'name' | 'kind'
 type SortDir = 'asc' | 'desc'
 
+const PAGE_SIZE = 100
+
 export function AdminCustomersTab({
   t,
-  customers,
+  token,
   selectedCustomer,
   onSelectCustomer,
   onOpenCustomer,
   onOpenOrder,
   onBulkDelete,
   loading: _loading,
+  refreshTrigger = 0,
 }: {
   t: any
-  customers: CustomerListItem[]
+  token: string
   selectedCustomer: (CustomerDetail | any) | null
   onSelectCustomer: (c: (CustomerDetail | any) | null) => void
   onOpenCustomer: (id: string) => void
   onOpenOrder: (id: string) => void
   onBulkDelete: (ids: string[]) => Promise<void>
   loading?: boolean
+  refreshTrigger?: number
 }) {
   const [query, setQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [kindFilter, setKindFilter] = useState<string>('all')
   const [sortField, setSortField] = useState<SortField>('createdAt')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -79,40 +85,48 @@ export function AdminCustomersTab({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [page, setPage] = useState(1)
-  const PAGE_SIZE = 100
 
-  const filtered = useMemo(() => {
-    let result = customers
-    const q = query.trim().toLowerCase()
-    if (q) {
-      result = result.filter((c) => {
-        const hay = `${c.id} ${c.name} ${c.whatsappNumber ?? ''} ${c.email ?? ''}`.toLowerCase()
-        return hay.includes(q)
+  // Server-fetched state
+  const [customers, setCustomers] = useState<CustomerListItem[]>([])
+  const [total, setTotal] = useState(0)
+  const [fetchLoading, setFetchLoading] = useState(false)
+
+  // Debounce search
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setDebouncedQuery(query)
+      setPage(1)
+    }, 300)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [query])
+
+  useEffect(() => { setPage(1) }, [kindFilter, sortField, sortDir])
+
+  // Fetch from server
+  useEffect(() => {
+    if (!token) return
+    const params = new URLSearchParams()
+    params.set('page', String(page))
+    params.set('pageSize', String(PAGE_SIZE))
+    if (debouncedQuery) params.set('search', debouncedQuery)
+    if (kindFilter !== 'all') params.set('kind', kindFilter)
+    params.set('sortField', sortField)
+    params.set('sortDir', sortDir)
+
+    setFetchLoading(true)
+    adminGetCustomers(token, params)
+      .then((res) => {
+        setCustomers(res.items.map((c: any) => ({ kind: c?.kind ?? 'customer', ...c })))
+        setTotal(res.total)
       })
-    }
-    if (kindFilter !== 'all') {
-      result = result.filter((c) => c.kind === kindFilter)
-    }
-    const sorted = [...result].sort((a, b) => {
-      let cmp = 0
-      if (sortField === 'createdAt') {
-        cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      } else if (sortField === 'name') {
-        cmp = (a.name ?? '').localeCompare(b.name ?? '')
-      } else if (sortField === 'kind') {
-        cmp = (a.kind ?? '').localeCompare(b.kind ?? '')
-      }
-      return sortDir === 'asc' ? cmp : -cmp
-    })
-    return sorted
-  }, [customers, query, kindFilter, sortField, sortDir])
+      .catch(() => {})
+      .finally(() => setFetchLoading(false))
+  }, [token, page, debouncedQuery, kindFilter, sortField, sortDir, refreshTrigger])
 
-  useEffect(() => { setPage(1) }, [query, kindFilter])
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const safePage = Math.min(page, totalPages)
-  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
-  useEffect(() => { if (page > totalPages) setPage(totalPages) }, [filtered.length])
 
   function toggleSort(field: SortField) {
     if (sortField === field) {
@@ -131,15 +145,6 @@ export function AdminCustomersTab({
       <ChevronDown className="h-3 w-3" />
     )
   }
-
-  const kindCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: customers.length }
-    customers.forEach((c) => {
-      const k = c.kind ?? 'customer'
-      counts[k] = (counts[k] || 0) + 1
-    })
-    return counts
-  }, [customers])
 
   const stepLabel = (step: number | null | undefined) => {
     const s = typeof step === 'number' && Number.isFinite(step) ? step : 0
@@ -337,7 +342,7 @@ export function AdminCustomersTab({
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t.customers}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {filtered.length} of {customers.length} customers{totalPages > 1 && ` · Page ${safePage} of ${totalPages}`}
+            {fetchLoading ? 'Loading…' : `${total} customer${total !== 1 ? 's' : ''}${totalPages > 1 ? ` · Page ${safePage} of ${totalPages}` : ''}`}
           </p>
         </div>
       </div>
@@ -354,7 +359,7 @@ export function AdminCustomersTab({
         </div>
 
         <div className="flex gap-1.5">
-          {['all', 'customer', 'draft'].map((k) => (
+          {(['all', 'customer', 'draft'] as const).map((k) => (
             <button
               key={k}
               onClick={() => setKindFilter(k)}
@@ -366,7 +371,6 @@ export function AdminCustomersTab({
               )}
             >
               {k === 'all' ? 'All' : k === 'customer' ? 'Customers' : 'Drafts'}
-              <span className="ml-1.5 opacity-70">({kindCounts[k] ?? 0})</span>
             </button>
           ))}
         </div>
@@ -439,16 +443,16 @@ export function AdminCustomersTab({
                   <input
                     type="checkbox"
                     className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-                    checked={paged.length > 0 && paged.every((c) => selected.has(c.id))}
+                    checked={customers.length > 0 && customers.every((c) => selected.has(c.id))}
                     ref={(el) => {
-                      if (el) el.indeterminate = paged.some((c) => selected.has(c.id)) && !paged.every((c) => selected.has(c.id))
+                      if (el) el.indeterminate = customers.some((c) => selected.has(c.id)) && !customers.every((c) => selected.has(c.id))
                     }}
                     onChange={(e) => {
                       if (e.target.checked) {
-                        setSelected(new Set([...selected, ...paged.map((c) => c.id)]))
+                        setSelected(new Set([...selected, ...customers.map((c) => c.id)]))
                       } else {
                         const next = new Set(selected)
-                        paged.forEach((c) => next.delete(c.id))
+                        customers.forEach((c) => next.delete(c.id))
                         setSelected(next)
                       }
                     }}
@@ -496,7 +500,7 @@ export function AdminCustomersTab({
               </tr>
             </thead>
             <tbody className="divide-y">
-              {paged.map((c) => (
+              {customers.map((c) => (
                 <tr
                   key={c.id}
                   className={cn(
@@ -547,58 +551,64 @@ export function AdminCustomersTab({
                     {c.latestOrderStatus ? (
                       <StatusBadge value={c.latestOrderStatus} />
                     ) : (
-                      <span className="text-xs text-muted-foreground">--</span>
+                      <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                    {new Date(c.createdAt).toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
+                  <td className="px-4 py-3">
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(c.createdAt).toLocaleDateString()}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
-                        title="View details"
+                        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="View customer"
                         onClick={() => onOpenCustomer(c.id)}
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </td>
                 </tr>
               ))}
-              {paged.length === 0 && (
+              {customers.length === 0 && !fetchLoading && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">
+                  <td colSpan={9} className="px-4 py-12 text-center text-sm text-muted-foreground">
                     {t.noCustomersFound ?? 'No customers found.'}
+                  </td>
+                </tr>
+              )}
+              {fetchLoading && (
+                <tr>
+                  <td colSpan={9} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    Loading…
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
         {totalPages > 1 && (
           <div className="flex items-center justify-between border-t px-4 py-3 shrink-0 bg-card">
             <span className="text-sm text-muted-foreground">
-              Showing {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length}
+              Showing {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, total)} of {total}
             </span>
             <div className="flex gap-1">
               <button
                 disabled={safePage <= 1}
                 onClick={() => setPage(p => p - 1)}
-                className="px-3 py-1.5 rounded-md text-xs font-medium border transition-colors disabled:opacity-40 hover:bg-muted"
+                className="px-3 py-1.5 rounded-md text-xs font-medium border bg-background hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 Previous
               </button>
               <button
                 disabled={safePage >= totalPages}
                 onClick={() => setPage(p => p + 1)}
-                className="px-3 py-1.5 rounded-md text-xs font-medium border transition-colors disabled:opacity-40 hover:bg-muted"
+                className="px-3 py-1.5 rounded-md text-xs font-medium border bg-background hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 Next
               </button>

@@ -43,8 +43,16 @@ export async function adminUpdatePromptTemplate(
   return apiPut<PromptTemplate>(`/api/admin/prompt-templates/${encodeURIComponent(id)}`, body, { token })
 }
 
-export async function adminGetCustomers(token: string) {
-  return apiGet<CustomerListItem[]>('/api/admin/customers', { token })
+export type CustomersPage = {
+  items: CustomerListItem[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export async function adminGetCustomers(token: string, params?: URLSearchParams) {
+  const url = params?.toString() ? `/api/admin/customers?${params.toString()}` : '/api/admin/customers'
+  return apiGet<CustomersPage>(url, { token })
 }
 
 export async function adminGetCustomer(token: string, id: string) {
