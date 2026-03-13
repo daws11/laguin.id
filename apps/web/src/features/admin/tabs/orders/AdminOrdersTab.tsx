@@ -197,11 +197,21 @@ function statusColor(status: string) {
     return 'bg-emerald-50 text-emerald-700 border-emerald-200'
   if (s === 'processing' || s === 'delivery_scheduled')
     return 'bg-amber-50 text-amber-700 border-amber-200'
+  if (s === 'wa_sent')
+    return 'bg-blue-50 text-blue-700 border-blue-200'
   if (s === 'created' || s === 'free' || s === 'pending' || s === 'delivery_pending')
     return 'bg-slate-50 text-slate-600 border-slate-200'
   if (s === 'failed' || s === 'delivery_failed')
     return 'bg-red-50 text-red-700 border-red-200'
   return 'bg-slate-50 text-slate-600 border-slate-200'
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  wa_sent: 'WA Sent',
+  delivery_pending: 'Pending',
+  delivery_scheduled: 'Scheduled',
+  delivery_failed: 'Failed',
+  delivered: 'Delivered',
 }
 
 function StatusBadge({ value }: { value: string }) {
@@ -212,7 +222,7 @@ function StatusBadge({ value }: { value: string }) {
         statusColor(value)
       )}
     >
-      {value.replace(/_/g, ' ')}
+      {STATUS_LABELS[value] ?? value.replace(/_/g, ' ')}
     </span>
   )
 }
@@ -488,7 +498,7 @@ export function AdminOrdersTab({
                     <CardContent className="p-3 pt-1">
                       <div className="flex items-center justify-between">
                         <span className="text-lg font-semibold capitalize">
-                          {selectedOrder.deliveryStatus.replace(/_/g, ' ')}
+                          {STATUS_LABELS[selectedOrder.deliveryStatus] ?? selectedOrder.deliveryStatus.replace(/_/g, ' ')}
                         </span>
                         <div
                           className={cn(
@@ -497,11 +507,13 @@ export function AdminOrdersTab({
                               ? 'bg-green-500'
                               : selectedOrder.deliveryStatus === 'delivery_failed'
                               ? 'bg-red-500'
+                              : selectedOrder.deliveryStatus === 'wa_sent'
+                              ? 'bg-blue-500'
                               : 'bg-amber-500'
                           )}
                         />
                       </div>
-                      {selectedOrder.deliveryStatus === 'delivery_scheduled' && (
+                      {(selectedOrder.deliveryStatus === 'delivery_scheduled' || selectedOrder.deliveryStatus === 'wa_sent') && (
                         <div className="mt-2 space-y-1.5">
                           {selectedOrder.deliveryScheduledAt && (
                             <div className="text-xs text-muted-foreground">
@@ -530,7 +542,7 @@ export function AdminOrdersTab({
                           })()}
                         </div>
                       )}
-                      {(selectedOrder.deliveryStatus === 'delivery_pending' || selectedOrder.deliveryStatus === 'delivery_scheduled') && (
+                      {(selectedOrder.deliveryStatus === 'delivery_pending' || selectedOrder.deliveryStatus === 'delivery_scheduled' || selectedOrder.deliveryStatus === 'wa_sent') && (
                         <div className="grid grid-cols-2 gap-2 mt-3">
                           <Button
                             size="sm"
@@ -856,10 +868,11 @@ export function AdminOrdersTab({
           className="rounded-md border bg-background px-3 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-500/40"
         >
           <option value="all">All Delivery</option>
-          <option value="delivery_pending">Delivery Pending</option>
-          <option value="delivery_scheduled">Delivery Scheduled</option>
+          <option value="delivery_pending">Pending</option>
+          <option value="delivery_scheduled">Scheduled</option>
+          <option value="wa_sent">WA Sent</option>
           <option value="delivered">Delivered</option>
-          <option value="delivery_failed">Delivery Failed</option>
+          <option value="delivery_failed">Failed</option>
         </select>
 
         <select

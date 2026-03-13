@@ -193,6 +193,12 @@ export async function sendWhatsAppReminderForOrder(orderId: string, opts?: { for
     data: result as any,
   })
 
+  // Advance delivery status to wa_sent (unless already fully delivered)
+  await prisma.order.update({
+    where: { id: orderId, deliveryStatus: { not: 'delivered' } },
+    data: { deliveryStatus: 'wa_sent' },
+  }).catch(() => {/* ignore if order is already delivered */})
+
   await finalizeDeliveryIfReady(orderId)
   return { ok: true }
 }

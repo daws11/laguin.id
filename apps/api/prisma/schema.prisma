@@ -23,6 +23,7 @@ enum OrderStatus {
 enum DeliveryStatus {
   delivery_pending
   delivery_scheduled
+  wa_sent
   delivered
   delivery_failed
 }

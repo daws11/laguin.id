@@ -10,7 +10,7 @@ import { completeOrder } from '../pipeline/generation'
 
 const ListQuerySchema = z.object({
   status: z.enum(['created', 'processing', 'completed', 'failed']).optional(),
-  deliveryStatus: z.enum(['delivery_pending', 'delivery_scheduled', 'delivered', 'delivery_failed']).optional(),
+  deliveryStatus: z.enum(['delivery_pending', 'delivery_scheduled', 'wa_sent', 'delivered', 'delivery_failed']).optional(),
   themeSlug: z.string().optional(),
   search: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),

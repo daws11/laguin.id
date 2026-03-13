@@ -6,6 +6,7 @@ export type OrderStatus = z.infer<typeof OrderStatusSchema>
 export const DeliveryStatusSchema = z.enum([
   'delivery_pending',
   'delivery_scheduled',
+  'wa_sent',
   'delivered',
   'delivery_failed',
 ])
