@@ -23,16 +23,12 @@ async function sendYCloudText(apiKey: string, from: string, to: string, body: st
  * Handles: text, button (quick-reply payload), interactive button_reply.
  */
 function extractMessageText(body: any): string {
-  // YCloud v2 webhook structure: body.whatsappInboundMessage
   const data = body?.whatsappInboundMessage ?? body?.data ?? {}
   const type: string = data.type ?? ''
 
   if (type === 'text') return (data.text?.body ?? '').trim()
 
   if (type === 'button') {
-    // When customer taps a quick-reply button, YCloud sends type=button with:
-    // button.payload = the payload value set in the template button
-    // button.text = the button label shown to the user
     return (data.button?.payload ?? data.button?.text ?? '').trim()
   }
 
@@ -45,6 +41,17 @@ function extractMessageText(body: any): string {
   return ''
 }
 
+/**
+ * Extracts the WhatsApp context.id from a button reply.
+ * This is the wamid of the original template message that contained the button.
+ * When present, it lets us precisely match the reply to the correct order.
+ */
+function extractContextMessageId(body: any): string | null {
+  const data = body?.whatsappInboundMessage ?? body?.data ?? {}
+  const ctxId = data.context?.id ?? data.context?.messageId ?? null
+  return typeof ctxId === 'string' && ctxId.length > 0 ? ctxId : null
+}
+
 const LISTEN_NOW_PATTERN = /^(dengarkan sekarang|listen now)$/i
 
 export const ycloudWebhookRoutes: FastifyPluginAsync = async (app) => {
@@ -55,22 +62,20 @@ export const ycloudWebhookRoutes: FastifyPluginAsync = async (app) => {
    *   https://<your-domain>/api/ycloud/webhook?token=<ycloudWebhookSecret>
    *
    * Two-step song delivery flow:
-   *  1. Song completed → send `song_delivery` WhatsApp template (with button "Dengarkan Sekarang")
-   *     → backend records a `whatsapp_reminder_sent` event on the order (ties the template send to the order ID)
-   *  2. Customer taps the button → YCloud forwards the "Dengarkan Sekarang" reply here
-   *     → we find which specific order is waiting for this customer's link (has reminder sent, no link sent yet)
-   *     → we pick the most recently reminded order and send its delivery link
-   *
-   * Multi-order safety: a customer with N orders will always receive the link for the correct order
-   * because we match on `whatsapp_reminder_sent` events (tied to the order) rather than just the
-   * latest completed order. Idempotency is guaranteed per-order via the `whatsapp_link_sent` event.
+   *  1. Song completed → send `song_delivery` WhatsApp template (button "Dengarkan Sekarang")
+   *     → YCloud returns a message ID; we store it as `providerMessageId` in the
+   *       `whatsapp_reminder_sent` event, tying the template send to the exact order.
+   *  2. Customer taps the button → YCloud sends the button reply here with `context.id`
+   *     = the wamid of the original template message.
+   *     → We look up the `whatsapp_reminder_sent` event whose `providerMessageId` matches
+   *       that context ID → resolves the exact order, even for customers with multiple orders
+   *       and even after admin resends for specific orders.
+   *     → Fallback: if context is unavailable, pick the most recently reminded order.
    */
   app.post('/ycloud/webhook', async (req, reply) => {
     const body: any = req.body ?? {}
     const query: any = req.query ?? {}
 
-    // Optional token-based security. Set ycloudWebhookSecret in admin settings,
-    // then add ?token=<secret> to the webhook URL configured in YCloud.
     const settings = await getOrCreateSettings().catch(() => null)
     const cfg = (settings?.whatsappConfig && typeof settings.whatsappConfig === 'object'
       ? settings.whatsappConfig
@@ -92,10 +97,8 @@ export const ycloudWebhookRoutes: FastifyPluginAsync = async (app) => {
     setImmediate(async () => {
       try {
         const eventType: string = body?.type ?? ''
-        // YCloud v2 uses dot-notation event type names
         if (eventType !== 'whatsapp.inbound_message.received' && eventType !== 'whatsapp_inbound_message') return
 
-        // YCloud v2: message data in whatsappInboundMessage; v1 fallback: data
         const data = body?.whatsappInboundMessage ?? body?.data ?? {}
         const senderPhone: string = typeof data.from === 'string' ? data.from : ''
         if (!senderPhone) return
@@ -105,7 +108,6 @@ export const ycloudWebhookRoutes: FastifyPluginAsync = async (app) => {
 
         if (!LISTEN_NOW_PATTERN.test(msgText)) return
 
-        // Normalize sender number to match our stored format (62xxxxxxxxxx)
         const normalizedSender = normalizeWhatsappNumber(senderPhone)
 
         const customer = await prisma.customer.findUnique({
@@ -118,42 +120,76 @@ export const ycloudWebhookRoutes: FastifyPluginAsync = async (app) => {
           return
         }
 
-        // Find the order for which we most recently sent the WA template.
-        // Includes orders whose link has already been sent — resending is always allowed.
-        // This correctly handles customers with multiple orders: we match on the recorded
-        // `whatsapp_reminder_sent` event rather than just the latest completed order.
-        const remindedOrders = await prisma.order.findMany({
-          where: {
-            customerId: customer.id,
-            status: 'completed',
-            // Has a template send recorded (ties the reply to a specific order)
-            events: { some: { type: 'whatsapp_reminder_sent' } },
-          },
-          include: {
-            events: {
-              where: { type: 'whatsapp_reminder_sent' },
-              orderBy: { createdAt: 'desc' },
-              take: 1,
-              select: { createdAt: true },
-            },
-          },
-        })
+        // ── Primary path: match via WhatsApp context.id ─────────────────────────────
+        // When a customer taps a quick-reply button, YCloud includes context.id in the
+        // inbound message — the wamid of the original template message. We stored that
+        // wamid as `providerMessageId` in the whatsapp_reminder_sent event when we sent
+        // the template. This gives us a precise, per-send mapping to the correct order,
+        // so resending for a specific order always produces the right link.
+        const contextMsgId = extractContextMessageId(body)
+        app.log.info({ contextMsgId }, 'ycloud_webhook: button reply context')
 
-        if (!remindedOrders.length) {
-          app.log.info({ customerId: customer.id }, 'ycloud_webhook: no reminded orders found for customer')
+        let order: { id: string; [key: string]: any } | null = null
+
+        if (contextMsgId) {
+          const reminderEvent = await prisma.orderEvent.findFirst({
+            where: {
+              type: 'whatsapp_reminder_sent',
+              // Match the providerMessageId stored in the event data
+              data: { path: ['providerMessageId'], equals: contextMsgId },
+              // Scope to this customer's orders for safety
+              order: { customerId: customer.id },
+            },
+            select: { orderId: true },
+          })
+
+          if (reminderEvent) {
+            order = await prisma.order.findUnique({ where: { id: reminderEvent.orderId } })
+            app.log.info({ orderId: order?.id, contextMsgId }, 'ycloud_webhook: matched order via context message ID')
+          } else {
+            app.log.warn({ contextMsgId, customerId: customer.id }, 'ycloud_webhook: context ID not found in reminder events, falling back')
+          }
+        }
+
+        // ── Fallback: most-recently-reminded order ───────────────────────────────────
+        // Used when the button reply doesn't include a context ID (older WA flows,
+        // or when the message ID wasn't captured at send time).
+        if (!order) {
+          const remindedOrders = await prisma.order.findMany({
+            where: {
+              customerId: customer.id,
+              status: 'completed',
+              events: { some: { type: 'whatsapp_reminder_sent' } },
+            },
+            include: {
+              events: {
+                where: { type: 'whatsapp_reminder_sent' },
+                orderBy: { createdAt: 'desc' },
+                take: 1,
+                select: { createdAt: true },
+              },
+            },
+          })
+
+          if (!remindedOrders.length) {
+            app.log.info({ customerId: customer.id }, 'ycloud_webhook: no reminded orders found for customer')
+            return
+          }
+
+          remindedOrders.sort((a, b) => {
+            const aTime = a.events[0]?.createdAt?.getTime() ?? 0
+            const bTime = b.events[0]?.createdAt?.getTime() ?? 0
+            return bTime - aTime
+          })
+          order = remindedOrders[0]
+          app.log.info({ orderId: order.id }, 'ycloud_webhook: matched order via most-recent-reminder fallback')
+        }
+
+        if (!order) {
+          app.log.info({ customerId: customer.id }, 'ycloud_webhook: could not resolve order for customer')
           return
         }
 
-        // Pick the order whose template was sent most recently — that is the order
-        // the customer is responding to.
-        remindedOrders.sort((a, b) => {
-          const aTime = a.events[0]?.createdAt?.getTime() ?? 0
-          const bTime = b.events[0]?.createdAt?.getTime() ?? 0
-          return bTime - aTime
-        })
-        const order = remindedOrders[0]
-
-        // Re-read settings (already loaded above)
         const ycloud = (cfg?.ycloud ?? {}) as any
         const apiKey = maybeDecrypt(ycloud.apiKeyEnc) ?? maybeDecrypt(ycloud.apiKey) ?? null
         const fromNumber = typeof ycloud.from === 'string' ? ycloud.from : null
@@ -163,7 +199,6 @@ export const ycloudWebhookRoutes: FastifyPluginAsync = async (app) => {
           return
         }
 
-        // Build delivery URL from admin-configured siteUrl or env var
         const siteUrl = (typeof cfg?.siteUrl === 'string' && cfg.siteUrl.trim())
           ? cfg.siteUrl.trim().replace(/\/$/, '')
           : (process.env.APP_BASE_URL ?? '').replace(/\/$/, '')
@@ -190,9 +225,8 @@ export const ycloudWebhookRoutes: FastifyPluginAsync = async (app) => {
             orderId: order.id,
             type: 'whatsapp_link_sent',
             message: `Sent delivery link to ${senderPhone}`,
-            data: { to: senderPhone, deliveryUrl } as any,
+            data: { to: senderPhone, deliveryUrl, contextMsgId } as any,
           })
-          // Customer has received the link — mark the order as delivered
           await prisma.order.update({
             where: { id: order.id },
             data: { deliveryStatus: 'delivered', deliveredAt: new Date() },
