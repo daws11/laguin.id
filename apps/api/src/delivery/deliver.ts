@@ -159,7 +159,8 @@ export async function sendWhatsAppReminderForOrder(orderId: string, opts?: { for
   })
   if (!order) throw new Error('Order not found')
   if (order.status !== 'completed') throw new Error(`Invalid status=${order.status}`)
-  if (!order.trackUrl) throw new Error('Missing trackUrl (music not generated)')
+  // Note: trackUrl is NOT required here — the WA template sends a button only;
+  // the delivery link is sent separately by the YCloud webhook when the customer taps it.
 
   if (!force) {
     const existing = await prisma.orderEvent.findFirst({
@@ -193,7 +194,20 @@ export async function sendWhatsAppReminderForOrder(orderId: string, opts?: { for
     data: result as any,
   })
 
-  await finalizeDeliveryIfReady(orderId)
+  // WA template sent successfully → mark order as delivered immediately.
+  // (The customer has the button to access their song; email is secondary.)
+  if (order.deliveryStatus !== 'delivered') {
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { deliveryStatus: 'delivered', deliveredAt: new Date() },
+    })
+    await addOrderEvent({
+      orderId,
+      type: 'delivered',
+      message: 'Delivered: WhatsApp template message sent.',
+    })
+  }
+
   return { ok: true }
 }
 
