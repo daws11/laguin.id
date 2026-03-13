@@ -622,6 +622,7 @@ export function PublicSiteConfigSection({
                   saveSettings={saveSettings}
                   loading={loading}
                   t={t}
+                  token={token}
                 />
               </div>
             )}

@@ -36,6 +36,20 @@ export async function adminGetSettings(token: string) {
   return apiGet<Settings>('/api/admin/settings', { token })
 }
 
+export type YCloudTemplate = {
+  name: string
+  language: string
+  status: string
+  category: string
+  hasButton: boolean
+  buttons: { type: string; text: string }[]
+  bodyText: string | null
+}
+
+export async function adminFetchYCloudTemplates(token: string) {
+  return apiGet<{ templates: YCloudTemplate[] }>('/api/admin/settings/whatsapp/templates', { token })
+}
+
 export async function adminSaveSettings(
   token: string,
   partial: Partial<Settings> & { openaiApiKey?: string; kaiAiApiKey?: string; ycloudApiKey?: string; ycloudWebhookSecret?: string },

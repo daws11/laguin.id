@@ -7,6 +7,7 @@ type YCloudConfig = {
   from: string
   templateName: string
   templateLangCode: string
+  templateHasButton: boolean | null
 }
 
 function getYCloudConfigFromSettings(settings: any): YCloudConfig {
@@ -17,37 +18,44 @@ function getYCloudConfigFromSettings(settings: any): YCloudConfig {
   const from = typeof ycloud.from === 'string' ? ycloud.from : null
   const templateName = typeof ycloud.templateName === 'string' ? ycloud.templateName : null
   const templateLangCode = typeof ycloud.templateLangCode === 'string' ? ycloud.templateLangCode : null
+  const templateHasButton = typeof ycloud.templateHasButton === 'boolean' ? ycloud.templateHasButton : null
 
   if (!apiKey) throw new Error('Missing YCloud apiKey (set ycloudApiKey in Admin Settings)')
   if (!from) throw new Error('Missing YCloud from (set ycloudFrom in Admin Settings)')
   if (!templateName) throw new Error('Missing YCloud templateName (set ycloudTemplateName in Admin Settings)')
   if (!templateLangCode) throw new Error('Missing YCloud templateLangCode (set ycloudTemplateLangCode in Admin Settings)')
 
-  return { apiKey, from, templateName, templateLangCode }
+  return { apiKey, from, templateName, templateLangCode, templateHasButton }
 }
 
 export class YCloudWhatsAppProvider implements WhatsAppProvider {
   name = 'ycloud'
 
   async send(input: WhatsAppSendInput): Promise<WhatsAppSendResult> {
-    // In this app:
-    // - If `input.message` is a non-empty string, it is treated as the track URL (link) and injected as 1 BODY variable.
-    // - If `input.message` is empty/whitespace, we send the template with no variables (reminder-only).
+    // templateHasButton=true  → send template with NO body variables; webhook reply delivers the link
+    // templateHasButton=false → send template WITH link as body variable {1}
+    // templateHasButton=null  → legacy: use body variable only when input.message is non-empty
     const message = input.message ?? ''
     const trackUrl = message.trim()
 
     const settings = await getOrCreateSettings()
     const cfg = getYCloudConfigFromSettings(settings as any)
 
-    const components =
-      trackUrl.length > 0
-        ? [
-            {
-              type: 'body',
-              parameters: [{ type: 'text', text: trackUrl }],
-            },
-          ]
-        : []
+    let components: object[] = []
+    if (cfg.templateHasButton === true) {
+      // Button template: no body variables — the webhook handles sending the link
+      components = []
+    } else if (cfg.templateHasButton === false) {
+      // Direct-link template: inject link as body variable {1} if available
+      if (trackUrl.length > 0) {
+        components = [{ type: 'body', parameters: [{ type: 'text', text: trackUrl }] }]
+      }
+    } else {
+      // Legacy (null): inject if message provided
+      if (trackUrl.length > 0) {
+        components = [{ type: 'body', parameters: [{ type: 'text', text: trackUrl }] }]
+      }
+    }
 
     const payload = {
       from: cfg.from,
@@ -58,7 +66,6 @@ export class YCloudWhatsAppProvider implements WhatsAppProvider {
         language: { code: cfg.templateLangCode },
         ...(components.length > 0 ? { components } : {}),
       },
-      // Helpful for reconciliation in YCloud dashboard/webhooks.
       externalId: `order:${(input as any).orderId ?? ''}`,
     }
 
@@ -84,4 +91,3 @@ export class YCloudWhatsAppProvider implements WhatsAppProvider {
     return { ok: true, provider: this.name, providerMessageId: typeof json?.id === 'string' ? json.id : undefined }
   }
 }
-

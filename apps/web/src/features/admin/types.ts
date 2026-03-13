@@ -42,6 +42,7 @@ export type Settings = {
   ycloudFrom: string | null
   ycloudTemplateName: string | null
   ycloudTemplateLangCode: string | null
+  ycloudTemplateHasButton: boolean | null
   hasYcloudKey: boolean
   hasYcloudWebhookSecret: boolean
   siteUrl: string | null

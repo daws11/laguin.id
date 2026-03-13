@@ -95,6 +95,7 @@ export function SystemSettingsSection({
                 saveSettings={saveSettings}
                 loading={loading}
                 t={t}
+                token={token}
               />
             </div>
           )}

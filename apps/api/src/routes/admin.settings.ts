@@ -42,6 +42,7 @@ const UpdateSchema = z.object({
   ycloudApiKey: z.string().min(1).optional(),
   ycloudWebhookSecret: z.string().min(1).optional(),
   ycloudLinkMessage: z.string().optional().nullable(),
+  ycloudTemplateHasButton: z.boolean().optional().nullable(),
 
   // Site base URL used for WhatsApp delivery links (stored in whatsappConfig.siteUrl)
   siteUrl: z.string().url().optional().nullable(),
@@ -59,6 +60,43 @@ const UpdateSchema = z.object({
 })
 
 export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
+  app.get('/settings/whatsapp/templates', async (_req, reply) => {
+    const s = await getOrCreateSettings()
+    const cfg = (s.whatsappConfig && typeof s.whatsappConfig === 'object' ? s.whatsappConfig : null) ?? {}
+    const ycloud = (cfg as any).ycloud ?? {}
+    const apiKey = maybeDecrypt(ycloud.apiKeyEnc ?? ycloud.apiKey)
+    if (!apiKey) return reply.code(400).send({ error: 'missing_api_key', message: 'YCloud API key not configured.' })
+    try {
+      const res = await fetch('https://api.ycloud.com/v2/whatsapp/templates?pageSize=100', {
+        headers: { 'X-API-Key': apiKey },
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => null)
+        return reply.code(res.status).send({ error: 'ycloud_error', message: JSON.stringify(body) })
+      }
+      const json = (await res.json()) as any
+      const items = Array.isArray(json?.items) ? json.items : []
+      const templates = items.map((t: any) => {
+        const components: any[] = Array.isArray(t.components) ? t.components : []
+        const buttonsComp = components.find((c: any) => c.type === 'BUTTONS')
+        const hasButton = Array.isArray(buttonsComp?.buttons) && buttonsComp.buttons.length > 0
+        const bodyComp = components.find((c: any) => c.type === 'BODY')
+        return {
+          name: t.name,
+          language: t.language,
+          status: t.status,
+          category: t.category,
+          hasButton,
+          buttons: hasButton ? (buttonsComp.buttons as any[]).map((b: any) => ({ type: b.type, text: b.text })) : [],
+          bodyText: bodyComp?.text ?? null,
+        }
+      })
+      return { templates }
+    } catch (err: any) {
+      return reply.code(500).send({ error: 'fetch_error', message: err?.message ?? 'Unknown error' })
+    }
+  })
+
   app.get('/settings', async () => {
     const s = await getOrCreateSettings()
     const cfg = (s.whatsappConfig && typeof s.whatsappConfig === 'object' ? s.whatsappConfig : null) ?? {}
@@ -84,6 +122,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       hasYcloudWebhookSecret: Boolean(maybeDecrypt(ycloud.webhookSecretEnc)),
       siteUrl: typeof cfg.siteUrl === 'string' ? cfg.siteUrl : null,
       ycloudLinkMessage: typeof cfg.linkMessage === 'string' ? cfg.linkMessage : null,
+      ycloudTemplateHasButton: typeof ycloud.templateHasButton === 'boolean' ? ycloud.templateHasButton : null,
       ycloudWebhookUrl: (() => {
         const secret = maybeDecrypt(ycloud.webhookSecretEnc)
         const base = '/api/ycloud/webhook'
@@ -148,6 +187,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
     if (parsed.data.ycloudTemplateLangCode) nextYcloud.templateLangCode = parsed.data.ycloudTemplateLangCode
     if (parsed.data.ycloudApiKey) nextYcloud.apiKeyEnc = encryptString(parsed.data.ycloudApiKey)
     if (parsed.data.ycloudWebhookSecret) nextYcloud.webhookSecretEnc = encryptString(parsed.data.ycloudWebhookSecret)
+    if (parsed.data.ycloudTemplateHasButton !== undefined) nextYcloud.templateHasButton = parsed.data.ycloudTemplateHasButton
 
     const nextCfg: any = { ...currentCfg, ycloud: nextYcloud }
     if (parsed.data.siteUrl !== undefined) nextCfg.siteUrl = parsed.data.siteUrl ?? null
@@ -225,6 +265,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       hasYcloudWebhookSecret: Boolean(maybeDecrypt(ycloud.webhookSecretEnc)),
       siteUrl: typeof (cfg as any).siteUrl === 'string' ? (cfg as any).siteUrl : null,
       ycloudLinkMessage: typeof (cfg as any).linkMessage === 'string' ? (cfg as any).linkMessage : null,
+      ycloudTemplateHasButton: typeof ycloud.templateHasButton === 'boolean' ? ycloud.templateHasButton : null,
       ycloudWebhookUrl: (() => {
         const secret = maybeDecrypt(ycloud.webhookSecretEnc)
         const base = '/api/ycloud/webhook'
