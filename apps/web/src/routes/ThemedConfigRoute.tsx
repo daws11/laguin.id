@@ -6,7 +6,7 @@ export function ThemedConfigRoute() {
   const { themeSlug } = useParams<{ themeSlug: string }>()
   return (
     <ThemeProvider themeSlug={themeSlug ?? null}>
-      <ConfigRoute />
+      <ConfigRoute key={themeSlug} />
     </ThemeProvider>
   )
 }

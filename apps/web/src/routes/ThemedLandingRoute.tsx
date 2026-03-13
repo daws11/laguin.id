@@ -17,7 +17,7 @@ export function ThemedLandingRoute() {
   return (
     <ThemeProvider themeSlug={themeSlug ?? null}>
       <Suspense fallback={<LazyFallback />}>
-        <LandingRoute />
+        <LandingRoute key={themeSlug} />
       </Suspense>
     </ThemeProvider>
   )
