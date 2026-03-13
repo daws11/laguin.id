@@ -41,6 +41,7 @@ const UpdateSchema = z.object({
   ycloudTemplateLangCode: z.string().min(1).optional(),
   ycloudApiKey: z.string().min(1).optional(),
   ycloudWebhookSecret: z.string().min(1).optional(),
+  ycloudLinkMessage: z.string().optional().nullable(),
 
   // Site base URL used for WhatsApp delivery links (stored in whatsappConfig.siteUrl)
   siteUrl: z.string().url().optional().nullable(),
@@ -82,6 +83,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       hasYcloudKey: Boolean(maybeDecrypt(ycloud.apiKeyEnc ?? ycloud.apiKey)),
       hasYcloudWebhookSecret: Boolean(maybeDecrypt(ycloud.webhookSecretEnc)),
       siteUrl: typeof cfg.siteUrl === 'string' ? cfg.siteUrl : null,
+      ycloudLinkMessage: typeof cfg.linkMessage === 'string' ? cfg.linkMessage : null,
       ycloudWebhookUrl: (() => {
         const secret = maybeDecrypt(ycloud.webhookSecretEnc)
         const base = '/api/ycloud/webhook'
@@ -149,6 +151,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
 
     const nextCfg: any = { ...currentCfg, ycloud: nextYcloud }
     if (parsed.data.siteUrl !== undefined) nextCfg.siteUrl = parsed.data.siteUrl ?? null
+    if (parsed.data.ycloudLinkMessage !== undefined) nextCfg.linkMessage = parsed.data.ycloudLinkMessage ?? null
 
     const mergedWhatsappConfig =
       parsed.data.whatsappConfig !== undefined
@@ -221,6 +224,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       hasYcloudKey: Boolean(maybeDecrypt(ycloud.apiKeyEnc ?? ycloud.apiKey)),
       hasYcloudWebhookSecret: Boolean(maybeDecrypt(ycloud.webhookSecretEnc)),
       siteUrl: typeof (cfg as any).siteUrl === 'string' ? (cfg as any).siteUrl : null,
+      ycloudLinkMessage: typeof (cfg as any).linkMessage === 'string' ? (cfg as any).linkMessage : null,
       ycloudWebhookUrl: (() => {
         const secret = maybeDecrypt(ycloud.webhookSecretEnc)
         const base = '/api/ycloud/webhook'

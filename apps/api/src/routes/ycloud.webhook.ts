@@ -19,10 +19,12 @@ async function sendYCloudText(apiKey: string, from: string, to: string, body: st
 
 /**
  * Extracts the plain-text content of an incoming YCloud WhatsApp message.
+ * YCloud v2 puts message details in body.whatsappInboundMessage (not body.data).
  * Handles: text, button (quick-reply payload), interactive button_reply.
  */
 function extractMessageText(body: any): string {
-  const data = body?.data ?? {}
+  // YCloud v2 webhook structure: body.whatsappInboundMessage
+  const data = body?.whatsappInboundMessage ?? body?.data ?? {}
   const type: string = data.type ?? ''
 
   if (type === 'text') return (data.text?.body ?? '').trim()
@@ -84,9 +86,11 @@ export const ycloudWebhookRoutes: FastifyPluginAsync = async (app) => {
     setImmediate(async () => {
       try {
         const eventType: string = body?.type ?? ''
-        if (eventType !== 'whatsapp_inbound_message') return
+        // YCloud v2 uses dot-notation event type names
+        if (eventType !== 'whatsapp.inbound_message.received' && eventType !== 'whatsapp_inbound_message') return
 
-        const data = body?.data ?? {}
+        // YCloud v2: message data in whatsappInboundMessage; v1 fallback: data
+        const data = body?.whatsappInboundMessage ?? body?.data ?? {}
         const senderPhone: string = typeof data.from === 'string' ? data.from : ''
         if (!senderPhone) return
 
@@ -149,7 +153,15 @@ export const ycloudWebhookRoutes: FastifyPluginAsync = async (app) => {
           : `https://laguin.id/order/${order.id}`
 
         const customerName = customer.name ?? 'Kamu'
-        const message = `🎵 Halo, ${customerName}!\n\nIni link lagu spesial Anda:\n\n${deliveryUrl}\n\nSelamat menikmati! 🎶`
+        const DEFAULT_LINK_MESSAGE =
+          `Silakan klik tautan di bawah ini untuk mengakses hasilnya:\n🔗  {link}\n\nSelamat menikmati karya spesial ini! Semoga sesuai dengan harapan dan memberikan kesan yang mendalam. ✨`
+        const rawTemplate =
+          typeof cfg?.linkMessage === 'string' && cfg.linkMessage.trim()
+            ? cfg.linkMessage.trim()
+            : DEFAULT_LINK_MESSAGE
+        const message = rawTemplate
+          .replace(/\{link\}/g, deliveryUrl)
+          .replace(/\{name\}/g, customerName)
 
         const ok = await sendYCloudText(apiKey, fromNumber, senderPhone, message)
 

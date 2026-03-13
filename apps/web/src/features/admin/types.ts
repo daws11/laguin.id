@@ -45,6 +45,7 @@ export type Settings = {
   hasYcloudKey: boolean
   hasYcloudWebhookSecret: boolean
   siteUrl: string | null
+  ycloudLinkMessage: string | null
   ycloudWebhookUrl: string | null
 
   hasXenditKey: boolean

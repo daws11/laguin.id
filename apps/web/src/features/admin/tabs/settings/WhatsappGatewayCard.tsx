@@ -13,6 +13,7 @@ interface Props {
       kaiAiApiKey?: string
       ycloudApiKey?: string
       ycloudWebhookSecret?: string
+      ycloudLinkMessage?: string | null
     },
   ) => Promise<Settings | null>
   loading: boolean
@@ -135,6 +136,22 @@ export function WhatsappGatewayCard({ settings, setSettings, saveSettings, loadi
                     }}
                   />
 
+                  {/* Link Reply Message Template */}
+                  <div className="text-[10px] font-medium text-muted-foreground pt-1">
+                    Pesan Balasan Link
+                    <span className="ml-1 font-normal text-muted-foreground/70">
+                      Gunakan <code className="bg-muted px-0.5 rounded">{'{link}'}</code> untuk URL dan{' '}
+                      <code className="bg-muted px-0.5 rounded">{'{name}'}</code> untuk nama pelanggan.
+                    </span>
+                  </div>
+                  <textarea
+                    className="w-full rounded border bg-background px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+                    rows={5}
+                    placeholder={`Silakan klik tautan di bawah ini untuk mengakses hasilnya:\n🔗  {link}\n\nSelamat menikmati karya spesial ini! ✨`}
+                    value={settings.ycloudLinkMessage ?? ''}
+                    onChange={(e) => setSettings((s) => (s ? { ...s, ycloudLinkMessage: e.target.value } : s))}
+                  />
+
                   {/* Webhook URL */}
                   {settings.ycloudWebhookUrl && (
                     <>
@@ -181,6 +198,7 @@ export function WhatsappGatewayCard({ settings, setSettings, saveSettings, loadi
                   ycloudTemplateName: settings.ycloudTemplateName ?? undefined,
                   ycloudTemplateLangCode: settings.ycloudTemplateLangCode ?? undefined,
                   siteUrl: settings.siteUrl ?? undefined,
+                  ycloudLinkMessage: settings.ycloudLinkMessage ?? null,
                 })
               }
             >
