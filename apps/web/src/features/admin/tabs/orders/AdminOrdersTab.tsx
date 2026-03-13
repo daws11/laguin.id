@@ -273,6 +273,7 @@ export function AdminOrdersTab({
   const [deleting, setDeleting] = useState(false)
   const [showClearTracksConfirm, setShowClearTracksConfirm] = useState(false)
   const [clearingTracks, setClearingTracks] = useState(false)
+  const [showBulkWAConfirm, setShowBulkWAConfirm] = useState(false)
   const [sendingBulkWA, setSendingBulkWA] = useState(false)
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 100
@@ -487,18 +488,49 @@ export function AdminOrdersTab({
                     <CardContent className="p-3 pt-1">
                       <div className="flex items-center justify-between">
                         <span className="text-lg font-semibold capitalize">
-                          {selectedOrder.deliveryStatus.replace('_', ' ')}
+                          {selectedOrder.deliveryStatus.replace(/_/g, ' ')}
                         </span>
                         <div
                           className={cn(
                             'h-2.5 w-2.5 rounded-full',
                             selectedOrder.deliveryStatus === 'delivered'
                               ? 'bg-green-500'
+                              : selectedOrder.deliveryStatus === 'delivery_failed'
+                              ? 'bg-red-500'
                               : 'bg-amber-500'
                           )}
                         />
                       </div>
-                      {selectedOrder.deliveryStatus === 'delivery_pending' && (
+                      {selectedOrder.deliveryStatus === 'delivery_scheduled' && (
+                        <div className="mt-2 space-y-1.5">
+                          {selectedOrder.deliveryScheduledAt && (
+                            <div className="text-xs text-muted-foreground">
+                              Scheduled:{' '}
+                              <span className="font-medium text-foreground">
+                                {new Date(selectedOrder.deliveryScheduledAt).toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                          {(() => {
+                            const events: any[] = Array.isArray(selectedOrder.events) ? selectedOrder.events : []
+                            const waSent = events.some((e: any) => e.type === 'whatsapp_reminder_sent')
+                            const emailSent = events.some((e: any) => e.type === 'email_song_sent')
+                            return (
+                              <div className="flex flex-col gap-0.5">
+                                <div className={cn('text-xs flex items-center gap-1', waSent ? 'text-green-600' : 'text-muted-foreground')}>
+                                  <MessageCircle className="h-3 w-3" />
+                                  WhatsApp template: {waSent ? 'Sent ✓' : 'Not sent yet'}
+                                </div>
+                                <div className={cn('text-xs flex items-center gap-1', emailSent ? 'text-green-600' : 'text-muted-foreground')}>
+                                  <Mail className="h-3 w-3" />
+                                  Email: {emailSent ? 'Sent ✓' : 'Not sent yet'}
+                                </div>
+                              </div>
+                            )
+                          })()}
+                        </div>
+                      )}
+                      {(selectedOrder.deliveryStatus === 'delivery_pending' || selectedOrder.deliveryStatus === 'delivery_scheduled') && (
                         <div className="grid grid-cols-2 gap-2 mt-3">
                           <Button
                             size="sm"
@@ -938,24 +970,49 @@ export function AdminOrdersTab({
               </Button>
             </div>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs gap-1.5 border-green-300 text-green-700 hover:bg-green-50"
-            disabled={sendingBulkWA}
-            onClick={async () => {
-              setSendingBulkWA(true)
-              try {
-                await onBulkResendWhatsApp(Array.from(selected))
-                setSelected(new Set())
-              } finally {
-                setSendingBulkWA(false)
-              }
-            }}
-          >
-            <MessageCircle className="h-3.5 w-3.5" />
-            {sendingBulkWA ? 'Sending...' : 'Resend WhatsApp'}
-          </Button>
+          {!showBulkWAConfirm ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs gap-1.5 border-green-300 text-green-700 hover:bg-green-50"
+              onClick={() => setShowBulkWAConfirm(true)}
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+              Resend WhatsApp
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-green-700 font-medium">
+                Send WA to {selected.size} order{selected.size > 1 ? 's' : ''}?
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs border-green-400 text-green-700 hover:bg-green-50"
+                disabled={sendingBulkWA}
+                onClick={async () => {
+                  setSendingBulkWA(true)
+                  try {
+                    await onBulkResendWhatsApp(Array.from(selected))
+                    setSelected(new Set())
+                    setShowBulkWAConfirm(false)
+                  } finally {
+                    setSendingBulkWA(false)
+                  }
+                }}
+              >
+                {sendingBulkWA ? 'Sending...' : 'Confirm Send'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setShowBulkWAConfirm(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

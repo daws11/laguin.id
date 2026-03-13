@@ -366,6 +366,11 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
         if (!order) { failed++; continue }
         await sendWhatsAppReminderForOrder(id, { force: true })
         await addOrderEvent({ orderId: id, type: 'admin_resend_whatsapp', message: 'Admin bulk resend WhatsApp reminder.' })
+        // Mark as delivered immediately — admin manually sent the link
+        await prisma.order.update({
+          where: { id },
+          data: { deliveryStatus: 'delivered', deliveredAt: new Date() },
+        })
         sent++
       } catch {
         failed++
@@ -408,12 +413,13 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     if (order.status !== 'completed') return reply.code(400).send({ error: 'invalid_state', message: `status=${order.status}` })
     if (order.deliveryStatus === 'delivered') return reply.code(400).send({ error: 'invalid_state', message: 'already_delivered' })
 
-    await prisma.order.update({
-      where: { id: order.id },
-      data: { deliveryStatus: 'delivery_pending', deliveryScheduledAt: new Date(), deliveredAt: null },
-    })
     await addOrderEvent({ orderId: order.id, type: 'admin_resend_whatsapp', message: 'Admin triggered resend WhatsApp reminder.' })
     const result = await sendWhatsAppReminderForOrder(order.id, { force: true })
+    // Mark as delivered immediately — admin manually sent the link, customer is notified
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { deliveryStatus: 'delivered', deliveredAt: new Date() },
+    })
     return { ok: true, orderId: order.id, result }
   })
 
