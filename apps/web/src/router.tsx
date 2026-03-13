@@ -36,9 +36,9 @@ export const router = createBrowserRouter([
       { path: '/privasi', element: <Suspense fallback={<LazyFallback />}><PrivacyPage /></Suspense> },
       { path: '/ketentuan', element: <Suspense fallback={<LazyFallback />}><TermsPage /></Suspense> },
       { path: '/kontak', element: <Suspense fallback={<LazyFallback />}><ContactPage /></Suspense> },
+      { path: ADMIN_PATH, element: <Suspense fallback={<LazyFallback />}><AdminRoute /></Suspense> },
       { path: '/:themeSlug', element: <ThemedLandingRoute /> },
       { path: '/:themeSlug/config', element: <Suspense fallback={<LazyFallback />}><ThemedConfigRoute /></Suspense> },
     ],
   },
-  { path: ADMIN_PATH, element: <Suspense fallback={<LazyFallback />}><AdminRoute /></Suspense> },
 ])
