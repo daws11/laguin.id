@@ -120,8 +120,8 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       ycloudTemplateLangCode: typeof ycloud.templateLangCode === 'string' ? ycloud.templateLangCode : null,
       hasYcloudKey: Boolean(maybeDecrypt(ycloud.apiKeyEnc ?? ycloud.apiKey)),
       hasYcloudWebhookSecret: Boolean(maybeDecrypt(ycloud.webhookSecretEnc)),
-      siteUrl: typeof cfg.siteUrl === 'string' ? cfg.siteUrl : null,
-      ycloudLinkMessage: typeof cfg.linkMessage === 'string' ? cfg.linkMessage : null,
+      siteUrl: typeof (cfg as any).siteUrl === 'string' ? (cfg as any).siteUrl : null,
+      ycloudLinkMessage: typeof (cfg as any).linkMessage === 'string' ? (cfg as any).linkMessage : null,
       ycloudTemplateHasButton: typeof ycloud.templateHasButton === 'boolean' ? ycloud.templateHasButton : null,
       ycloudWebhookUrl: (() => {
         const secret = maybeDecrypt(ycloud.webhookSecretEnc)

@@ -136,7 +136,7 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     yourName: z.string().max(200).optional(),
     occasion: z.string().max(200).optional(),
     story: z.string().min(1).max(10000).optional(),
-    musicPreferences: z.record(z.unknown()).optional(),
+    musicPreferences: z.record(z.string(), z.unknown()).optional(),
   }).refine(data => Object.keys(data).length > 0, { message: 'At least one field required' })
 
   app.post('/orders/:id/update-input', async (req, reply) => {
@@ -169,7 +169,7 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
 
     await prisma.order.update({
       where: { id: order.id },
-      data: { inputPayload: updatedPayload },
+      data: { inputPayload: updatedPayload as Prisma.InputJsonValue },
     })
 
     if (body.data.recipientName !== undefined && order.customerId) {

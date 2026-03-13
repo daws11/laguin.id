@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import path from 'node:path'
+import { Prisma } from '@prisma/client'
 
 import { prisma } from '../lib/prisma'
 import { getOrCreateSettings } from '../lib/settings'
@@ -262,7 +263,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
         inputPayload: updatedPayload,
         ...(newLyrics ? { lyricsText: newLyrics } : {}),
         trackUrl: null,
-        trackMetadata: null,
+        trackMetadata: Prisma.DbNull,
         generationStartedAt: null,
         generationCompletedAt: null,
         moodDescription: (body.data.revisionType === 'describe' || body.data.revisionType === 'new_story')
