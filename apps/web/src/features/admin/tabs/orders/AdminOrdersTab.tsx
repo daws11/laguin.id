@@ -972,49 +972,15 @@ export function AdminOrdersTab({
               </Button>
             </div>
           )}
-          {!showBulkWAConfirm ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs gap-1.5 border-green-300 text-green-700 hover:bg-green-50"
-              onClick={() => setShowBulkWAConfirm(true)}
-            >
-              <MessageCircle className="h-3.5 w-3.5" />
-              Resend WhatsApp
-            </Button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-green-700 font-medium">
-                Send WA to {selected.size} order{selected.size > 1 ? 's' : ''}?
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs border-green-400 text-green-700 hover:bg-green-50"
-                disabled={sendingBulkWA}
-                onClick={async () => {
-                  setSendingBulkWA(true)
-                  try {
-                    await onBulkResendWhatsApp(Array.from(selected))
-                    setSelected(new Set())
-                    setShowBulkWAConfirm(false)
-                  } finally {
-                    setSendingBulkWA(false)
-                  }
-                }}
-              >
-                {sendingBulkWA ? 'Sending...' : 'Confirm Send'}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => setShowBulkWAConfirm(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs gap-1.5 border-green-300 text-green-700 hover:bg-green-50"
+            onClick={() => setShowBulkWAConfirm(true)}
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+            Resend WhatsApp
+          </Button>
         </div>
       )}
 
@@ -1285,6 +1251,50 @@ export function AdminOrdersTab({
                   className="flex-1"
                   variant="outline"
                   onClick={() => setShowResendWAConfirm(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Bulk Resend WhatsApp Confirmation Modal */}
+      {showBulkWAConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-96 shadow-lg">
+            <CardHeader className="border-b">
+              <CardTitle className="text-sm font-semibold text-green-700">
+                Resend WhatsApp Messages
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <p className="text-sm text-muted-foreground mb-6">
+                This will send WhatsApp template messages to {selected.size} order{selected.size > 1 ? 's' : ''}. Their delivery status will be marked as delivered.
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  className="flex-1 border-green-400 text-green-700 hover:bg-green-50"
+                  variant="outline"
+                  disabled={sendingBulkWA}
+                  onClick={async () => {
+                    setSendingBulkWA(true)
+                    try {
+                      await onBulkResendWhatsApp(Array.from(selected))
+                      setSelected(new Set())
+                      setShowBulkWAConfirm(false)
+                    } finally {
+                      setSendingBulkWA(false)
+                    }
+                  }}
+                >
+                  {sendingBulkWA ? 'Sending...' : 'Confirm Send'}
+                </Button>
+                <Button
+                  className="flex-1"
+                  variant="outline"
+                  onClick={() => setShowBulkWAConfirm(false)}
                 >
                   Cancel
                 </Button>
