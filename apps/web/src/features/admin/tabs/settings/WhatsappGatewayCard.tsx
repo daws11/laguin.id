@@ -161,10 +161,8 @@ export function WhatsappGatewayCard({ settings, setSettings, saveSettings, loadi
                         </Button>
                       </div>
                       {settings.hasYcloudWebhookSecret && (
-                        <div className="text-[10px] text-muted-foreground">
-                          Tambahkan{' '}
-                          <code className="bg-muted px-0.5 rounded">?token=&#x3C;webhook_secret&#x3E;</code>{' '}
-                          ke URL di atas saat mengonfigurasi di YCloud.
+                        <div className="text-[10px] text-green-600">
+                          Token webhook sudah disertakan dalam URL di atas.
                         </div>
                       )}
                     </>

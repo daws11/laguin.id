@@ -82,7 +82,11 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       hasYcloudKey: Boolean(maybeDecrypt(ycloud.apiKeyEnc ?? ycloud.apiKey)),
       hasYcloudWebhookSecret: Boolean(maybeDecrypt(ycloud.webhookSecretEnc)),
       siteUrl: typeof cfg.siteUrl === 'string' ? cfg.siteUrl : null,
-      ycloudWebhookUrl: '/api/ycloud/webhook',
+      ycloudWebhookUrl: (() => {
+        const secret = maybeDecrypt(ycloud.webhookSecretEnc)
+        const base = '/api/ycloud/webhook'
+        return secret ? `${base}?token=${encodeURIComponent(secret)}` : base
+      })(),
       defaultThemeSlug: s.defaultThemeSlug ?? null,
       showThemesInFooter: s.showThemesInFooter ?? false,
       metaPixelId: s.metaPixelId ?? null,
@@ -217,7 +221,11 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       hasYcloudKey: Boolean(maybeDecrypt(ycloud.apiKeyEnc ?? ycloud.apiKey)),
       hasYcloudWebhookSecret: Boolean(maybeDecrypt(ycloud.webhookSecretEnc)),
       siteUrl: typeof (cfg as any).siteUrl === 'string' ? (cfg as any).siteUrl : null,
-      ycloudWebhookUrl: '/api/ycloud/webhook',
+      ycloudWebhookUrl: (() => {
+        const secret = maybeDecrypt(ycloud.webhookSecretEnc)
+        const base = '/api/ycloud/webhook'
+        return secret ? `${base}?token=${encodeURIComponent(secret)}` : base
+      })(),
       defaultThemeSlug: updated.defaultThemeSlug ?? null,
       showThemesInFooter: updated.showThemesInFooter ?? false,
       metaPixelId: updated.metaPixelId ?? null,
