@@ -172,7 +172,12 @@ export const ycloudWebhookRoutes: FastifyPluginAsync = async (app) => {
             message: `Sent delivery link to ${senderPhone}`,
             data: { to: senderPhone, deliveryUrl } as any,
           })
-          app.log.info({ orderId: order.id, to: senderPhone }, 'ycloud_webhook: delivery link sent')
+          // Customer has received the link — mark the order as delivered
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { deliveryStatus: 'delivered', deliveredAt: new Date() },
+          })
+          app.log.info({ orderId: order.id, to: senderPhone }, 'ycloud_webhook: delivery link sent, order marked delivered')
         } else {
           app.log.error({ orderId: order.id, to: senderPhone }, 'ycloud_webhook: failed to send link')
         }
