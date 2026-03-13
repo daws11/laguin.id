@@ -362,9 +362,9 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     let failed = 0
     for (const id of parsed.data.ids) {
       try {
-        const order = await prisma.order.findUnique({ where: { id }, include: { customer: true } })
+        const order = await prisma.order.findUnique({ where: { id } })
         if (!order) { failed++; continue }
-        await sendWhatsAppReminderForOrder(order as any)
+        await sendWhatsAppReminderForOrder(id, { force: true })
         await addOrderEvent({ orderId: id, type: 'admin_resend_whatsapp', message: 'Admin bulk resend WhatsApp reminder.' })
         sent++
       } catch {
