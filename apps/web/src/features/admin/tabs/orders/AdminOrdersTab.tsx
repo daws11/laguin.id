@@ -275,6 +275,8 @@ export function AdminOrdersTab({
   const [clearingTracks, setClearingTracks] = useState(false)
   const [showBulkWAConfirm, setShowBulkWAConfirm] = useState(false)
   const [sendingBulkWA, setSendingBulkWA] = useState(false)
+  const [showResendWAConfirm, setShowResendWAConfirm] = useState(false)
+  const [sendingResendWA, setSendingResendWA] = useState(false)
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 100
 
@@ -541,16 +543,49 @@ export function AdminOrdersTab({
                           >
                             <Mail className="h-3 w-3" /> {t.resendEmailShort ?? 'Resend Email'}
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={loading}
-                            onClick={() => onResendWhatsApp(selectedOrder.id)}
-                            className="h-8 text-xs gap-2"
-                          >
-                            <MessageCircle className="h-3 w-3" />{' '}
-                            {t.resendWhatsAppShort ?? 'Resend WA'}
-                          </Button>
+                          {!showResendWAConfirm ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={loading}
+                              onClick={() => setShowResendWAConfirm(true)}
+                              className="h-8 text-xs gap-2"
+                            >
+                              <MessageCircle className="h-3 w-3" />{' '}
+                              {t.resendWhatsAppShort ?? 'Resend WA'}
+                            </Button>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-green-700 font-medium">
+                                Send WA?
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={sendingResendWA}
+                                onClick={async () => {
+                                  setSendingResendWA(true)
+                                  try {
+                                    await onResendWhatsApp(selectedOrder.id)
+                                    setShowResendWAConfirm(false)
+                                  } finally {
+                                    setSendingResendWA(false)
+                                  }
+                                }}
+                                className="h-8 text-xs border-green-400 text-green-700 hover:bg-green-50"
+                              >
+                                {sendingResendWA ? 'Sending...' : 'Confirm'}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setShowResendWAConfirm(false)}
+                                className="h-8 text-xs"
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </CardContent>

@@ -43,6 +43,12 @@ The project uses a monorepo structure with `npm workspaces`, separating the fron
 - All page text is editable via global admin settings (Settings → Delivery Page).
 - Legacy `POST /api/public/order/:id/verify` endpoint still exists for backward compatibility.
 
+**Delivery Status Automation:**
+- WhatsApp template send (scheduled or manual) automatically marks order as `deliveryStatus = 'delivered'` with `deliveredAt` timestamp.
+- YCloud webhook (when customer taps button) also marks order as `delivered`.
+- Admin manual resend endpoints (individual and bulk) force delivery status to `delivered` immediately after attempting send (even if send fails, admin intent to deliver is honored).
+- Removed invalid `trackUrl` requirement from `sendWhatsAppReminderForOrder` — YCloud template send doesn't use `trackUrl`; delivery link is sent separately via webhook.
+
 **Song Regeneration:**
 - Customers can request up to 2 regenerations from the delivery page.
 - 3 revision types: describe changes, edit lyrics, new story.
