@@ -56,8 +56,14 @@ export const ycloudWebhookRoutes: FastifyPluginAsync = async (app) => {
    *
    * Two-step song delivery flow:
    *  1. Song completed → send `song_delivery` WhatsApp template (with button "Dengarkan Sekarang")
+   *     → backend records a `whatsapp_reminder_sent` event on the order (ties the template send to the order ID)
    *  2. Customer taps the button → YCloud forwards the "Dengarkan Sekarang" reply here
-   *     → we reply with the delivery page link
+   *     → we find which specific order is waiting for this customer's link (has reminder sent, no link sent yet)
+   *     → we pick the most recently reminded order and send its delivery link
+   *
+   * Multi-order safety: a customer with N orders will always receive the link for the correct order
+   * because we match on `whatsapp_reminder_sent` events (tied to the order) rather than just the
+   * latest completed order. Idempotency is guaranteed per-order via the `whatsapp_link_sent` event.
    */
   app.post('/ycloud/webhook', async (req, reply) => {
     const body: any = req.body ?? {}
@@ -112,18 +118,43 @@ export const ycloudWebhookRoutes: FastifyPluginAsync = async (app) => {
           return
         }
 
-        // Get latest completed order for this customer
-        const order = await prisma.order.findFirst({
-          where: { customerId: customer.id, status: 'completed' },
-          orderBy: { createdAt: 'desc' },
+        // Find the order for which we most recently sent the WA template but have NOT yet
+        // sent the delivery link. This correctly handles customers with multiple orders —
+        // we never guess; we match on the recorded `whatsapp_reminder_sent` event.
+        const pendingOrders = await prisma.order.findMany({
+          where: {
+            customerId: customer.id,
+            status: 'completed',
+            // Has a template send recorded (ties to a specific order)
+            events: { some: { type: 'whatsapp_reminder_sent' } },
+            // But the delivery link has not been sent for this order yet
+            NOT: { events: { some: { type: 'whatsapp_link_sent' } } },
+          },
+          include: {
+            events: {
+              where: { type: 'whatsapp_reminder_sent' },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: { createdAt: true },
+            },
+          },
         })
 
-        if (!order) {
-          app.log.info({ customerId: customer.id }, 'ycloud_webhook: no completed order for customer')
+        if (!pendingOrders.length) {
+          app.log.info({ customerId: customer.id }, 'ycloud_webhook: no orders awaiting link delivery for customer')
           return
         }
 
-        // Idempotency — only send the link once per order
+        // Among pending orders, pick the one whose template was sent most recently.
+        // That is the order the customer is responding to.
+        pendingOrders.sort((a, b) => {
+          const aTime = a.events[0]?.createdAt?.getTime() ?? 0
+          const bTime = b.events[0]?.createdAt?.getTime() ?? 0
+          return bTime - aTime
+        })
+        const order = pendingOrders[0]
+
+        // Race-condition guard: double-check the link hasn't been sent in a concurrent request
         const alreadySent = await prisma.orderEvent.findFirst({
           where: { orderId: order.id, type: 'whatsapp_link_sent' },
           select: { id: true },
