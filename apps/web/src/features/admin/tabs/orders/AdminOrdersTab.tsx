@@ -503,6 +503,49 @@ export function AdminOrdersTab({
                           )}
                         />
                       </div>
+
+                      {selectedOrder.deliveryStatus === 'delivered' && (
+                        <div className="mt-3 space-y-2">
+                          {selectedOrder.deliveredAt && (
+                            <div className="text-xs text-muted-foreground">
+                              Delivered:{' '}
+                              <span className="font-medium text-foreground">
+                                {new Date(selectedOrder.deliveredAt).toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                          {(() => {
+                            const events: any[] = Array.isArray(selectedOrder.events) ? selectedOrder.events : []
+                            const emailEvent = events.find((e: any) => e.type === 'email_song_sent')
+                            const waEvent = events.find((e: any) => e.type === 'whatsapp_reminder_sent')
+                            const deliveryEvent = events.find((e: any) => e.type === 'delivered')
+                            
+                            return (
+                              <div className="flex flex-col gap-1 text-xs">
+                                {emailEvent && emailEvent.createdAt && (
+                                  <div className="flex items-center gap-2 text-green-600">
+                                    <Mail className="h-3 w-3 flex-shrink-0" />
+                                    <span>Email sent: {new Date(emailEvent.createdAt).toLocaleString()}</span>
+                                  </div>
+                                )}
+                                {waEvent && waEvent.createdAt && (
+                                  <div className="flex items-center gap-2 text-green-600">
+                                    <MessageCircle className="h-3 w-3 flex-shrink-0" />
+                                    <span>WhatsApp template: {new Date(waEvent.createdAt).toLocaleString()}</span>
+                                  </div>
+                                )}
+                                {deliveryEvent && deliveryEvent.createdAt && (
+                                  <div className="flex items-center gap-2 text-green-600">
+                                    <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
+                                    <span>Marked delivered: {new Date(deliveryEvent.createdAt).toLocaleString()}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })()}
+                        </div>
+                      )}
+
                       {selectedOrder.deliveryStatus === 'delivery_scheduled' && (
                         <div className="mt-2 space-y-1.5">
                           {selectedOrder.deliveryScheduledAt && (

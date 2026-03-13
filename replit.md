@@ -77,6 +77,11 @@ The project uses a monorepo structure with `npm workspaces`, separating the fron
 - Orders and Customers tabs with search, filter, sorting, and bulk actions.
 - Funnel analytics to track user journeys from homepage to order confirmation.
 - Order detail includes `regenerationCount` and `testimonialVideos`.
+- **Delivery Status Details**: When an order is marked as delivered, displays comprehensive timeline including:
+  - Delivery timestamp (`deliveredAt`)
+  - Email sent timestamp (when email was dispatched)
+  - WhatsApp template sent timestamp (when initial reminder was sent)
+  - Marked delivered timestamp (when status changed to delivered)
 
 ## External Dependencies
 - **PostgreSQL:** For data storage.
