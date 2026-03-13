@@ -118,17 +118,16 @@ export const ycloudWebhookRoutes: FastifyPluginAsync = async (app) => {
           return
         }
 
-        // Find the order for which we most recently sent the WA template but have NOT yet
-        // sent the delivery link. This correctly handles customers with multiple orders —
-        // we never guess; we match on the recorded `whatsapp_reminder_sent` event.
-        const pendingOrders = await prisma.order.findMany({
+        // Find the order for which we most recently sent the WA template.
+        // Includes orders whose link has already been sent — resending is always allowed.
+        // This correctly handles customers with multiple orders: we match on the recorded
+        // `whatsapp_reminder_sent` event rather than just the latest completed order.
+        const remindedOrders = await prisma.order.findMany({
           where: {
             customerId: customer.id,
             status: 'completed',
-            // Has a template send recorded (ties to a specific order)
+            // Has a template send recorded (ties the reply to a specific order)
             events: { some: { type: 'whatsapp_reminder_sent' } },
-            // But the delivery link has not been sent for this order yet
-            NOT: { events: { some: { type: 'whatsapp_link_sent' } } },
           },
           include: {
             events: {
@@ -140,29 +139,19 @@ export const ycloudWebhookRoutes: FastifyPluginAsync = async (app) => {
           },
         })
 
-        if (!pendingOrders.length) {
-          app.log.info({ customerId: customer.id }, 'ycloud_webhook: no orders awaiting link delivery for customer')
+        if (!remindedOrders.length) {
+          app.log.info({ customerId: customer.id }, 'ycloud_webhook: no reminded orders found for customer')
           return
         }
 
-        // Among pending orders, pick the one whose template was sent most recently.
-        // That is the order the customer is responding to.
-        pendingOrders.sort((a, b) => {
+        // Pick the order whose template was sent most recently — that is the order
+        // the customer is responding to.
+        remindedOrders.sort((a, b) => {
           const aTime = a.events[0]?.createdAt?.getTime() ?? 0
           const bTime = b.events[0]?.createdAt?.getTime() ?? 0
           return bTime - aTime
         })
-        const order = pendingOrders[0]
-
-        // Race-condition guard: double-check the link hasn't been sent in a concurrent request
-        const alreadySent = await prisma.orderEvent.findFirst({
-          where: { orderId: order.id, type: 'whatsapp_link_sent' },
-          select: { id: true },
-        })
-        if (alreadySent) {
-          app.log.info({ orderId: order.id }, 'ycloud_webhook: link already sent, skipping')
-          return
-        }
+        const order = remindedOrders[0]
 
         // Re-read settings (already loaded above)
         const ycloud = (cfg?.ycloud ?? {}) as any
