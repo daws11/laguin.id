@@ -657,18 +657,21 @@ export function AdminOrdersTab({
                                   <span className="text-[11px] font-medium text-muted-foreground uppercase">Stored Backup</span>
                                 </div>
                                 <div className="space-y-1">
-                                  {storedTracks.map((url: string, idx: number) => (
-                                    <a
-                                      key={idx}
-                                      href={url}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="flex items-center gap-2 text-sm font-medium text-emerald-700 hover:underline p-1.5 rounded-md hover:bg-emerald-50 transition-colors"
-                                    >
-                                      <Music className="h-3.5 w-3.5" />
-                                      {storedTracks.length > 1 ? `Backup ${idx + 1}` : 'Backup'}
-                                    </a>
-                                  ))}
+                                  {storedTracks.map((url: string, idx: number) => {
+                                    const downloadUrl = url.includes('?') ? `${url}&download=1` : `${url}?download=1`
+                                    const label = storedTracks.length > 1 ? `Backup ${idx + 1}` : 'Backup'
+                                    return (
+                                      <a
+                                        key={idx}
+                                        href={downloadUrl}
+                                        download={label}
+                                        className="flex items-center gap-2 text-sm font-medium text-emerald-700 hover:underline p-1.5 rounded-md hover:bg-emerald-50 transition-colors"
+                                      >
+                                        <Music className="h-3.5 w-3.5" />
+                                        {label}
+                                      </a>
+                                    )
+                                  })}
                                 </div>
                               </div>
                             )}

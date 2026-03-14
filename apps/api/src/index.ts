@@ -69,6 +69,15 @@ app.get('/uploads/*', async (req, reply) => {
     reply.header('Content-Type', result.contentType)
     reply.header('Content-Length', result.buffer.length)
     reply.header('Cache-Control', 'public, max-age=31536000, immutable')
+
+    // Support ?download=1 to force browser download instead of inline display
+    const wantDownload = (req.query as any)?.download === '1'
+    if (wantDownload) {
+      const ext = objectKey.split('.').pop() ?? 'bin'
+      const filename = `track-${objectKey.replace(/\//g, '-').replace(/^-+/, '')}`
+      reply.header('Content-Disposition', `attachment; filename="${filename}"`)
+    }
+
     return reply.send(result.buffer)
   } catch (err) {
     req.log.error(err, 'Error serving upload')
