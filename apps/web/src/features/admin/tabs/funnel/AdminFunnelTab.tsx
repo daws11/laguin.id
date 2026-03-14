@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Download } from 'lucide-react'
-import { adminGetFunnel, adminGetFunnelTrend, adminGetThemes, type FunnelData, type TrendData, type ThemeItem } from '@/features/admin/api'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Download, Loader2, AlertCircle } from 'lucide-react'
+import { adminGetFunnel, adminGetFunnelTrend, adminGetThemes, adminEnqueueExport, adminGetExportJobStatus, type FunnelData, type TrendData, type ThemeItem } from '@/features/admin/api'
 
 function formatDate(d: Date): string {
   const y = d.getFullYear()
@@ -151,6 +151,10 @@ export function AdminFunnelTab({ t, token }: { t: any; token: string }) {
   const [trend, setTrend] = useState<TrendData | null>(null)
   const [loading, setLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [exportJobId, setExportJobId] = useState<string | null>(null)
+  const [exportError, setExportError] = useState<string | null>(null)
+  const [exportDownloadUrl, setExportDownloadUrl] = useState<string | null>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [themes, setThemes] = useState<ThemeItem[]>([])
   const [themeFilter, setThemeFilter] = useState<string>('')
@@ -158,6 +162,12 @@ export function AdminFunnelTab({ t, token }: { t: any; token: string }) {
   useEffect(() => {
     adminGetThemes(token).then(setThemes).catch(() => {})
   }, [token])
+
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current)
+    }
+  }, [])
 
   const fetchData = useCallback(async (f: string, toDate: string) => {
     setLoading(true)
@@ -235,38 +245,85 @@ export function AdminFunnelTab({ t, token }: { t: any; token: string }) {
           </select>
         </div>
         <div className="flex-1" />
-        <button
-          disabled={exporting}
-          onClick={async () => {
-            setExporting(true)
-            try {
-              const tzOffset = new Date().getTimezoneOffset()
-              const params = new URLSearchParams({ from, to, tzOffset: String(tzOffset) })
-              if (themeFilter) params.set('themeSlug', themeFilter)
-              const res = await fetch(`/api/admin/orders/export-stories?${params.toString()}`, {
-                headers: { Authorization: `Bearer ${token}` },
-              })
-              if (!res.ok) throw new Error('Export failed')
-              const blob = await res.blob()
-              const url = URL.createObjectURL(blob)
-              const a = document.createElement('a')
-              a.href = url
-              a.download = `stories_${from}_to_${to}.csv`
-              document.body.appendChild(a)
-              a.click()
-              document.body.removeChild(a)
-              URL.revokeObjectURL(url)
-            } catch {
-              setError('Failed to export stories')
-            } finally {
-              setExporting(false)
-            }
-          }}
-          className="flex items-center gap-1.5 rounded-md border bg-background px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-muted transition-colors disabled:opacity-50"
-        >
-          <Download className="h-3.5 w-3.5" />
-          {exporting ? 'Exporting…' : 'Export Stories CSV'}
-        </button>
+        {exportDownloadUrl ? (
+          <button
+            onClick={async () => {
+              try {
+                const res = await fetch(exportDownloadUrl, {
+                  headers: { Authorization: `Bearer ${token}` },
+                })
+                if (!res.ok) throw new Error('Download failed')
+                const blob = await res.blob()
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url
+                a.download = `stories_${from}_to_${to}.csv`
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+                URL.revokeObjectURL(url)
+                setExportDownloadUrl(null)
+                setExportJobId(null)
+              } catch {
+                setExportError('Failed to download CSV')
+              }
+            }}
+            className="flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 shadow-sm hover:bg-emerald-100 transition-colors"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Download CSV
+          </button>
+        ) : (
+          <button
+            disabled={exporting}
+            onClick={async () => {
+              setExporting(true)
+              setExportError(null)
+              setExportJobId(null)
+              setExportDownloadUrl(null)
+              if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+              try {
+                const tzOffset = new Date().getTimezoneOffset()
+                const exportParams: { from: string; to: string; tzOffset: number; themeSlug?: string } = { from, to, tzOffset }
+                if (themeFilter) exportParams.themeSlug = themeFilter
+                const { jobId } = await adminEnqueueExport(token, exportParams)
+                setExportJobId(jobId)
+
+                pollRef.current = setInterval(async () => {
+                  try {
+                    const result = await adminGetExportJobStatus(token, jobId)
+                    if (result.status === 'done' && result.downloadUrl) {
+                      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+                      setExportDownloadUrl(result.downloadUrl)
+                      setExporting(false)
+                    } else if (result.status === 'failed') {
+                      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+                      setExportError(result.error || 'Export failed')
+                      setExporting(false)
+                      setExportJobId(null)
+                    }
+                  } catch {
+                    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+                    setExportError('Failed to check export status')
+                    setExporting(false)
+                    setExportJobId(null)
+                  }
+                }, 3000)
+              } catch {
+                setExportError('Failed to start export')
+                setExporting(false)
+              }
+            }}
+            className="flex items-center gap-1.5 rounded-md border bg-background px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-muted transition-colors disabled:opacity-50"
+          >
+            {exporting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
+            {exporting ? 'Preparing export…' : 'Export Stories CSV'}
+          </button>
+        )}
       </div>
 
       {loading && (
@@ -279,6 +336,13 @@ export function AdminFunnelTab({ t, token }: { t: any; token: string }) {
       {error && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           {error}
+        </div>
+      )}
+
+      {exportError && (
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {exportError}
         </div>
       )}
 

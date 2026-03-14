@@ -330,6 +330,175 @@ async function reminderTick() {
   }
 }
 
+async function exportTick() {
+  const lockKey = 'export-tick'
+  const locked = await tryLock(lockKey)
+  if (!locked) return
+
+  try {
+    const job = await prisma.exportJob.findFirst({
+      where: { status: 'pending' },
+      orderBy: { createdAt: 'asc' },
+    })
+    if (!job) return
+
+    try {
+      const params = (job.params && typeof job.params === 'object' ? job.params : {}) as Record<string, string | number | undefined>
+      const offsetMs = (typeof params.tzOffset === 'number' ? params.tzOffset : 0) * 60 * 1000
+
+      const now = new Date()
+      const defaultFrom = new Date(now)
+      defaultFrom.setDate(defaultFrom.getDate() - 7)
+      defaultFrom.setHours(0, 0, 0, 0)
+
+      const fromDate = params.from
+        ? new Date(new Date(params.from + 'T00:00:00.000Z').getTime() + offsetMs)
+        : defaultFrom
+      const toDate = params.to
+        ? new Date(new Date(params.to + 'T23:59:59.999Z').getTime() + offsetMs)
+        : now
+
+      const where: { createdAt: { gte: Date; lte: Date }; themeSlug?: string } = {
+        createdAt: { gte: fromDate, lte: toDate },
+        ...(params.themeSlug ? { themeSlug: String(params.themeSlug) } : {}),
+      }
+
+      const totalCount = await prisma.order.count({ where })
+      if (totalCount === 0) {
+        await prisma.exportJob.update({
+          where: { id: job.id },
+          data: { status: 'failed', error: 'No orders found for the selected date range.' },
+        })
+        return
+      }
+
+      function sanitize(val: string): string {
+        let s = val
+        if (/^[=+\-@\t\r]/.test(s)) s = "'" + s
+        if (s.includes('"') || s.includes(',') || s.includes('\n') || s.includes('\r')) {
+          return '"' + s.replace(/"/g, '""') + '"'
+        }
+        return s
+      }
+
+      const fs = await import('fs')
+      const os = await import('os')
+      const path = await import('path')
+      const tmpFile = path.join(os.tmpdir(), `export_${job.id}.csv`)
+
+      try {
+        const header = ['Order ID', 'Created At', 'Theme', 'Customer Name', 'Email', 'WhatsApp', 'Status', 'Recipient', 'Relationship', 'Story']
+        fs.writeFileSync(tmpFile, header.join(',') + '\r\n')
+
+        let cursor: string | undefined = undefined
+        const BATCH_SIZE = 100
+
+        type ExportOrderRow = {
+          id: string
+          createdAt: Date
+          themeSlug: string | null
+          inputPayload: unknown
+          status: string
+          customer: { name: string; email: string | null; whatsappNumber: string | null }
+        }
+
+        while (true) {
+          const orderSelect = {
+            id: true, createdAt: true, themeSlug: true, inputPayload: true, status: true,
+            customer: { select: { name: true, email: true, whatsappNumber: true } },
+          } as const
+          let batch: ExportOrderRow[]
+          if (cursor) {
+            batch = await prisma.order.findMany({ where, orderBy: { id: 'asc' }, take: BATCH_SIZE, skip: 1, cursor: { id: cursor }, select: orderSelect })
+          } else {
+            batch = await prisma.order.findMany({ where, orderBy: { id: 'asc' }, take: BATCH_SIZE, select: orderSelect })
+          }
+
+          if (batch.length === 0) break
+
+          let batchCsv = ''
+          for (const o of batch) {
+            const ip = (o.inputPayload && typeof o.inputPayload === 'object' ? o.inputPayload : {}) as Record<string, unknown>
+            const row = [
+              o.id,
+              o.createdAt.toISOString(),
+              o.themeSlug ?? '',
+              o.customer?.name ?? '',
+              o.customer?.email ?? '',
+              o.customer?.whatsappNumber ?? '',
+              o.status,
+              ip.recipientName ?? ip.recipient ?? '',
+              ip.relationship ?? '',
+              ip.story ?? '',
+            ].map(v => sanitize(String(v)))
+            batchCsv += row.join(',') + '\r\n'
+          }
+          fs.appendFileSync(tmpFile, batchCsv)
+
+          cursor = batch[batch.length - 1].id
+          if (batch.length < BATCH_SIZE) break
+        }
+
+        const { uploadBuffer } = await import('./lib/objectStorage')
+        const fileKey = `exports/stories_${job.id}.csv`
+        const fileContent = fs.readFileSync(tmpFile)
+        await uploadBuffer(fileKey, fileContent, 'text/csv')
+
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
+        await prisma.exportJob.update({
+          where: { id: job.id },
+          data: { status: 'done', fileKey, expiresAt },
+        })
+
+        console.log(`[worker] Export job ${job.id} completed: ${totalCount} orders`)
+      } finally {
+        try { fs.unlinkSync(tmpFile) } catch {}
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error(`[worker] Export job ${job.id} failed:`, msg)
+      await prisma.exportJob.update({
+        where: { id: job.id },
+        data: { status: 'failed', error: msg.slice(0, 500) },
+      })
+    }
+  } catch (err: unknown) {
+    console.error('[worker] exportTick error:', err instanceof Error ? err.message : String(err))
+  } finally {
+    await unlock(lockKey)
+  }
+}
+
+async function exportCleanupTick() {
+  try {
+    const expired = await prisma.exportJob.findMany({
+      where: {
+        expiresAt: { lte: new Date() },
+        status: 'done',
+        fileKey: { not: null },
+      },
+    })
+
+    for (const job of expired) {
+      if (job.fileKey) {
+        const { deleteObject } = await import('./lib/objectStorage')
+        await deleteObject(job.fileKey).catch(() => {})
+      }
+    }
+
+    await prisma.exportJob.deleteMany({
+      where: {
+        OR: [
+          { expiresAt: { lte: new Date() } },
+          { status: 'failed', createdAt: { lte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+        ],
+      },
+    })
+  } catch (err: any) {
+    console.error('[worker] exportCleanupTick error:', err?.message)
+  }
+}
+
 console.log('[worker] started')
 
 // Every 5 seconds: attempt one generation job.
@@ -345,5 +514,15 @@ cron.schedule('*/10 * * * * *', () => {
 // Every 60 seconds: check for due reminders.
 cron.schedule('* * * * *', () => {
   void reminderTick()
+})
+
+// Every 10 seconds: process export jobs.
+cron.schedule('*/10 * * * * *', () => {
+  void exportTick()
+})
+
+// Every 5 minutes: cleanup expired export jobs.
+cron.schedule('*/5 * * * *', () => {
+  void exportCleanupTick()
 })
 

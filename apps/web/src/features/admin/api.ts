@@ -308,6 +308,25 @@ export async function adminGetWhatsAppScheduled(token: string) {
   return apiGet<{ scheduled: WhatsAppScheduledItem[] }>('/api/admin/whatsapp-logs/scheduled', { token })
 }
 
+export async function adminEnqueueExport(
+  token: string,
+  params: { from: string; to: string; tzOffset: number; themeSlug?: string },
+) {
+  return apiPost<{ jobId: string }>('/api/admin/orders/export-stories', params, { token })
+}
+
+export type ExportJobStatus = {
+  id: string
+  status: 'pending' | 'done' | 'failed'
+  error: string | null
+  createdAt: string
+  downloadUrl: string | null
+}
+
+export async function adminGetExportJobStatus(token: string, jobId: string): Promise<ExportJobStatus> {
+  return apiGet<ExportJobStatus>(`/api/admin/orders/export-jobs/${encodeURIComponent(jobId)}`, { token })
+}
+
 export async function adminDuplicateTheme(token: string, slug: string) {
   const res = await fetch(`/api/admin/themes/${encodeURIComponent(slug)}/duplicate`, {
     method: 'POST',

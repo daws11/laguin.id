@@ -437,72 +437,69 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     tzOffset: z.coerce.number().int().min(-840).max(840).optional(),
   })
 
-  app.get('/orders/export-stories', async (req, reply) => {
-    const parsed = ExportQuerySchema.safeParse(req.query)
+  app.post('/orders/export-stories', async (req, reply) => {
+    const parsed = ExportQuerySchema.safeParse(req.body)
     if (!parsed.success) return reply.code(400).send({ error: 'invalid_query' })
     const query = parsed.data
 
-    const offsetMs = (query.tzOffset ?? 0) * 60 * 1000
+    const params: Record<string, string | number> = {}
+    if (query.from) params.from = query.from
+    if (query.to) params.to = query.to
+    if (query.themeSlug) params.themeSlug = query.themeSlug
+    if (query.tzOffset !== undefined) params.tzOffset = query.tzOffset
 
-    const now = new Date()
-    const defaultFrom = new Date(now)
-    defaultFrom.setDate(defaultFrom.getDate() - 7)
-    defaultFrom.setHours(0, 0, 0, 0)
-
-    const fromDate = query.from ? new Date(new Date(query.from + 'T00:00:00.000Z').getTime() + offsetMs) : defaultFrom
-    const toDate = query.to ? new Date(new Date(query.to + 'T23:59:59.999Z').getTime() + offsetMs) : now
-
-    const where: Prisma.OrderWhereInput = {
-      createdAt: { gte: fromDate, lte: toDate },
-      ...(query.themeSlug ? { themeSlug: query.themeSlug } : {}),
-    }
-
-    const orders = await prisma.order.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      take: 10000,
-      select: {
-        id: true,
-        createdAt: true,
-        themeSlug: true,
-        inputPayload: true,
-        status: true,
-        customer: { select: { name: true, email: true, whatsappNumber: true } },
+    const job = await prisma.exportJob.create({
+      data: {
+        type: 'stories',
+        params,
       },
     })
 
-    function sanitize(val: string): string {
-      let s = val
-      if (/^[=+\-@\t\r]/.test(s)) s = "'" + s
-      if (s.includes('"') || s.includes(',') || s.includes('\n') || s.includes('\r')) {
-        return '"' + s.replace(/"/g, '""') + '"'
-      }
-      return s
+    return { jobId: job.id }
+  })
+
+  app.get('/orders/export-jobs/:id', async (req, reply) => {
+    const params = ParamsIdSchema.safeParse(req.params)
+    if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
+
+    const job = await prisma.exportJob.findUnique({ where: { id: params.data.id } })
+    if (!job) return reply.code(404).send({ error: 'not_found' })
+
+    const isExpired = job.expiresAt && job.expiresAt < new Date()
+    const effectiveStatus = isExpired && job.status === 'done' ? 'failed' : job.status
+    const effectiveError = isExpired && job.status === 'done' ? 'Export file has expired.' : (job.error ?? null)
+
+    return {
+      id: job.id,
+      status: effectiveStatus,
+      error: effectiveError,
+      createdAt: job.createdAt,
+      downloadUrl: effectiveStatus === 'done' && job.fileKey
+        ? `/api/admin/orders/export-jobs/${job.id}/download`
+        : null,
     }
+  })
 
-    const header = ['Order ID', 'Created At', 'Theme', 'Customer Name', 'Email', 'WhatsApp', 'Status', 'Recipient', 'Relationship', 'Story']
-    const rows = orders.map(o => {
-      const ip = (o.inputPayload && typeof o.inputPayload === 'object' ? o.inputPayload : {}) as Record<string, any>
-      return [
-        o.id,
-        o.createdAt.toISOString(),
-        o.themeSlug ?? '',
-        o.customer?.name ?? '',
-        o.customer?.email ?? '',
-        o.customer?.whatsappNumber ?? '',
-        o.status,
-        ip.recipientName ?? ip.recipient ?? '',
-        ip.relationship ?? '',
-        ip.story ?? '',
-      ].map(v => sanitize(String(v)))
-    })
+  app.get('/orders/export-jobs/:id/download', async (req, reply) => {
+    const params = ParamsIdSchema.safeParse(req.params)
+    if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
 
-    const csv = [header.join(','), ...rows.map(r => r.join(','))].join('\r\n')
+    const job = await prisma.exportJob.findUnique({ where: { id: params.data.id } })
+    if (!job) return reply.code(404).send({ error: 'not_found' })
+    if (job.status !== 'done' || !job.fileKey) return reply.code(400).send({ error: 'not_ready' })
+    if (job.expiresAt && job.expiresAt < new Date()) return reply.code(410).send({ error: 'file_expired' })
+
+    const { downloadBuffer } = await import('../lib/objectStorage')
+    const file = await downloadBuffer(job.fileKey)
+    if (!file) return reply.code(410).send({ error: 'file_expired' })
+
+    const jobParams = (job.params && typeof job.params === 'object' ? job.params : {}) as Record<string, string>
+    const filename = `stories_${jobParams.from ?? 'all'}_to_${jobParams.to ?? 'now'}.csv`
 
     reply
       .header('Content-Type', 'text/csv; charset=utf-8')
-      .header('Content-Disposition', `attachment; filename="stories_${query.from ?? 'all'}_to_${query.to ?? 'now'}.csv"`)
-      .send(csv)
+      .header('Content-Disposition', `attachment; filename="${filename}"`)
+      .send(file.buffer)
   })
 
   app.get('/testimonial-videos', async (_req, reply) => {
