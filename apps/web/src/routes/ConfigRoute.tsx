@@ -86,6 +86,7 @@ export function ConfigRoute() {
   const [discountValidating, setDiscountValidating] = useState(false)
   const [discountError, setDiscountError] = useState<string | null>(null)
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number } | null>(null)
+  const [discountExpanded, setDiscountExpanded] = useState(false)
 
   const fmtCurrency = (amt: number) => {
     if (amt === 0) return 'GRATIS'
@@ -1699,47 +1700,58 @@ export function ConfigRoute() {
                           )}
                         </div>
 
-                        {/* Discount code section */}
+                        {/* Discount code section — collapsible */}
                         <div className="py-2">
                           {!appliedDiscount && (
-                            <div className="space-y-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                              <label className="text-xs font-semibold text-gray-700 flex items-center gap-2">
-                                <Tag className="h-3.5 w-3.5" /> Kode Diskon (Opsional)
-                              </label>
-                              <div className="flex gap-2">
-                                <Input
-                                  value={discountCodeInput}
-                                  onChange={e => { setDiscountCodeInput(e.target.value.toUpperCase()); setDiscountError(null) }}
-                                  placeholder="Masukkan atau paste kode diskon"
-                                  className="h-10 text-sm flex-1 uppercase font-semibold"
-                                />
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="h-10 px-3"
-                                  title="Paste dari clipboard"
-                                  onClick={async () => {
-                                    try {
-                                      const text = await navigator.clipboard.readText()
-                                      setDiscountCodeInput(text.toUpperCase().trim())
-                                      setDiscountError(null)
-                                    } catch (err) {
-                                      setDiscountError('Gagal membaca clipboard')
-                                    }
-                                  }}
-                                >
-                                  <Clipboard className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  type="button"
-                                  className="h-10 text-sm px-4 bg-[var(--theme-accent)] text-white hover:bg-[var(--theme-accent)] font-semibold"
-                                  onClick={() => void validateDiscountCode()}
-                                  disabled={discountValidating || !discountCodeInput.trim()}
-                                >
-                                  {discountValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add'}
-                                </Button>
-                              </div>
-                              {discountError && <p className="text-xs text-red-600 text-center font-medium">{discountError}</p>}
+                            <div className="rounded-lg border border-gray-200 overflow-hidden">
+                              <button
+                                type="button"
+                                onClick={() => setDiscountExpanded(!discountExpanded)}
+                                className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 hover:bg-gray-100 transition-colors"
+                              >
+                                <span className="text-xs font-semibold text-gray-600 flex items-center gap-2">
+                                  <Tag className="h-3.5 w-3.5" /> Punya kode diskon?
+                                </span>
+                                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${discountExpanded ? 'rotate-180' : ''}`} />
+                              </button>
+                              {discountExpanded && (
+                                <div className="space-y-2 p-3 bg-gray-50 border-t border-gray-200">
+                                  <div className="flex gap-2">
+                                    <Input
+                                      value={discountCodeInput}
+                                      onChange={e => { setDiscountCodeInput(e.target.value.toUpperCase()); setDiscountError(null) }}
+                                      placeholder="Masukkan atau paste kode diskon"
+                                      className="h-10 text-sm flex-1 uppercase font-semibold"
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      className="h-10 px-3"
+                                      title="Paste dari clipboard"
+                                      onClick={async () => {
+                                        try {
+                                          const text = await navigator.clipboard.readText()
+                                          setDiscountCodeInput(text.toUpperCase().trim())
+                                          setDiscountError(null)
+                                        } catch (err) {
+                                          setDiscountError('Gagal membaca clipboard')
+                                        }
+                                      }}
+                                    >
+                                      <Clipboard className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      className="h-10 text-sm px-4 bg-[var(--theme-accent)] text-white hover:bg-[var(--theme-accent)] font-semibold"
+                                      onClick={() => void validateDiscountCode()}
+                                      disabled={discountValidating || !discountCodeInput.trim()}
+                                    >
+                                      {discountValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add'}
+                                    </Button>
+                                  </div>
+                                  {discountError && <p className="text-xs text-red-600 text-center font-medium">{discountError}</p>}
+                                </div>
+                              )}
                             </div>
                           )}
                           {appliedDiscount && (
