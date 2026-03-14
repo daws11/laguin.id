@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "vdA5TL2M1baQ1l5_qmEEZ"
+uri = "file://laguin_dev_dump.sql.gz"
+type = "unspecified"
+title = "Laguin Dev Database Dump (gzip)"
