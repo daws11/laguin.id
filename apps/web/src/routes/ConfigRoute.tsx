@@ -985,6 +985,7 @@ export function ConfigRoute() {
         id: String(it.id),
         icon: typeof it.icon === 'string' ? it.icon : '',
         title: String(it.title),
+        headline: typeof it.headline === 'string' ? it.headline : '',
         description: typeof it.description === 'string' ? it.description : '',
         price: typeof it.price === 'number' ? it.price : 0,
         priceLabel: typeof it.priceLabel === 'string' ? it.priceLabel : '',

@@ -9,6 +9,7 @@ type UpsellItemConfig = {
   id: string
   icon: string
   title: string
+  headline: string
   description: string
   price: number
   priceLabel: string
@@ -151,7 +152,7 @@ export function UpsellRoute() {
             <CheckCircle2 className="h-8 w-8" style={{ color: '#22c55e' }} />
           </div>
           <h1 className="text-center text-lg font-semibold text-gray-800">
-            {upsellConfig.headline}
+            {currentItem.headline || upsellConfig.headline}
           </h1>
         </div>
 

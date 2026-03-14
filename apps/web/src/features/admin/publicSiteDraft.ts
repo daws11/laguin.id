@@ -220,7 +220,7 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
   },
   upsell: {
     enabled: false,
-    headline: 'Tunggu, ada penawaran spesial untukmu!',
+    headline: '',
     footerNote: '',
     items: [],
   },
@@ -533,6 +533,7 @@ function buildUpsell(raw: any): UpsellConfig {
     id: asString(x?.id, ''),
     icon: asString(x?.icon, ''),
     title: asString(x?.title, ''),
+    headline: asString(x?.headline, ''),
     description: asString(x?.description, ''),
     price: asNumber(x?.price, 0),
     priceLabel: asString(x?.priceLabel, ''),

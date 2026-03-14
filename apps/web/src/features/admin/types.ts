@@ -288,6 +288,7 @@ export type UpsellItem = {
   id: string
   icon: string
   title: string
+  headline: string
   description: string
   price: number
   priceLabel: string

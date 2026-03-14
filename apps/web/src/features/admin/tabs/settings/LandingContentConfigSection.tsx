@@ -2407,6 +2407,7 @@ export function LandingContentConfigSection({
                                                     id: `upsell_${Date.now()}`,
                                                     icon: '',
                                                     title: '',
+                                                    headline: 'Tunggu, ada penawaran spesial untukmu!',
                                                     description: '',
                                                     price: 0,
                                                     priceLabel: 'One-time upgrade',
@@ -2439,6 +2440,20 @@ export function LandingContentConfigSection({
                                         >
                                             <Trash2 className="h-3 w-3" /> Remove
                                         </Button>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-medium">Headline (shown above card)</label>
+                                        <Input
+                                            value={item.headline ?? ''}
+                                            onChange={(e) => setDraft(d => ({
+                                                ...d,
+                                                upsell: {
+                                                    ...d.upsell,
+                                                    items: d.upsell.items.map((it, i) => i === idx ? { ...it, headline: e.target.value } : it),
+                                                },
+                                            }))}
+                                            placeholder="e.g. Tunggu, ada penawaran spesial untukmu!"
+                                        />
                                     </div>
                                     <div className="grid gap-3 sm:grid-cols-2">
                                         <div className="space-y-1">
