@@ -1,5 +1,8 @@
 node_modules
-dist
+# Ignore web build output (static assets, not needed on server)
+apps/web/dist
+packages/shared/dist
+# apps/api/dist is intentionally NOT ignored so Render can deploy the compiled server
 .env
 .DS_Store
 coverage
