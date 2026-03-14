@@ -238,7 +238,16 @@ export async function processOrderGeneration(orderId: string) {
   // Music generation via Kie.ai (Suno). This is async; we submit once, then poll on subsequent ticks.
   if (!latestOrder.trackUrl) {
     const apiKey = await getKaiAiApiKey()
-    const callbackUrl = process.env.KIE_AI_CALLBACK_URL ?? ''
+    // Auto-derive callback URL from siteUrl setting, fall back to env var
+    let callbackUrl = process.env.KIE_AI_CALLBACK_URL ?? ''
+    if (!callbackUrl) {
+      const settings = await getOrCreateSettings()
+      const cfg = (settings.whatsappConfig && typeof settings.whatsappConfig === 'object' ? settings.whatsappConfig : null) ?? {}
+      const siteUrl = (cfg as any).siteUrl
+      if (typeof siteUrl === 'string' && siteUrl.startsWith('http')) {
+        callbackUrl = `${siteUrl.replace(/\/+$/, '')}/api/kie/callback`
+      }
+    }
     const model = process.env.KIE_AI_MODEL ?? 'V5'
 
     // Keep the music template render for audit/debug metadata (even though Kie.ai uses lyrics/style separately).

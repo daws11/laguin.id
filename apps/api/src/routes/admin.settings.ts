@@ -161,7 +161,12 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       hasXenditKey: Boolean(maybeDecrypt((s as any).xenditSecretKeyEnc)),
       xenditWebhookToken: (s as any).xenditWebhookToken ?? null,
       allowMultipleOrdersPerWhatsapp: (s as any).allowMultipleOrdersPerWhatsapp ?? false,
-      kieAiCallbackUrl: process.env.KIE_AI_CALLBACK_URL || null,
+      kieAiCallbackUrl: process.env.KIE_AI_CALLBACK_URL || (() => {
+        const siteUrl = (cfg as any).siteUrl
+        return typeof siteUrl === 'string' && siteUrl.startsWith('http')
+          ? `${siteUrl.replace(/\/+$/, '')}/api/kie/callback`
+          : null
+      })(),
 
       s3Endpoint: (s as any).s3Endpoint ?? null,
       s3Bucket: (s as any).s3Bucket ?? null,
@@ -319,7 +324,12 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       hasMetaCapiToken: Boolean(maybeDecrypt((updated as any).metaCapiAccessTokenEnc)),
       metaCapiTestEventCode: (updated as any).metaCapiTestEventCode ?? null,
       allowMultipleOrdersPerWhatsapp: (updated as any).allowMultipleOrdersPerWhatsapp ?? false,
-      kieAiCallbackUrl: process.env.KIE_AI_CALLBACK_URL || null,
+      kieAiCallbackUrl: process.env.KIE_AI_CALLBACK_URL || (() => {
+        const siteUrl = (cfg as any).siteUrl
+        return typeof siteUrl === 'string' && siteUrl.startsWith('http')
+          ? `${siteUrl.replace(/\/+$/, '')}/api/kie/callback`
+          : null
+      })(),
 
       s3Endpoint: (updated as any).s3Endpoint ?? null,
       s3Bucket: (updated as any).s3Bucket ?? null,
