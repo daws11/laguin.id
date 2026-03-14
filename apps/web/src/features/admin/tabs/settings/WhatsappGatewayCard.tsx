@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { Settings } from '@/features/admin/types'
-import { adminFetchYCloudTemplates, type YCloudTemplate } from '@/features/admin/api'
+import { adminFetchYCloudTemplates, adminGetWhatsAppLogs, adminGetWhatsAppScheduled, type YCloudTemplate, type WhatsAppLogItem, type WhatsAppScheduledItem } from '@/features/admin/api'
 
 interface Props {
   settings: Settings | null
@@ -22,7 +22,7 @@ interface Props {
   token: string | null
 }
 
-type TabKey = 'connection' | 'delivery' | 'reminders'
+type TabKey = 'connection' | 'delivery' | 'reminders' | 'logs'
 
 export function WhatsappGatewayCard({ settings, setSettings, saveSettings, loading, t, token }: Props) {
   const [copied, setCopied] = useState(false)
@@ -111,12 +111,66 @@ export function WhatsappGatewayCard({ settings, setSettings, saveSettings, loadi
     setSettings((s) => (s ? { ...s, reminderTemplates: reminders } : s))
   }
 
+  const [logItems, setLogItems] = useState<WhatsAppLogItem[]>([])
+  const [logTotal, setLogTotal] = useState(0)
+  const [logPage, setLogPage] = useState(1)
+  const [logTypeFilter, setLogTypeFilter] = useState<string>('')
+  const [logLoading, setLogLoading] = useState(false)
+  const [scheduledItems, setScheduledItems] = useState<WhatsAppScheduledItem[]>([])
+  const [scheduledLoading, setScheduledLoading] = useState(false)
+
+  const fetchLogs = useCallback(async (page: number, typeFilter: string) => {
+    if (!token) return
+    setLogLoading(true)
+    try {
+      const params = new URLSearchParams()
+      params.set('page', String(page))
+      params.set('pageSize', '15')
+      if (typeFilter) params.set('type', typeFilter)
+      const res = await adminGetWhatsAppLogs(token, params)
+      if (res) {
+        setLogItems(res.items)
+        setLogTotal(res.total)
+      }
+    } catch {
+    } finally {
+      setLogLoading(false)
+    }
+  }, [token])
+
+  const fetchScheduled = useCallback(async () => {
+    if (!token) return
+    setScheduledLoading(true)
+    try {
+      const res = await adminGetWhatsAppScheduled(token)
+      if (res) {
+        setScheduledItems(res.scheduled)
+      }
+    } catch {
+    } finally {
+      setScheduledLoading(false)
+    }
+  }, [token])
+
+  useEffect(() => {
+    if (activeTab === 'logs') {
+      void fetchLogs(logPage, logTypeFilter)
+      void fetchScheduled()
+    }
+  }, [activeTab, logPage, logTypeFilter, fetchLogs, fetchScheduled])
+
+  function maskPhone(phone: string): string {
+    if (!phone || phone.length <= 4) return phone
+    return '•'.repeat(phone.length - 4) + phone.slice(-4)
+  }
+
   const hasButton = settings?.ycloudTemplateHasButton
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: 'connection', label: 'Connection' },
     { key: 'delivery', label: 'Delivery' },
     { key: 'reminders', label: 'Reminders' },
+    { key: 'logs', label: 'Logs' },
   ]
 
   return (
@@ -478,6 +532,164 @@ export function WhatsappGatewayCard({ settings, setSettings, saveSettings, loadi
                     >
                       + Add Reminder
                     </Button>
+                  </div>
+                )}
+
+                {activeTab === 'logs' && (
+                  <div className="space-y-3 pt-1.5">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-medium">Activity Log</span>
+                        <div className="flex items-center gap-1.5">
+                          <select
+                            className="rounded border bg-background px-1.5 py-0.5 text-[10px] h-6 focus:outline-none focus:ring-1 focus:ring-ring"
+                            value={logTypeFilter}
+                            onChange={(e) => { setLogTypeFilter(e.target.value); setLogPage(1) }}
+                          >
+                            <option value="">All types</option>
+                            <option value="delivery_sent">Delivery Sent</option>
+                            <option value="delivery_failed">Delivery Failed</option>
+                            <option value="reminder_sent">Reminder Sent</option>
+                            <option value="reminder_failed">Reminder Failed</option>
+                          </select>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 px-2 text-[10px]"
+                            disabled={logLoading}
+                            onClick={() => { void fetchLogs(logPage, logTypeFilter); void fetchScheduled() }}
+                          >
+                            {logLoading ? 'Loading…' : 'Refresh'}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {logItems.length === 0 && !logLoading && (
+                        <div className="text-[10px] text-muted-foreground py-2 text-center">No log entries found.</div>
+                      )}
+
+                      {logItems.length > 0 && (
+                        <div className="border rounded overflow-hidden">
+                          <table className="w-full text-[10px]">
+                            <thead>
+                              <tr className="bg-muted/30 border-b">
+                                <th className="px-1.5 py-1 text-left font-medium">Time</th>
+                                <th className="px-1.5 py-1 text-left font-medium">Type</th>
+                                <th className="px-1.5 py-1 text-left font-medium">Phone</th>
+                                <th className="px-1.5 py-1 text-left font-medium">Template</th>
+                                <th className="px-1.5 py-1 text-left font-medium">Status</th>
+                                <th className="px-1.5 py-1 text-left font-medium">Order</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {logItems.map((log) => (
+                                <tr key={log.id} className="border-b last:border-b-0 hover:bg-muted/10">
+                                  <td className="px-1.5 py-1 whitespace-nowrap">
+                                    {new Date(log.createdAt).toLocaleString()}
+                                  </td>
+                                  <td className="px-1.5 py-1">
+                                    <span className={`inline-block px-1 py-0.5 rounded text-[9px] font-medium ${
+                                      log.type.startsWith('delivery') ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                                    }`}>
+                                      {log.type.startsWith('delivery') ? 'Delivery' : 'Reminder'}
+                                    </span>
+                                  </td>
+                                  <td className="px-1.5 py-1 font-mono">{maskPhone(log.phone)}</td>
+                                  <td className="px-1.5 py-1 truncate max-w-[100px]" title={log.templateName}>
+                                    {log.templateName}
+                                  </td>
+                                  <td className="px-1.5 py-1">
+                                    <span className={`inline-block px-1 py-0.5 rounded text-[9px] font-medium ${
+                                      log.status === 'Sent' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                    }`}>
+                                      {log.status}
+                                    </span>
+                                    {log.error && (
+                                      <span className="block text-[9px] text-destructive truncate max-w-[120px]" title={log.error}>
+                                        {log.error}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="px-1.5 py-1">
+                                    {log.orderId ? (
+                                      <a
+                                        href={`/admin?tab=orders&orderId=${encodeURIComponent(log.orderId)}`}
+                                        className="font-mono text-[9px] text-blue-600 underline hover:text-blue-800"
+                                        title={log.orderId}
+                                      >
+                                        {log.orderId.slice(0, 8)}…
+                                      </a>
+                                    ) : log.draftId ? (
+                                      <span className="font-mono text-[9px] text-muted-foreground" title={`Draft: ${log.draftId}`}>
+                                        draft
+                                      </span>
+                                    ) : '—'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {logTotal > 15 && (
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="text-[10px] text-muted-foreground">
+                            Page {logPage} of {Math.ceil(logTotal / 15)} ({logTotal} total)
+                          </span>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 px-2 text-[10px]"
+                              disabled={logPage <= 1}
+                              onClick={() => setLogPage((p) => Math.max(1, p - 1))}
+                            >
+                              Prev
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-6 px-2 text-[10px]"
+                              disabled={logPage >= Math.ceil(logTotal / 15)}
+                              onClick={() => setLogPage((p) => p + 1)}
+                            >
+                              Next
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border-t pt-2">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-medium">Scheduled Reminders</span>
+                        {scheduledLoading && <span className="text-[10px] text-muted-foreground">Loading…</span>}
+                      </div>
+
+                      {scheduledItems.length === 0 && !scheduledLoading && (
+                        <div className="text-[10px] text-muted-foreground py-2 text-center">No pending reminders.</div>
+                      )}
+
+                      {scheduledItems.length > 0 && (
+                        <div className="space-y-1">
+                          {scheduledItems.map((item, idx) => {
+                            const isPast = new Date(item.estimatedSendTime).getTime() <= Date.now()
+                            return (
+                              <div key={idx} className="flex items-center justify-between border rounded px-2 py-1 bg-muted/10">
+                                <div>
+                                  <span className="font-mono text-[10px]">{maskPhone(item.phone)}</span>
+                                  <span className="text-[10px] text-muted-foreground ml-1.5">{item.reminderLabel}</span>
+                                </div>
+                                <span className={`text-[10px] ${isPast ? 'text-orange-600 font-medium' : 'text-muted-foreground'}`}>
+                                  {isPast ? 'Due now' : new Date(item.estimatedSendTime).toLocaleString()}
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </>

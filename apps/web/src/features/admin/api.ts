@@ -271,6 +271,43 @@ export async function adminDeleteDiscountCode(token: string, id: string) {
   return apiDelete<{ ok: boolean }>(`/api/admin/discount-codes/${encodeURIComponent(id)}`, { token })
 }
 
+export type WhatsAppLogItem = {
+  id: string
+  createdAt: string
+  type: string
+  phone: string
+  templateName: string
+  templateLangCode: string | null
+  orderId: string | null
+  draftId: string | null
+  error: string | null
+  status: 'Sent' | 'Failed'
+}
+
+export type WhatsAppLogsPage = {
+  items: WhatsAppLogItem[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+export type WhatsAppScheduledItem = {
+  draftId: string
+  phone: string
+  reminderLabel: string
+  templateName: string
+  estimatedSendTime: string
+}
+
+export async function adminGetWhatsAppLogs(token: string, params?: URLSearchParams) {
+  const url = params?.toString() ? `/api/admin/whatsapp-logs?${params.toString()}` : '/api/admin/whatsapp-logs'
+  return apiGet<WhatsAppLogsPage>(url, { token })
+}
+
+export async function adminGetWhatsAppScheduled(token: string) {
+  return apiGet<{ scheduled: WhatsAppScheduledItem[] }>('/api/admin/whatsapp-logs/scheduled', { token })
+}
+
 export async function adminDuplicateTheme(token: string, slug: string) {
   const res = await fetch(`/api/admin/themes/${encodeURIComponent(slug)}/duplicate`, {
     method: 'POST',

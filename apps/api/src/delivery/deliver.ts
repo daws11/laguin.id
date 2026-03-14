@@ -159,8 +159,6 @@ export async function sendWhatsAppReminderForOrder(orderId: string, opts?: { for
   })
   if (!order) throw new Error('Order not found')
   if (order.status !== 'completed') throw new Error(`Invalid status=${order.status}`)
-  // Note: trackUrl is NOT required here — the WA template sends a button only;
-  // the delivery link is sent separately by the YCloud webhook when the customer taps it.
 
   if (!force) {
     const existing = await prisma.orderEvent.findFirst({
@@ -170,12 +168,40 @@ export async function sendWhatsAppReminderForOrder(orderId: string, opts?: { for
     if (existing) return { ok: true, skipped: true, reason: 'already_sent' }
   }
 
-  const provider = await getWhatsAppProvider()
-  const result = await provider.send({
-    to: order.customer.whatsappNumber,
-    message: '',
-    ...({ orderId } as any),
-  })
+  const settings = await (await import('../lib/settings')).getOrCreateSettings()
+  const cfg = settings.whatsappConfig && typeof settings.whatsappConfig === 'object' ? (settings.whatsappConfig as any) : {}
+  const ycloud = cfg.ycloud ?? {}
+  const deliveryTemplateName: string = ycloud.templateName ?? ''
+  const deliveryTemplateLangCode: string = ycloud.templateLangCode ?? ''
+
+  let result: { ok: boolean; error?: string }
+  try {
+    const provider = await getWhatsAppProvider()
+    result = await provider.send({
+      to: order.customer.whatsappNumber,
+      message: '',
+      ...({ orderId } as any),
+    })
+  } catch (ex: any) {
+    const errorMsg = ex?.message ?? String(ex)
+    await addOrderEvent({
+      orderId,
+      type: 'whatsapp_reminder_failed',
+      message: errorMsg,
+      data: { force, exception: true } as any,
+    })
+    await prisma.whatsAppLog.create({
+      data: {
+        type: 'delivery_failed',
+        phone: order.customer.whatsappNumber ?? '',
+        templateName: deliveryTemplateName,
+        templateLangCode: deliveryTemplateLangCode || null,
+        orderId,
+        error: errorMsg,
+      },
+    })
+    return await scheduleDeliveryRetry({ orderId, reason: 'WhatsApp reminder exception; scheduling retry.', error: ex })
+  }
 
   if (!result.ok) {
     await addOrderEvent({
@@ -183,6 +209,16 @@ export async function sendWhatsAppReminderForOrder(orderId: string, opts?: { for
       type: 'whatsapp_reminder_failed',
       message: result.error ?? 'WhatsApp reminder send failed',
       data: { ...result, force } as any,
+    })
+    await prisma.whatsAppLog.create({
+      data: {
+        type: 'delivery_failed',
+        phone: order.customer.whatsappNumber ?? '',
+        templateName: deliveryTemplateName,
+        templateLangCode: deliveryTemplateLangCode || null,
+        orderId,
+        error: result.error ?? 'WhatsApp reminder send failed',
+      },
     })
     return await scheduleDeliveryRetry({ orderId, reason: 'WhatsApp reminder failed; scheduling retry.', error: result })
   }
@@ -193,9 +229,16 @@ export async function sendWhatsAppReminderForOrder(orderId: string, opts?: { for
     message: force ? 'Resent WhatsApp reminder' : undefined,
     data: result as any,
   })
+  await prisma.whatsAppLog.create({
+    data: {
+      type: 'delivery_sent',
+      phone: order.customer.whatsappNumber ?? '',
+      templateName: deliveryTemplateName,
+      templateLangCode: deliveryTemplateLangCode || null,
+      orderId,
+    },
+  })
 
-  // WA template sent successfully → mark order as delivered immediately.
-  // (The customer has the button to access their song; email is secondary.)
   if (order.deliveryStatus !== 'delivered') {
     await prisma.order.update({
       where: { id: orderId },

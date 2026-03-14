@@ -279,18 +279,47 @@ async function reminderTick() {
             console.log(
               `[worker] Reminder sent: draft=${draft.id} template=${reminder.templateName} delay=${reminder.delayMinutes}m`,
             )
+            await prisma.whatsAppLog.create({
+              data: {
+                type: 'reminder_sent',
+                phone: draft.whatsappNumber!,
+                templateName: reminder.templateName,
+                templateLangCode: reminder.templateLangCode,
+                draftId: draft.id,
+              },
+            })
           } else {
             const body = await res.json().catch(() => null)
             console.error(
               `[worker] Reminder send failed: draft=${draft.id} status=${res.status}`,
               body,
             )
+            await prisma.whatsAppLog.create({
+              data: {
+                type: 'reminder_failed',
+                phone: draft.whatsappNumber!,
+                templateName: reminder.templateName,
+                templateLangCode: reminder.templateLangCode,
+                draftId: draft.id,
+                error: `HTTP ${res.status}: ${JSON.stringify(body)}`,
+              },
+            })
           }
         } catch (err: any) {
           console.error(
             `[worker] Reminder exception: draft=${draft.id} template=${reminder.templateName}`,
             err?.message,
           )
+          await prisma.whatsAppLog.create({
+            data: {
+              type: 'reminder_failed',
+              phone: draft.whatsappNumber!,
+              templateName: reminder.templateName,
+              templateLangCode: reminder.templateLangCode,
+              draftId: draft.id,
+              error: err?.message ?? String(err),
+            },
+          }).catch(() => {})
         }
       }
     }

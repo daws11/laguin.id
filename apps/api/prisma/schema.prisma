@@ -168,6 +168,7 @@ model Order {
   events             OrderEvent[]
   xenditWebhookLogs  XenditWebhookLog[]
   testimonialVideos  TestimonialVideo[]
+  whatsAppLogs       WhatsAppLog[]
 
   @@index([status])
   @@index([deliveryStatus])
@@ -219,6 +220,8 @@ model OrderDraft {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
+  whatsAppLogs        WhatsAppLog[]
+
   @@index([updatedAt])
   @@index([emailLower])
   @@index([whatsappNumber])
@@ -248,6 +251,32 @@ model TestimonialVideo {
 
   @@index([orderId])
   @@index([status])
+}
+
+enum WhatsAppLogType {
+  delivery_sent
+  delivery_failed
+  reminder_sent
+  reminder_failed
+}
+
+model WhatsAppLog {
+  id              String          @id @default(cuid())
+  createdAt       DateTime        @default(now())
+  type            WhatsAppLogType
+  phone           String
+  templateName    String
+  templateLangCode String?
+  orderId         String?
+  order           Order?          @relation(fields: [orderId], references: [id])
+  draftId         String?
+  draft           OrderDraft?     @relation(fields: [draftId], references: [id])
+  error           String?
+
+  @@index([createdAt])
+  @@index([type])
+  @@index([orderId])
+  @@index([draftId])
 }
 
 enum DiscountCodeStatus {

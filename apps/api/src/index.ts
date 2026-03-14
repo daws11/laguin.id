@@ -27,6 +27,7 @@ import { adminUploadsRoutes } from './routes/admin.uploads'
 import { adminFunnelRoutes } from './routes/admin.funnel'
 import { adminThemeRoutes } from './routes/admin.themes'
 import { adminDiscountRoutes } from './routes/admin.discounts'
+import { adminWhatsAppLogRoutes } from './routes/admin.whatsappLogs'
 import { publicDiscountRoutes } from './routes/discount.public'
 import { xenditWebhookRoutes } from './routes/xendit.webhook'
 import { ycloudWebhookRoutes } from './routes/ycloud.webhook'
@@ -143,6 +144,7 @@ await app.register(async (adminApp) => {
   await adminApp.register(adminFunnelRoutes)
   await adminApp.register(adminThemeRoutes)
   await adminApp.register(adminDiscountRoutes)
+  await adminApp.register(adminWhatsAppLogRoutes)
 }, { prefix: '/api/admin' })
 
 if (hasWebDist) {
