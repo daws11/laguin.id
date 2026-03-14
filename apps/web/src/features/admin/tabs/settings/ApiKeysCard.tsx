@@ -17,10 +17,15 @@ export function ApiKeysCard({ settings, saveSettings, t }: Props) {
   const [openaiKey, setOpenaiKey] = useState('')
   const [kaiaiKey, setKaiaiKey] = useState('')
   const [model, setModel] = useState(settings?.openaiModel ?? '')
+  const existingDomain = settings?.kieAiCallbackUrl
+    ? settings.kieAiCallbackUrl.replace(/\/api\/kie\/callback$/, '')
+    : ''
+  const [callbackDomain, setCallbackDomain] = useState(existingDomain)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  const dirty = openaiKey.trim().length > 0 || kaiaiKey.trim().length > 0 || model !== (settings?.openaiModel ?? '')
+  const callbackDomainChanged = callbackDomain !== existingDomain
+  const dirty = openaiKey.trim().length > 0 || kaiaiKey.trim().length > 0 || model !== (settings?.openaiModel ?? '') || callbackDomainChanged
 
   async function handleSave() {
     if (!dirty) return
@@ -31,6 +36,10 @@ export function ApiKeysCard({ settings, saveSettings, t }: Props) {
       if (kaiaiKey.trim()) payload.kaiAiApiKey = kaiaiKey.trim()
       if (model !== (settings?.openaiModel ?? '')) {
         payload.openaiModel = model.trim() || null
+      }
+      if (callbackDomainChanged) {
+        const domain = callbackDomain.trim().replace(/\/+$/, '')
+        payload.siteUrl = domain || null
       }
       await saveSettings(payload as any)
       setOpenaiKey('')
@@ -99,14 +108,22 @@ export function ApiKeysCard({ settings, saveSettings, t }: Props) {
               <div className="text-[10px] font-medium text-muted-foreground">
                 kie.ai Callback URL
               </div>
-              <Input
-                className="h-7 text-xs bg-muted/50"
-                value={settings.kieAiCallbackUrl ?? 'Belum diatur'}
-                readOnly
-              />
-              <div className="text-[10px] text-muted-foreground">
-                Diatur via environment variable KIE_AI_CALLBACK_URL
+              <div className="flex items-center gap-0">
+                <Input
+                  className="h-7 text-xs rounded-r-none border-r-0"
+                  placeholder="https://yourdomain.com"
+                  value={callbackDomain}
+                  onChange={(e) => setCallbackDomain(e.target.value)}
+                />
+                <div className="h-7 flex items-center px-2 bg-muted/50 border border-input rounded-r-md text-[10px] text-muted-foreground whitespace-nowrap">
+                  /api/kie/callback
+                </div>
               </div>
+              {callbackDomain.trim() && (
+                <div className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                  {callbackDomain.trim().replace(/\/+$/, '')}/api/kie/callback
+                </div>
+              )}
             </div>
             <Button
               size="sm"
