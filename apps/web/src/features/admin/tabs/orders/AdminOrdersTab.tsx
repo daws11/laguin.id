@@ -1094,8 +1094,11 @@ export function AdminOrdersTab({
                   onClick={() => toggleSort('createdAt')}
                 >
                   <span className="inline-flex items-center gap-1">
-                    Date <SortIcon field="createdAt" />
+                    Date &amp; Time <SortIcon field="createdAt" />
                   </span>
+                </th>
+                <th className="text-right px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                  Price
                 </th>
                 <th
                   className="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider cursor-pointer select-none"
@@ -1161,11 +1164,32 @@ export function AdminOrdersTab({
                     </div>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                    {new Date(o.createdAt).toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
+                    <div>
+                      {new Date(o.createdAt).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </div>
+                    <div className="text-xs opacity-70">
+                      {new Date(o.createdAt).toLocaleTimeString(undefined, {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right whitespace-nowrap">
+                    {o.totalAmount != null ? (
+                      o.totalAmount === 0 ? (
+                        <span className="text-xs text-muted-foreground">Free</span>
+                      ) : (
+                        <span className="text-sm font-medium">
+                          {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(o.totalAmount)}
+                        </span>
+                      )
+                    ) : (
+                      <span className="text-xs text-muted-foreground">--</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge value={o.status} />

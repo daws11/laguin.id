@@ -65,7 +65,7 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
         ? [{ deliveryStatus: sortDir }, { createdAt: 'desc' }]
         : { createdAt: sortDir }
 
-    const [orders, total, statusGroups] = await Promise.all([
+    const [orders, total, statusGroups, themes] = await Promise.all([
       prisma.order.findMany({
         where: fullWhere,
         orderBy,
@@ -79,7 +79,18 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
         where: baseWhere,
         _count: { _all: true },
       }),
+      prisma.theme.findMany({ select: { slug: true, settings: true } }),
     ])
+
+    // Build slug → paymentAmount map from theme settings
+    const themePaymentMap: Record<string, number> = {}
+    for (const th of themes) {
+      const s = th.settings as any
+      const amt = s?.creationDelivery?.paymentAmount
+      if (typeof amt === 'number' && Number.isFinite(amt)) {
+        themePaymentMap[th.slug] = amt
+      }
+    }
 
     const statusCounts: Record<string, number> = { all: 0 }
     for (const g of statusGroups) {
@@ -88,26 +99,36 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     }
 
     return {
-      orders: orders.map((o) => ({
-        id: o.id,
-        customer: {
-          id: o.customer.id,
-          name: o.customer.name,
-          whatsappNumber: o.customer.whatsappNumber,
-        },
-        status: o.status,
-        deliveryStatus: o.deliveryStatus,
-        paymentStatus: o.paymentStatus,
-        createdAt: o.createdAt,
-        confirmedAt: o.confirmedAt,
-        generationCompletedAt: o.generationCompletedAt,
-        deliveryScheduledAt: o.deliveryScheduledAt,
-        deliveredAt: o.deliveredAt,
-        trackUrl: o.trackUrl,
-        errorMessage: o.errorMessage,
-        themeSlug: o.themeSlug ?? null,
-        regenerationCount: o.regenerationCount,
-      })),
+      orders: orders.map((o) => {
+        // Compute total amount: base price - discount + upsells
+        const basePrice = o.themeSlug ? (themePaymentMap[o.themeSlug] ?? 497000) : 497000
+        const discount = typeof o.discountAmount === 'number' ? o.discountAmount : 0
+        const upsellItems = Array.isArray(o.upsellItems) ? o.upsellItems as any[] : []
+        const upsellTotal = upsellItems.reduce((sum: number, item: any) => sum + (typeof item?.price === 'number' ? item.price : 0), 0)
+        const totalAmount = Math.max(0, basePrice - discount) + upsellTotal
+
+        return {
+          id: o.id,
+          customer: {
+            id: o.customer.id,
+            name: o.customer.name,
+            whatsappNumber: o.customer.whatsappNumber,
+          },
+          status: o.status,
+          deliveryStatus: o.deliveryStatus,
+          paymentStatus: o.paymentStatus,
+          createdAt: o.createdAt,
+          confirmedAt: o.confirmedAt,
+          generationCompletedAt: o.generationCompletedAt,
+          deliveryScheduledAt: o.deliveryScheduledAt,
+          deliveredAt: o.deliveredAt,
+          trackUrl: o.trackUrl,
+          errorMessage: o.errorMessage,
+          themeSlug: o.themeSlug ?? null,
+          regenerationCount: o.regenerationCount,
+          totalAmount,
+        }
+      }),
       total,
       page,
       pageSize,

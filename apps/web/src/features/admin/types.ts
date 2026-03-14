@@ -437,6 +437,7 @@ export type OrderListItem = {
   errorMessage: string | null
   customer: { id: string; name: string; whatsappNumber: string }
   themeSlug: string | null
+  totalAmount?: number
 }
 
 export type CustomerDetail = any
