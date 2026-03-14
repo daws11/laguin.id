@@ -10,6 +10,7 @@
     "dev:web": "npm run dev -w web",
     "dev:api": "npm run dev -w api",
     "dev:worker": "npm run dev:worker -w api",
+    "start": "node apps/api/dist/index.js",
     "build": "npm run build --workspace=shared && npm run build --workspace=api && npm run build --workspace=web",
     "lint": "npm run lint -ws",
     "typecheck": "npm run typecheck -ws",
