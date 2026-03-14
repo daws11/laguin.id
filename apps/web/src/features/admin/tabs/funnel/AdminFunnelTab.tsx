@@ -152,7 +152,7 @@ export function AdminFunnelTab({ t, token }: { t: any; token: string }) {
   const [upsellData, setUpsellData] = useState<UpsellAnalytics | null>(null)
   const [loading, setLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
-  const [exportJobId, setExportJobId] = useState<string | null>(null)
+  const [_exportJobId, setExportJobId] = useState<string | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
   const [exportDownloadUrl, setExportDownloadUrl] = useState<string | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)

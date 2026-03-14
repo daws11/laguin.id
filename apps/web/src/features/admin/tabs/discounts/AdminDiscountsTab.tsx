@@ -52,7 +52,7 @@ function toFormState(item: DiscountCodeItem): FormState {
   }
 }
 
-export function AdminDiscountsTab({ token, t }: Props) {
+export function AdminDiscountsTab({ token, t: _t }: Props) {
   const [codes, setCodes] = useState<DiscountCodeItem[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

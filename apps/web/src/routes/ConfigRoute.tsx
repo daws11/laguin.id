@@ -1150,12 +1150,12 @@ export function ConfigRoute() {
     }
   }, [step])
 
-  const themeColors = (publicSiteConfig as any)?.colors
+  const rawThemeColors = (publicSiteConfig as any)?.colors
   const themeStyle = {
-    '--theme-accent': themeColors?.accentColor || '#E11D48',
-    '--theme-button': themeColors?.buttonColor || themeColors?.accentColor || '#E11D48',
-    '--theme-accent-soft': themeColors?.bgColor1 || '#FFF5F7',
-    '--theme-bg': themeColors?.bgColor2 || '#FFFFFF',
+    '--theme-accent': rawThemeColors?.accentColor || '#E11D48',
+    '--theme-button': rawThemeColors?.buttonColor || rawThemeColors?.accentColor || '#E11D48',
+    '--theme-accent-soft': rawThemeColors?.bgColor1 || '#FFF5F7',
+    '--theme-bg': rawThemeColors?.bgColor2 || '#FFFFFF',
   } as React.CSSProperties
 
   const apiBase = import.meta.env.VITE_API_BASE_URL ?? ''
