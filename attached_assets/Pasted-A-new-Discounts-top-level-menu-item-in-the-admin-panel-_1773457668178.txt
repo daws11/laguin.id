@@ -1,0 +1,36 @@
+A new "Discounts" top-level menu item in the admin panel.
+Admin can create, edit, activate, pause, and delete global discount codes.
+Each code has: a discount code string, a fixed discount amount, which templates it applies to, an active date/time range, and a per-phone-number usage limit.
+At checkout, the Order Summary card has a centered "Add discount code" text link. Clicking it expands an inline input + "Add" button.
+After entering a valid code, the original price is shown struck through and the discounted price is shown in the accent color, plus a savings badge (e.g. "HEMAT Rp 100.000"). The Total row updates to the discounted amount.
+If the code is invalid, expired, wrong template, or the phone number has exceeded the usage limit, an inline error is shown.
+On order submission, the backend validates the code, subtracts the fixed amount from the order total (floored at 0), and passes the already-adjusted price to Xendit as a normal payment — no discount-specific Xendit changes. The code string and discount amount are stored directly on the order; phone number usage is tracked by counting orders, not a separate table.
+Multiple global codes can coexist and be active at the same time.
+Out of scope
+User-level (per-customer) discount codes — not included.
+Percentage-based discounts (fixed amount only).
+Bulk code generation or CSV import.
+Usage analytics or reporting dashboard.
+A configurable label for the "Add discount code" text in theme settings.
+Tasks
+Database schema — Add a DiscountCode model (fields: code, fixedAmount, templateSlugs JSON, startsAt, endsAt, maxUsesPerPhone, status enum active/paused, createdAt). Add discountCode (string) and discountAmount (number) fields directly to the Order model — no foreign key, no separate usage table. Run db push.
+
+Admin backend — Discount Codes CRUD — Add admin REST endpoints to list, create, update (edit fields + activate/pause), and delete global discount codes. On create/update, normalize the code to uppercase before saving so lookups are always consistent. Validate code uniqueness on create. Return template slugs and usage counts where relevant.
+
+Public validation endpoint — Add POST /api/public/discount/validate that accepts { code, templateSlug, phoneNumber } and returns { valid, discountAmount, error? }. The code lookup must be case-insensitive (normalize to uppercase before comparing). Validates: code exists, is active, current time is within startsAt–endsAt, the templateSlug is in the allowed list, and the phone number has not exceeded maxUsesPerPhone by counting existing orders that already have that code + phone number combination. Does not consume the code.
+
+Checkout integration (backend) — In the order creation route, accept an optional discountCode field. Validate the code (same logic as the validation endpoint), subtract the fixed amount from paymentAmount (floored at 0), and pass the resulting amount to Xendit as a normal payment with no other Xendit changes. Store the code string and discount amount directly on the order — no foreign key, no separate usage record needed.
+
+Checkout integration (frontend) — In the checkout step, add a centered "Add discount code" text link at the bottom of the Order Summary card. Clicking it expands an inline input + "Add" button. On successful validation response, show the original price struck through, discounted price in accent color, and a savings badge. Pass discountCode to the order creation API call.
+
+Admin UI — Discounts tab — Create a "Discounts" top-level tab in the admin panel. It shows a table of all global codes with columns for code, amount, valid templates, active period, per-phone limit, status badge, and action buttons (edit, activate/pause, delete). Include a form to create or edit a code.
+
+Relevant files
+apps/api/prisma/schema.prisma
+apps/api/src/routes/orders.public.ts
+apps/api/src/routes/admin.orders.ts
+apps/web/src/routes/ConfigRoute.tsx
+apps/web/src/routes/ThemedConfigRoute.tsx
+apps/web/src/routes/AdminRoute.tsx
+apps/web/src/features/admin/api.ts
+apps/web/src/features/admin/types.ts
