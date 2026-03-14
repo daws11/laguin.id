@@ -1048,6 +1048,7 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
       id: item.id.trim(),
       icon: item.icon.trim(),
       title: item.title.trim(),
+      headline: (item.headline ?? '').trim(),
       description: item.description.trim(),
       price: Math.max(0, Math.floor(item.price)),
       priceLabel: item.priceLabel.trim(),
