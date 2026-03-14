@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Settings as SettingsIcon, MessageSquare, Users, ShoppingBag, BarChart3, Palette, Video } from 'lucide-react'
+import { Settings as SettingsIcon, MessageSquare, Users, ShoppingBag, BarChart3, Palette, Video, Tag } from 'lucide-react'
 
 import { AdminApp } from '@/features/admin/AdminApp'
 import * as adminApi from '@/features/admin/api'
@@ -19,6 +19,7 @@ import { AdminSettingsTab } from '@/features/admin/tabs/settings/AdminSettingsTa
 import { AdminFunnelTab } from '@/features/admin/tabs/funnel/AdminFunnelTab'
 import { AdminThemesTab } from '@/features/admin/tabs/themes/AdminThemesTab'
 import { AdminTestimonialsTab } from '@/features/admin/tabs/testimonials/AdminTestimonialsTab'
+import { AdminDiscountsTab } from '@/features/admin/tabs/discounts/AdminDiscountsTab'
 
 const translations = importedTranslations
 /*
@@ -297,7 +298,7 @@ function AdminRouteLegacy() {
   const [authError, setAuthError] = useState<string | null>(null)
   const [loadingAuth, setLoadingAuth] = useState(false)
 
-    const [tab, setTab] = useState<'settings' | 'prompts' | 'customers' | 'orders' | 'funnel' | 'themes' | 'testimonials'>('orders')
+    const [tab, setTab] = useState<'settings' | 'prompts' | 'customers' | 'orders' | 'funnel' | 'themes' | 'testimonials' | 'discounts'>('orders')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [lang, setLang] = useState<AdminLang>('en')
@@ -626,6 +627,7 @@ function AdminRouteLegacy() {
         { value: 'prompts', icon: MessageSquare, label: t.prompts },
         { value: 'themes', icon: Palette, label: t.themes },
         { value: 'testimonials', icon: Video, label: t.testimonials },
+        { value: 'discounts', icon: Tag, label: t.discounts ?? 'Discounts' },
       ]}
       activeNav={tab}
       onSelectNav={(v) => {
@@ -737,6 +739,12 @@ function AdminRouteLegacy() {
       {tab === 'testimonials' && token && (
         <AdminSettingsTab>
           <AdminTestimonialsTab token={token} t={t} />
+        </AdminSettingsTab>
+      )}
+
+      {tab === 'discounts' && token && (
+        <AdminSettingsTab>
+          <AdminDiscountsTab token={token} t={t} />
         </AdminSettingsTab>
       )}
     </AdminLayout>

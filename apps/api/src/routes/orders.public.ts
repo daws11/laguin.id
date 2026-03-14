@@ -121,6 +121,48 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       },
     }
 
+    const rawPaymentAmount = themeCD ? (themeCD.paymentAmount ?? 497000) : 497000
+    let paymentAmount = typeof rawPaymentAmount === 'number' && Number.isFinite(rawPaymentAmount) && rawPaymentAmount >= 0 ? Math.floor(rawPaymentAmount) : 497000
+    let appliedDiscountCode: string | null = null
+    let appliedDiscountAmount: number | null = null
+
+    const discountCodeInput = typeof (req.body as any)?.discountCode === 'string' ? (req.body as any).discountCode.toUpperCase().trim() : null
+    if (discountCodeInput) {
+      const discount = await prisma.discountCode.findUnique({ where: { code: discountCodeInput } })
+      if (!discount || discount.status !== 'active') {
+        return reply.code(400).send({ error: 'Kode diskon tidak valid.' })
+      }
+      const now = new Date()
+      if (discount.startsAt && now < discount.startsAt) {
+        return reply.code(400).send({ error: 'Kode diskon belum berlaku.' })
+      }
+      if (discount.endsAt && now > discount.endsAt) {
+        return reply.code(400).send({ error: 'Kode diskon sudah kadaluarsa.' })
+      }
+      if (discount.templateSlugs) {
+        const allowedSlugs = discount.templateSlugs as string[]
+        if (Array.isArray(allowedSlugs) && allowedSlugs.length > 0) {
+          if (!themeSlug || !allowedSlugs.includes(themeSlug)) {
+            return reply.code(400).send({ error: 'Kode diskon tidak berlaku untuk produk ini.' })
+          }
+        }
+      }
+      if (discount.maxUsesPerPhone && whatsappNumber) {
+        const usageCount = await prisma.order.count({
+          where: {
+            discountCode: discountCodeInput,
+            customer: { whatsappNumber },
+          },
+        })
+        if (usageCount >= discount.maxUsesPerPhone) {
+          return reply.code(400).send({ error: 'Kode diskon sudah mencapai batas penggunaan.' })
+        }
+      }
+      appliedDiscountCode = discountCodeInput
+      appliedDiscountAmount = discount.fixedAmount
+      paymentAmount = Math.max(0, paymentAmount - discount.fixedAmount)
+    }
+
     let customer: { id: string }
     if (allowMultipleOrders) {
       let existing: { id: string } | null = null
@@ -176,8 +218,6 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
-    const rawPaymentAmount = themeCD ? (themeCD.paymentAmount ?? 497000) : 497000
-    const paymentAmount = typeof rawPaymentAmount === 'number' && Number.isFinite(rawPaymentAmount) && rawPaymentAmount >= 0 ? Math.floor(rawPaymentAmount) : 497000
     const xenditConfigured = Boolean(maybeDecrypt((settings as any).xenditSecretKeyEnc))
     const shouldCreateInvoice = xenditConfigured && paymentAmount > 0
 
@@ -189,6 +229,8 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
         deliveryStatus: 'delivery_pending',
         paymentStatus: paymentAmount === 0 ? 'free' : 'pending',
         themeSlug,
+        discountCode: appliedDiscountCode,
+        discountAmount: appliedDiscountAmount,
       },
     })
 

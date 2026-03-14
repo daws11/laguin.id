@@ -219,6 +219,58 @@ export async function adminDeleteTheme(token: string, slug: string) {
   return res.json()
 }
 
+export type DiscountCodeItem = {
+  id: string
+  code: string
+  fixedAmount: number
+  templateSlugs: string[] | null
+  startsAt: string | null
+  endsAt: string | null
+  maxUsesPerPhone: number | null
+  status: 'active' | 'paused'
+  createdAt: string
+  updatedAt: string
+}
+
+export async function adminGetDiscountCodes(token: string) {
+  return apiGet<DiscountCodeItem[]>('/api/admin/discount-codes', { token })
+}
+
+export async function adminCreateDiscountCode(
+  token: string,
+  body: {
+    code: string
+    fixedAmount: number
+    templateSlugs?: string[] | null
+    startsAt?: string | null
+    endsAt?: string | null
+    maxUsesPerPhone?: number | null
+    status?: 'active' | 'paused'
+  },
+) {
+  return apiPost<DiscountCodeItem>('/api/admin/discount-codes', body, { token })
+}
+
+export async function adminUpdateDiscountCode(
+  token: string,
+  id: string,
+  body: Partial<{
+    code: string
+    fixedAmount: number
+    templateSlugs: string[] | null
+    startsAt: string | null
+    endsAt: string | null
+    maxUsesPerPhone: number | null
+    status: 'active' | 'paused'
+  }>,
+) {
+  return apiPut<DiscountCodeItem>(`/api/admin/discount-codes/${encodeURIComponent(id)}`, body, { token })
+}
+
+export async function adminDeleteDiscountCode(token: string, id: string) {
+  return apiDelete<{ ok: boolean }>(`/api/admin/discount-codes/${encodeURIComponent(id)}`, { token })
+}
+
 export async function adminDuplicateTheme(token: string, slug: string) {
   const res = await fetch(`/api/admin/themes/${encodeURIComponent(slug)}/duplicate`, {
     method: 'POST',

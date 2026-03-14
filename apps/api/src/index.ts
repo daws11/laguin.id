@@ -26,6 +26,8 @@ import { adminOrderRoutes } from './routes/admin.orders'
 import { adminUploadsRoutes } from './routes/admin.uploads'
 import { adminFunnelRoutes } from './routes/admin.funnel'
 import { adminThemeRoutes } from './routes/admin.themes'
+import { adminDiscountRoutes } from './routes/admin.discounts'
+import { publicDiscountRoutes } from './routes/discount.public'
 import { xenditWebhookRoutes } from './routes/xendit.webhook'
 import { ycloudWebhookRoutes } from './routes/ycloud.webhook'
 
@@ -121,6 +123,7 @@ app.get('/health', async () => {
 
 await app.register(publicSettingsRoutes, { prefix: '/api' })
 await app.register(publicOrdersRoutes, { prefix: '/api' })
+await app.register(publicDiscountRoutes, { prefix: '/api' })
 await app.register(orderDraftsRoutes, { prefix: '/api' })
 await app.register(emailVerificationRoutes, { prefix: '/api' })
 await app.register(trackingRoutes, { prefix: '/api' })
@@ -139,6 +142,7 @@ await app.register(async (adminApp) => {
   await adminApp.register(adminUploadsRoutes)
   await adminApp.register(adminFunnelRoutes)
   await adminApp.register(adminThemeRoutes)
+  await adminApp.register(adminDiscountRoutes)
 }, { prefix: '/api/admin' })
 
 if (hasWebDist) {

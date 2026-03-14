@@ -157,6 +157,9 @@ model Order {
   xenditInvoiceId    String?
   xenditInvoiceUrl   String?
 
+  discountCode       String?
+  discountAmount     Int?
+
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
@@ -242,4 +245,25 @@ model TestimonialVideo {
 
   @@index([orderId])
   @@index([status])
+}
+
+enum DiscountCodeStatus {
+  active
+  paused
+}
+
+model DiscountCode {
+  id              String             @id @default(cuid())
+  code            String             @unique
+  fixedAmount     Int
+  templateSlugs   Json?
+  startsAt        DateTime?
+  endsAt          DateTime?
+  maxUsesPerPhone Int?
+  status          DiscountCodeStatus @default(active)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([status])
+  @@index([code])
 }

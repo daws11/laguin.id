@@ -71,6 +71,16 @@ The project uses a monorepo structure with `npm workspaces`, separating the fron
 - Optional webhook security: set `ycloudWebhookSecret` in admin, append `?token=<secret>` to YCloud webhook URL
 - Webhook URL to configure in YCloud: `<your-domain>/api/ycloud/webhook` (optionally with `?token=<secret>`)
 
+**Discount Codes System:**
+- `DiscountCode` model: code (unique, uppercase), fixedAmount, templateSlugs (JSON), startsAt/endsAt, maxUsesPerPhone, status (active/paused).
+- Order model stores `discountCode` (String?) and `discountAmount` (Int?) directly — no FK, no separate usage table.
+- Phone usage tracked by counting orders with matching `discountCode` + customer `whatsappNumber`.
+- Admin CRUD at `/api/admin/discount-codes` (list, create, update, delete).
+- Public validation at `POST /api/public/discount/validate` — checks existence, status, date range, template slugs, phone usage limit.
+- Order creation (`/api/orders/draft`) re-validates discount server-side, subtracts fixedAmount (floor at 0), passes adjusted amount to Xendit.
+- Checkout UI: "Add discount code" link in Order Summary → inline input + Add button → shows struck-through price + savings badge.
+- Admin UI: "Discounts" tab with table and create/edit form.
+
 **Admin Features:**
 - CRUD operations for themes with a visual editor.
 - Settings management for global configurations like API keys, WhatsApp integration, Meta Pixel IDs, and delivery page text.

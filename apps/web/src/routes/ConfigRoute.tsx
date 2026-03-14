@@ -36,7 +36,8 @@ import {
   Play,
   Pause,
   ChevronRight,
-  BadgeCheck
+  BadgeCheck,
+  Tag
 } from 'lucide-react'
 
 type PersistedConfigDraft = {
@@ -79,6 +80,12 @@ export function ConfigRoute() {
   const pixelStep4Fired = useRef(false)
   const [draftCountdown, setDraftCountdown] = useState(10 * 60)
   const draftCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const [discountInputOpen, setDiscountInputOpen] = useState(false)
+  const [discountCodeInput, setDiscountCodeInput] = useState('')
+  const [discountValidating, setDiscountValidating] = useState(false)
+  const [discountError, setDiscountError] = useState<string | null>(null)
+  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number } | null>(null)
 
   const fmtCurrency = (amt: number) => {
     if (amt === 0) return 'GRATIS'
@@ -934,6 +941,36 @@ export function ConfigRoute() {
     }, 0)
   }
 
+  const discountedPaymentAmount = appliedDiscount
+    ? Math.max(0, paymentAmount - appliedDiscount.amount)
+    : paymentAmount
+
+  async function validateDiscountCode() {
+    const code = discountCodeInput.trim()
+    if (!code) return
+    setDiscountValidating(true)
+    setDiscountError(null)
+    try {
+      const res = await apiPost<{ valid: boolean; discountAmount?: number; error?: string }>('/api/public/discount/validate', {
+        code,
+        templateSlug: themeSlug ?? null,
+        phoneNumber: form.getValues('whatsappNumber') || null,
+      })
+      if (res.valid && typeof res.discountAmount === 'number') {
+        setAppliedDiscount({ code: code.toUpperCase(), amount: res.discountAmount })
+        setDiscountError(null)
+      } else {
+        setDiscountError(res.error ?? 'Kode diskon tidak valid.')
+        setAppliedDiscount(null)
+      }
+    } catch (e: any) {
+      setDiscountError(e?.message ?? 'Gagal memvalidasi kode diskon.')
+      setAppliedDiscount(null)
+    } finally {
+      setDiscountValidating(false)
+    }
+  }
+
   const onSubmit = async (data: OrderInput) => {
     if (!manualConfirmationEnabled && emailOtpEnabled) {
       if (!data.email) {
@@ -961,7 +998,7 @@ export function ConfigRoute() {
       // Agreement UI is temporarily disabled, but backend may still enforce it.
       // If enabled in settings, auto-accept to avoid blocking the public flow.
       if (agreementEnabled) (payload as Record<string, unknown>).agreementAccepted = true
-      const res = await apiPost<{ orderId: string; xenditInvoiceUrl?: string }>('/api/orders/draft', { ...payload, themeSlug: themeSlug ?? null })
+      const res = await apiPost<{ orderId: string; xenditInvoiceUrl?: string }>('/api/orders/draft', { ...payload, themeSlug: themeSlug ?? null, ...(appliedDiscount ? { discountCode: appliedDiscount.code } : {}) })
       clearDraft()
 
       // Fire browser Lead pixel with the same eventID as server-side CAPI for deduplication.
@@ -1554,7 +1591,7 @@ export function ConfigRoute() {
                     (!manualConfirmationEnabled && emailOtpEnabled && !emailVerified)
                   }
                 >
-                  {loading ? 'Memproses...' : (manualConfirmationEnabled ? configSteps.step4.manualCheckoutButtonText : `${configSteps.step4.checkoutButtonText}${funnelPriceVisibility.checkoutButton ? ` — ${fmtCurrency(paymentAmount)}` : ''}`)}
+                  {loading ? 'Memproses...' : (manualConfirmationEnabled ? configSteps.step4.manualCheckoutButtonText : `${configSteps.step4.checkoutButtonText}${funnelPriceVisibility.checkoutButton ? ` — ${fmtCurrency(discountedPaymentAmount)}` : ''}`)}
                 </Button>
 
                 {/* Trust badges */}
@@ -1606,17 +1643,70 @@ export function ConfigRoute() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-gray-500">Lagu Personal <span className="text-gray-400">({relationship})</span></span>
-                          {originalAmount > paymentAmount && (
+                          {originalAmount > paymentAmount && !appliedDiscount && (
                             <span className="text-[10px] font-bold bg-[var(--theme-accent)] text-white px-2 py-0.5 rounded-full">HEMAT {Math.round((1 - paymentAmount / originalAmount) * 100)}%</span>
                           )}
                         </div>
+
+                        {/* Discount code section */}
+                        <div className="pt-1">
+                          {!appliedDiscount && !discountInputOpen && (
+                            <button
+                              type="button"
+                              onClick={() => setDiscountInputOpen(true)}
+                              className="text-xs text-[var(--theme-accent)] hover:underline flex items-center justify-center gap-1 w-full"
+                            >
+                              <Tag className="h-3 w-3" /> Add discount code
+                            </button>
+                          )}
+                          {!appliedDiscount && discountInputOpen && (
+                            <div className="space-y-1.5">
+                              <div className="flex gap-2">
+                                <Input
+                                  value={discountCodeInput}
+                                  onChange={e => { setDiscountCodeInput(e.target.value.toUpperCase()); setDiscountError(null) }}
+                                  placeholder="Kode diskon"
+                                  className="h-8 text-xs flex-1 uppercase"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 text-xs px-3"
+                                  onClick={() => void validateDiscountCode()}
+                                  disabled={discountValidating || !discountCodeInput.trim()}
+                                >
+                                  {discountValidating ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Add'}
+                                </Button>
+                              </div>
+                              {discountError && <p className="text-[10px] text-red-500 text-center">{discountError}</p>}
+                            </div>
+                          )}
+                          {appliedDiscount && (
+                            <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <Tag className="h-3 w-3 text-green-600" />
+                                <span className="text-xs font-bold text-green-700">{appliedDiscount.code}</span>
+                                <span className="text-[10px] font-bold bg-green-600 text-white px-1.5 py-0.5 rounded-full">HEMAT {fmtCurrency(appliedDiscount.amount)}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => { setAppliedDiscount(null); setDiscountCodeInput(''); setDiscountError(null) }}
+                                className="text-[10px] text-red-500 hover:underline"
+                              >
+                                Hapus
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
                         <div className="flex justify-between items-center">
                           <span className="text-gray-500">Total</span>
                           <span className="font-bold text-[var(--theme-accent)] flex items-center gap-2">
-                            {originalAmount > paymentAmount && (
-                              <span className="text-gray-400 line-through font-normal">{fmtCurrency(originalAmount)}</span>
+                            {(originalAmount > paymentAmount || appliedDiscount) && (
+                              <span className="text-gray-400 line-through font-normal">{fmtCurrency(appliedDiscount ? paymentAmount : originalAmount)}</span>
                             )}
-                            {fmtCurrency(paymentAmount)}
+                            {fmtCurrency(appliedDiscount ? discountedPaymentAmount : paymentAmount)}
                           </span>
                         </div>
                       </div>
@@ -1693,7 +1783,7 @@ export function ConfigRoute() {
                     (!manualConfirmationEnabled && emailOtpEnabled && !emailVerified)
                   }
                 >
-                  {loading ? 'Memproses...' : (manualConfirmationEnabled ? configSteps.step4.manualCheckoutButtonText : `${configSteps.step4.checkoutButtonText}${funnelPriceVisibility.checkoutButton ? ` — ${fmtCurrency(paymentAmount)}` : ''}`)}
+                  {loading ? 'Memproses...' : (manualConfirmationEnabled ? configSteps.step4.manualCheckoutButtonText : `${configSteps.step4.checkoutButtonText}${funnelPriceVisibility.checkoutButton ? ` — ${fmtCurrency(discountedPaymentAmount)}` : ''}`)}
                 </Button>
                 <p className="text-center text-xs text-gray-400">{configSteps.step4.checkoutSubtext.replace('{recipient}', currentRecipient)}</p>
 
@@ -1792,7 +1882,7 @@ export function ConfigRoute() {
                     step === 1 ? 'Pilih vibenya ->' : 
                     step === 2 ? 'Tambahkan ceritamu ->' : 
                     step === 3 ? 'Hampir selesai! ->' : 
-                    loading ? 'Memproses...' : (manualConfirmationEnabled ? configSteps.step4.manualCheckoutButtonText : emailOtpEnabled ? (emailVerified ? `${configSteps.step4.checkoutButtonText}${funnelPriceVisibility.checkoutButton ? ` — ${fmtCurrency(paymentAmount)}` : ''}` : 'Verifikasi email dulu') : `${configSteps.step4.checkoutButtonText}${funnelPriceVisibility.checkoutButton ? ` — ${fmtCurrency(paymentAmount)}` : ''}`)}
+                    loading ? 'Memproses...' : (manualConfirmationEnabled ? configSteps.step4.manualCheckoutButtonText : emailOtpEnabled ? (emailVerified ? `${configSteps.step4.checkoutButtonText}${funnelPriceVisibility.checkoutButton ? ` — ${fmtCurrency(discountedPaymentAmount)}` : ''}` : 'Verifikasi email dulu') : `${configSteps.step4.checkoutButtonText}${funnelPriceVisibility.checkoutButton ? ` — ${fmtCurrency(discountedPaymentAmount)}` : ''}`)}
                  </Button>
                </div>
              </div>
