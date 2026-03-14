@@ -125,6 +125,7 @@ type PublicSiteConfig = {
     tagline?: string
     companyName?: string
     email?: string
+    phone?: string
     disclaimer?: string
     copyrightLine?: string
   }
@@ -965,6 +966,7 @@ export function LandingRoute() {
           tagline={footerSec?.tagline}
           companyName={footerSec?.companyName}
           email={footerSec?.email}
+          phone={footerSec?.phone}
           disclaimer={footerSec?.disclaimer}
           copyrightLine={footerSec?.copyrightLine}
         />

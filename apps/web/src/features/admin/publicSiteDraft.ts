@@ -193,6 +193,7 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
     tagline: 'Membuat pria menangis sejak 2024',
     companyName: 'Langit Utama Group',
     email: 'support@laguin.id',
+    phone: '',
     disclaimer: 'Laguin.id menyediakan layanan musik digital yang dipersonalisasi. Seluruh lagu dibuat secara khusus berdasarkan informasi yang diberikan oleh pelanggan. Tidak terdapat pengiriman produk fisik. Kualitas dan hasil akhir dapat bervariasi bergantung pada kelengkapan serta keakuratan informasi yang disampaikan. Layanan ini tidak berafiliasi dengan, tidak disponsori, dan tidak didukung oleh Facebook, Inc. atau Meta Platforms, Inc.',
     copyrightLine: 'Langit Utama Group. All rights reserved.',
   },
@@ -632,6 +633,7 @@ function buildFooter(raw: any) {
     tagline: asString(s?.tagline, d.tagline),
     companyName: asString(s?.companyName, d.companyName),
     email: asString(s?.email, d.email),
+    phone: asString(s?.phone, d.phone),
     disclaimer: asString(s?.disclaimer, d.disclaimer),
     copyrightLine: asString(s?.copyrightLine, d.copyrightLine),
   }
@@ -1024,6 +1026,7 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
     tagline: draft.footer.tagline.trim(),
     companyName: draft.footer.companyName.trim(),
     email: draft.footer.email.trim(),
+    phone: draft.footer.phone.trim(),
     disclaimer: draft.footer.disclaimer.trim(),
     copyrightLine: draft.footer.copyrightLine.trim(),
   }

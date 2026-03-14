@@ -263,6 +263,7 @@ export type FooterConfig = {
   tagline: string
   companyName: string
   email: string
+  phone: string
   disclaimer: string
   copyrightLine: string
 }

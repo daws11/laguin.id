@@ -7,6 +7,7 @@ type Props = {
   tagline?: string
   companyName?: string
   email?: string
+  phone?: string
   disclaimer?: string
   copyrightLine?: string
 }
@@ -18,6 +19,7 @@ export function LandingFooter({
   tagline = 'Membuat pria menangis sejak 2024',
   companyName = 'Langit Utama Group',
   email = 'support@laguin.id',
+  phone = '',
   disclaimer = 'Laguin.id menyediakan layanan musik digital yang dipersonalisasi. Seluruh lagu dibuat secara khusus berdasarkan informasi yang diberikan oleh pelanggan. Tidak terdapat pengiriman produk fisik. Kualitas dan hasil akhir dapat bervariasi bergantung pada kelengkapan serta keakuratan informasi yang disampaikan. Layanan ini tidak berafiliasi dengan, tidak disponsori, dan tidak didukung oleh Facebook, Inc. atau Meta Platforms, Inc.',
   copyrightLine = 'Langit Utama Group. All rights reserved.',
 }: Props) {
@@ -33,6 +35,7 @@ export function LandingFooter({
             <div className="text-xs space-y-1 text-gray-400">
               <p className="font-medium text-gray-500">{companyName}</p>
               <a href={`mailto:${email}`} className="hover:text-gray-600 transition-colors">{email}</a>
+              {phone && <a href={`tel:${phone.replace(/\s/g, '')}`} className="hover:text-gray-600 transition-colors">{phone}</a>}
             </div>
           </div>
 

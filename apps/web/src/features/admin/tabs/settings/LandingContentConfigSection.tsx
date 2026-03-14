@@ -2226,6 +2226,10 @@ export function LandingContentConfigSection({
                             <Input value={draft.footer.email} onChange={(e) => setDraft(d => ({ ...d, footer: { ...d.footer, email: e.target.value } }))} />
                         </div>
                         <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Phone Number</label>
+                            <Input value={draft.footer.phone ?? ''} onChange={(e) => setDraft(d => ({ ...d, footer: { ...d.footer, phone: e.target.value } }))} placeholder="e.g. +62 895 3702 31680" />
+                        </div>
+                        <div className="space-y-1">
                             <label className="text-xs font-medium text-muted-foreground">Disclaimer</label>
                             <Textarea className="min-h-[80px]" value={draft.footer.disclaimer} onChange={(e) => setDraft(d => ({ ...d, footer: { ...d.footer, disclaimer: e.target.value } }))} />
                         </div>
