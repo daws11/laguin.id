@@ -37,7 +37,8 @@ import {
   Pause,
   ChevronRight,
   BadgeCheck,
-  Tag
+  Tag,
+  Clipboard
 } from 'lucide-react'
 
 type PersistedConfigDraft = {
@@ -81,7 +82,6 @@ export function ConfigRoute() {
   const [draftCountdown, setDraftCountdown] = useState(10 * 60)
   const draftCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const [discountInputOpen, setDiscountInputOpen] = useState(false)
   const [discountCodeInput, setDiscountCodeInput] = useState('')
   const [discountValidating, setDiscountValidating] = useState(false)
   const [discountError, setDiscountError] = useState<string | null>(null)
@@ -1650,25 +1650,35 @@ export function ConfigRoute() {
 
                         {/* Discount code section */}
                         <div className="py-2">
-                          {!appliedDiscount && !discountInputOpen && (
-                            <button
-                              type="button"
-                              onClick={() => setDiscountInputOpen(true)}
-                              className="text-sm font-semibold text-[var(--theme-accent)] hover:text-[var(--theme-accent)] flex items-center justify-center gap-2 w-full py-2 px-3 rounded-lg border border-[var(--theme-accent)] border-opacity-30 hover:bg-[var(--theme-accent)] hover:bg-opacity-5 transition-all"
-                            >
-                              <Tag className="h-4 w-4" /> Add discount code
-                            </button>
-                          )}
-                          {!appliedDiscount && discountInputOpen && (
+                          {!appliedDiscount && (
                             <div className="space-y-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                              <label className="text-xs font-semibold text-gray-700 flex items-center gap-2">
+                                <Tag className="h-3.5 w-3.5" /> Kode Diskon (Opsional)
+                              </label>
                               <div className="flex gap-2">
                                 <Input
                                   value={discountCodeInput}
                                   onChange={e => { setDiscountCodeInput(e.target.value.toUpperCase()); setDiscountError(null) }}
-                                  placeholder="Kode diskon"
+                                  placeholder="Masukkan atau paste kode diskon"
                                   className="h-10 text-sm flex-1 uppercase font-semibold"
-                                  autoFocus
                                 />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="h-10 px-3"
+                                  title="Paste dari clipboard"
+                                  onClick={async () => {
+                                    try {
+                                      const text = await navigator.clipboard.readText()
+                                      setDiscountCodeInput(text.toUpperCase().trim())
+                                      setDiscountError(null)
+                                    } catch (err) {
+                                      setDiscountError('Gagal membaca clipboard')
+                                    }
+                                  }}
+                                >
+                                  <Clipboard className="h-4 w-4" />
+                                </Button>
                                 <Button
                                   type="button"
                                   className="h-10 text-sm px-4 bg-[var(--theme-accent)] text-white hover:bg-[var(--theme-accent)] font-semibold"
