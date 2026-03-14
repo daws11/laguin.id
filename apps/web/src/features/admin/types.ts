@@ -49,6 +49,13 @@ export type Settings = {
   ycloudLinkMessage: string | null
   ycloudWebhookUrl: string | null
 
+  reminderTemplates: Array<{
+    label: string
+    delayMinutes: number
+    templateName: string
+    templateLangCode: string
+  }>
+
   hasXenditKey: boolean
   xenditWebhookToken: string | null
   allowMultipleOrdersPerWhatsapp: boolean

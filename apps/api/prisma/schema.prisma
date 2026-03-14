@@ -213,6 +213,8 @@ model OrderDraft {
   whatsappNumber      String?
   emailVerificationId String?
   convertedOrderId    String?
+  whatsappCapturedAt  DateTime?
+  remindersSent       Json?
 
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -221,6 +223,7 @@ model OrderDraft {
   @@index([emailLower])
   @@index([whatsappNumber])
   @@index([themeSlug])
+  @@index([whatsappCapturedAt])
 }
 
 model PageView {

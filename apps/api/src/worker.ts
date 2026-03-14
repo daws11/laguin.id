@@ -188,6 +188,119 @@ async function deliveryTick() {
   }
 }
 
+async function reminderTick() {
+  const lockKey = 'reminder-tick'
+  const locked = await tryLock(lockKey)
+  if (!locked) return
+
+  try {
+    const settings = await getOrCreateSettings()
+    const cfg =
+      settings.whatsappConfig && typeof settings.whatsappConfig === 'object'
+        ? (settings.whatsappConfig as any)
+        : {}
+    const reminderTemplates: Array<{
+      label: string
+      delayMinutes: number
+      templateName: string
+      templateLangCode: string
+    }> = Array.isArray(cfg.reminderTemplates) ? cfg.reminderTemplates : []
+
+    if (reminderTemplates.length === 0) return
+
+    const ycloud = cfg.ycloud ?? {}
+    const { maybeDecrypt } = await import('./lib/settings')
+    const apiKey = maybeDecrypt(ycloud.apiKeyEnc) ?? maybeDecrypt(ycloud.apiKey) ?? null
+    const from: string | null = typeof ycloud.from === 'string' ? ycloud.from : null
+
+    if (!apiKey || !from) return
+
+    const drafts = await prisma.orderDraft.findMany({
+      where: {
+        whatsappCapturedAt: { not: null },
+        whatsappNumber: { not: null },
+        convertedOrderId: null,
+      },
+      select: {
+        id: true,
+        whatsappNumber: true,
+        whatsappCapturedAt: true,
+        remindersSent: true,
+      },
+    })
+
+    const now = Date.now()
+
+    for (const draft of drafts) {
+      if (!draft.whatsappCapturedAt || !draft.whatsappNumber) continue
+
+      const capturedAt = new Date(draft.whatsappCapturedAt).getTime()
+      const alreadySent: string[] = Array.isArray(draft.remindersSent)
+        ? (draft.remindersSent as string[])
+        : []
+
+      for (const reminder of reminderTemplates) {
+        if (!reminder.templateName || !reminder.templateLangCode || !reminder.delayMinutes) continue
+
+        const dueAt = capturedAt + reminder.delayMinutes * 60 * 1000
+        const reminderKey = `${reminder.templateName}:${reminder.templateLangCode}:${reminder.delayMinutes}`
+
+        if (now < dueAt) continue
+        if (alreadySent.includes(reminderKey)) continue
+
+        try {
+          const payload = {
+            from,
+            to: draft.whatsappNumber,
+            type: 'template',
+            template: {
+              name: reminder.templateName,
+              language: { code: reminder.templateLangCode },
+            },
+            externalId: `reminder:${draft.id}:${reminderKey}`,
+          }
+
+          const res = await fetch('https://api.ycloud.com/v2/whatsapp/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-Key': apiKey,
+            },
+            body: JSON.stringify(payload),
+          })
+
+          if (res.ok) {
+            const updatedSent = [...alreadySent, reminderKey]
+            await prisma.orderDraft.update({
+              where: { id: draft.id },
+              data: { remindersSent: updatedSent },
+            })
+            alreadySent.push(reminderKey)
+            console.log(
+              `[worker] Reminder sent: draft=${draft.id} template=${reminder.templateName} delay=${reminder.delayMinutes}m`,
+            )
+          } else {
+            const body = await res.json().catch(() => null)
+            console.error(
+              `[worker] Reminder send failed: draft=${draft.id} status=${res.status}`,
+              body,
+            )
+          }
+        } catch (err: any) {
+          console.error(
+            `[worker] Reminder exception: draft=${draft.id} template=${reminder.templateName}`,
+            err?.message,
+          )
+        }
+      }
+    }
+  } catch (err: any) {
+    console.error('[worker] reminderTick error:', err?.message)
+  } finally {
+    await unlock(lockKey)
+  }
+}
+
 console.log('[worker] started')
 
 // Every 5 seconds: attempt one generation job.
@@ -198,5 +311,10 @@ cron.schedule('*/5 * * * * *', () => {
 // Every 10 seconds: attempt one delivery job.
 cron.schedule('*/10 * * * * *', () => {
   void deliveryTick()
+})
+
+// Every 60 seconds: check for due reminders.
+cron.schedule('* * * * *', () => {
+  void reminderTick()
 })
 

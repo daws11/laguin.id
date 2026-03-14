@@ -998,7 +998,7 @@ export function ConfigRoute() {
       // Agreement UI is temporarily disabled, but backend may still enforce it.
       // If enabled in settings, auto-accept to avoid blocking the public flow.
       if (agreementEnabled) (payload as Record<string, unknown>).agreementAccepted = true
-      const res = await apiPost<{ orderId: string; xenditInvoiceUrl?: string }>('/api/orders/draft', { ...payload, themeSlug: themeSlug ?? null, ...(appliedDiscount ? { discountCode: appliedDiscount.code } : {}) })
+      const res = await apiPost<{ orderId: string; xenditInvoiceUrl?: string }>('/api/orders/draft', { ...payload, themeSlug: themeSlug ?? null, ...(appliedDiscount ? { discountCode: appliedDiscount.code } : {}), ...(draftKeyRef.current ? { draftKey: draftKeyRef.current } : {}) })
       clearDraft()
 
       // Fire browser Lead pixel with the same eventID as server-side CAPI for deduplication.

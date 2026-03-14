@@ -44,6 +44,17 @@ const UpdateSchema = z.object({
   ycloudLinkMessage: z.string().optional().nullable(),
   ycloudTemplateHasButton: z.boolean().optional().nullable(),
 
+  reminderTemplates: z
+    .array(
+      z.object({
+        label: z.string().min(1),
+        delayMinutes: z.number().int().min(1),
+        templateName: z.string().min(1),
+        templateLangCode: z.string().min(1),
+      }),
+    )
+    .optional(),
+
   // Site base URL used for WhatsApp delivery links (stored in whatsappConfig.siteUrl)
   siteUrl: z.string().url().optional().nullable(),
 
@@ -128,6 +139,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
         const base = '/api/ycloud/webhook'
         return secret ? `${base}?token=${encodeURIComponent(secret)}` : base
       })(),
+      reminderTemplates: Array.isArray((cfg as any).reminderTemplates) ? (cfg as any).reminderTemplates : [],
       defaultThemeSlug: s.defaultThemeSlug ?? null,
       showThemesInFooter: s.showThemesInFooter ?? false,
       metaPixelId: s.metaPixelId ?? null,
@@ -192,6 +204,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
     const nextCfg: any = { ...currentCfg, ycloud: nextYcloud }
     if (parsed.data.siteUrl !== undefined) nextCfg.siteUrl = parsed.data.siteUrl ?? null
     if (parsed.data.ycloudLinkMessage !== undefined) nextCfg.linkMessage = parsed.data.ycloudLinkMessage ?? null
+    if (parsed.data.reminderTemplates !== undefined) nextCfg.reminderTemplates = parsed.data.reminderTemplates
 
     const mergedWhatsappConfig =
       parsed.data.whatsappConfig !== undefined
@@ -271,6 +284,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
         const base = '/api/ycloud/webhook'
         return secret ? `${base}?token=${encodeURIComponent(secret)}` : base
       })(),
+      reminderTemplates: Array.isArray((cfg as any).reminderTemplates) ? (cfg as any).reminderTemplates : [],
       defaultThemeSlug: updated.defaultThemeSlug ?? null,
       showThemesInFooter: updated.showThemesInFooter ?? false,
       metaPixelId: updated.metaPixelId ?? null,

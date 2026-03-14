@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify'
+import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 
 import { prisma } from '../lib/prisma'
@@ -56,6 +57,17 @@ export const orderDraftsRoutes: FastifyPluginAsync = async (app) => {
     const whatsappNumberRaw = input.formValues.whatsappNumber ?? ''
     const whatsappNumber = whatsappNumberRaw ? normalizeWhatsappNumber(whatsappNumberRaw) : null
 
+    const existing = whatsappNumber
+      ? await prisma.orderDraft.findUnique({
+          where: { draftKey: input.draftKey },
+          select: { whatsappNumber: true, whatsappCapturedAt: true },
+        })
+      : null
+
+    const isNewWhatsapp =
+      whatsappNumber &&
+      (!existing || !existing.whatsappNumber || existing.whatsappNumber !== whatsappNumber)
+
     const row = await prisma.orderDraft.upsert({
       where: { draftKey: input.draftKey },
       create: {
@@ -67,6 +79,7 @@ export const orderDraftsRoutes: FastifyPluginAsync = async (app) => {
         whatsappNumber: whatsappNumber || null,
         emailVerificationId: input.emailVerificationId ?? null,
         themeSlug: input.themeSlug ?? null,
+        whatsappCapturedAt: whatsappNumber ? new Date() : null,
       },
       update: {
         step: input.step,
@@ -76,6 +89,7 @@ export const orderDraftsRoutes: FastifyPluginAsync = async (app) => {
         whatsappNumber: whatsappNumber || null,
         emailVerificationId: input.emailVerificationId ?? null,
         themeSlug: input.themeSlug ?? null,
+        ...(isNewWhatsapp ? { whatsappCapturedAt: new Date(), remindersSent: Prisma.DbNull } : {}),
       },
       select: { id: true },
     })

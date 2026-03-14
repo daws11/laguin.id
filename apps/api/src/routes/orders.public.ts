@@ -23,6 +23,9 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
 
     const input = parsed.data
     const themeSlug = typeof (req.body as any)?.themeSlug === 'string' ? (req.body as any).themeSlug : null
+    const draftKey = typeof (req.body as any)?.draftKey === 'string' && (req.body as any).draftKey.length >= 20
+      ? (req.body as any).draftKey
+      : null
     const customerName = input.yourName ?? input.recipientName
     const settings = await getOrCreateSettings()
     const emailLower = normalizeEmail(input.email)
@@ -233,6 +236,13 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
         discountAmount: appliedDiscountAmount,
       },
     })
+
+    if (draftKey) {
+      await prisma.orderDraft.updateMany({
+        where: { draftKey, convertedOrderId: null },
+        data: { convertedOrderId: order.id },
+      }).catch(() => {})
+    }
 
     await addOrderEvent({
       orderId: order.id,
