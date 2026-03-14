@@ -160,6 +160,8 @@ model Order {
   discountCode       String?
   discountAmount     Int?
 
+  upsellItems        Json?
+
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 

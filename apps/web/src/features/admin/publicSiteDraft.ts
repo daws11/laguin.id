@@ -1,4 +1,4 @@
-import type { PublicSiteDraft, Settings, ToastItem } from './types'
+import type { PublicSiteDraft, Settings, ToastItem, UpsellConfig } from './types'
 
 export const defaultThemeColors = {
   accentColor: '#E11D48',
@@ -217,6 +217,12 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
     funnelHeader: true,
     orderSummary: true,
     checkoutButton: true,
+  },
+  upsell: {
+    enabled: false,
+    headline: 'Tunggu, ada penawaran spesial untukmu!',
+    footerNote: '',
+    items: [],
   },
   configSteps: {
     step0: {
@@ -507,6 +513,7 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
       paymentAmount: asNumber(cd?.paymentAmount, defaultPublicSiteDraft.creationDelivery.paymentAmount),
       originalAmount: asNumber(cd?.originalAmount, defaultPublicSiteDraft.creationDelivery.originalAmount),
     },
+    upsell: buildUpsell(cfg?.upsell),
     configSteps: buildConfigSteps(cfg?.configSteps),
     audioSamplesSection: buildAudioSamplesSection(cfg?.audioSamplesSection),
     comparisonSection: buildComparisonSection(cfg?.comparisonSection),
@@ -516,6 +523,27 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
     footer: buildFooter(cfg?.footer),
     miscText: buildMiscText(cfg?.miscText),
     priceVisibility: buildPriceVisibility(cfg?.priceVisibility),
+  }
+}
+
+function buildUpsell(raw: any): UpsellConfig {
+  const s = raw && typeof raw === 'object' ? raw : {}
+  const d = defaultPublicSiteDraft.upsell
+  const items = safeArr(s?.items, (x: any) => ({
+    id: asString(x?.id, ''),
+    icon: asString(x?.icon, ''),
+    title: asString(x?.title, ''),
+    description: asString(x?.description, ''),
+    price: asNumber(x?.price, 0),
+    priceLabel: asString(x?.priceLabel, ''),
+    ctaText: asString(x?.ctaText, ''),
+    declineText: asString(x?.declineText, ''),
+  })).filter((x: any) => x.id && x.title)
+  return {
+    enabled: asBool(s?.enabled, d.enabled),
+    headline: asString(s?.headline, d.headline),
+    footerNote: asString(s?.footerNote, d.footerNote),
+    items,
   }
 }
 
@@ -1011,6 +1039,22 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
 
   const nextPriceVisibility = { ...draft.priceVisibility }
 
-  return { logoUrl, faviconUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, heroCheckmarks: nextHeroCheckmarks, trustBadges: nextTrustBadges, statsBar: nextStatsBar, reviews: nextReviews, promoBanner: nextPromoBanner, configSteps: nextConfigSteps, audioSamplesSection: nextAudioSamplesSection, comparisonSection: nextComparisonSection, howItWorksSection: nextHowItWorksSection, guaranteeSection: nextGuaranteeSection, faqSection: nextFaqSection, footer: nextFooter, miscText: nextMiscText, priceVisibility: nextPriceVisibility }
+  const nextUpsell = {
+    enabled: draft.upsell.enabled,
+    headline: draft.upsell.headline.trim(),
+    footerNote: draft.upsell.footerNote.trim(),
+    items: draft.upsell.items.map((item) => ({
+      id: item.id.trim(),
+      icon: item.icon.trim(),
+      title: item.title.trim(),
+      description: item.description.trim(),
+      price: Math.max(0, Math.floor(item.price)),
+      priceLabel: item.priceLabel.trim(),
+      ctaText: item.ctaText.trim(),
+      declineText: item.declineText.trim(),
+    })).filter((item) => item.id && item.title),
+  }
+
+  return { logoUrl, faviconUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, heroCheckmarks: nextHeroCheckmarks, trustBadges: nextTrustBadges, statsBar: nextStatsBar, reviews: nextReviews, promoBanner: nextPromoBanner, configSteps: nextConfigSteps, audioSamplesSection: nextAudioSamplesSection, comparisonSection: nextComparisonSection, howItWorksSection: nextHowItWorksSection, guaranteeSection: nextGuaranteeSection, faqSection: nextFaqSection, footer: nextFooter, miscText: nextMiscText, priceVisibility: nextPriceVisibility, upsell: nextUpsell }
 }
 

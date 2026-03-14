@@ -284,6 +284,24 @@ export type MiscTextConfig = {
   mobileCtaQuotaBadge: string
 }
 
+export type UpsellItem = {
+  id: string
+  icon: string
+  title: string
+  description: string
+  price: number
+  priceLabel: string
+  ctaText: string
+  declineText: string
+}
+
+export type UpsellConfig = {
+  enabled: boolean
+  headline: string
+  footerNote: string
+  items: UpsellItem[]
+}
+
 export type PriceVisibility = {
   promoBanner: boolean
   header: boolean
@@ -392,6 +410,7 @@ export type PublicSiteDraft = {
   footer: FooterConfig
   miscText: MiscTextConfig
   priceVisibility: PriceVisibility
+  upsell: UpsellConfig
 }
 
 export type CustomerListItem = {

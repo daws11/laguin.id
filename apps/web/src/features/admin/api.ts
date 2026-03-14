@@ -174,6 +174,21 @@ export async function adminGetFunnel(token: string, from: string, to: string, th
 export type TrendDay = { date: string; homepage: number; step0: number; orderCreated: number; orderConfirmed: number; step0Pct: number; orderCreatedPct: number; orderConfirmedPct: number }
 export type TrendData = { days: TrendDay[] }
 
+export type UpsellAnalytics = {
+  entered: number
+  acceptedAtLeastOne: number
+  acceptedPct: number
+  totalRevenue: number
+  items: Array<{ title: string; accepted: number; revenue: number }>
+}
+
+export async function adminGetFunnelUpsell(token: string, from: string, to: string, themeSlug?: string) {
+  const tzOffset = new Date().getTimezoneOffset()
+  let url = `/api/admin/funnel/upsell?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&tzOffset=${tzOffset}`
+  if (themeSlug) url += `&themeSlug=${encodeURIComponent(themeSlug)}`
+  return apiGet<UpsellAnalytics>(url, { token })
+}
+
 export async function adminGetFunnelTrend(token: string, from: string, to: string, themeSlug?: string) {
   const tzOffset = new Date().getTimezoneOffset()
   let url = `/api/admin/funnel/trend?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&tzOffset=${tzOffset}`

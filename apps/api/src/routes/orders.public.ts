@@ -32,6 +32,15 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
     const whatsappNumber = input.whatsappNumber ? normalizeWhatsappNumber(input.whatsappNumber) : null
 
     let themeCD: any = null
+    let upsellCatalog: Array<{ id: string; title: string; price: number; icon: string }> = []
+
+    const extractUpsellCatalog = (src: any): Array<{ id: string; title: string; price: number; icon: string }> => {
+      if (!src || typeof src !== 'object' || !src.enabled || !Array.isArray(src.items)) return []
+      return src.items
+        .filter((it: any) => it && typeof it === 'object' && typeof it.id === 'string' && typeof it.title === 'string' && typeof it.price === 'number' && Number.isInteger(it.price) && it.price >= 0)
+        .map((it: any) => ({ id: it.id as string, title: it.title as string, price: it.price as number, icon: typeof it.icon === 'string' ? it.icon : '' }))
+    }
+
     if (themeSlug) {
       const theme = await prisma.theme.findUnique({ where: { slug: themeSlug } })
       if (theme?.settings && typeof theme.settings === 'object') {
@@ -39,6 +48,12 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
         if (ts.creationDelivery && typeof ts.creationDelivery === 'object') {
           themeCD = ts.creationDelivery
         }
+        upsellCatalog = extractUpsellCatalog(ts.upsell)
+      }
+    } else {
+      const psc = (settings as any).publicSiteConfig
+      if (psc && typeof psc === 'object') {
+        upsellCatalog = extractUpsellCatalog(psc.upsell)
       }
     }
 
@@ -166,6 +181,32 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       paymentAmount = Math.max(0, paymentAmount - discount.fixedAmount)
     }
 
+    const rawUpsells = (req.body as any)?.upsells
+    let validatedUpsells: Array<{ id: string; title: string; price: number; icon: string }> | null = null
+    if (Array.isArray(rawUpsells)) {
+      if (rawUpsells.length === 0) {
+        validatedUpsells = []
+      } else {
+        validatedUpsells = []
+        const seenIds = new Set<string>()
+        for (const item of rawUpsells) {
+          if (!item || typeof item !== 'object') continue
+          const clientId = typeof item.id === 'string' ? item.id : ''
+          if (!clientId) {
+            return reply.code(400).send({ error: 'Invalid upsell item.' })
+          }
+          if (seenIds.has(clientId)) continue
+          seenIds.add(clientId)
+          const catalogItem = upsellCatalog.find((c) => c.id === clientId)
+          if (!catalogItem) {
+            return reply.code(400).send({ error: `Unknown upsell item: ${clientId}` })
+          }
+          validatedUpsells.push({ id: catalogItem.id, title: catalogItem.title, price: catalogItem.price, icon: catalogItem.icon })
+          paymentAmount += catalogItem.price
+        }
+      }
+    }
+
     let customer: { id: string }
     if (allowMultipleOrders) {
       let existing: { id: string } | null = null
@@ -234,6 +275,7 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
         themeSlug,
         discountCode: appliedDiscountCode,
         discountAmount: appliedDiscountAmount,
+        upsellItems: validatedUpsells !== null ? (validatedUpsells as any) : undefined,
       },
     })
 

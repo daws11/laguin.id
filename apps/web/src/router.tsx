@@ -10,6 +10,8 @@ const ConfigRoute = lazy(() => import('@/routes/ConfigRoute').then(m => ({ defau
 const CheckoutRoute = lazy(() => import('@/routes/CheckoutRoute').then(m => ({ default: m.CheckoutRoute })))
 const AdminRoute = lazy(() => import('@/routes/AdminRoute').then(m => ({ default: m.AdminRoute })))
 const ThemedConfigRoute = lazy(() => import('@/routes/ThemedConfigRoute').then(m => ({ default: m.ThemedConfigRoute })))
+const UpsellRoute = lazy(() => import('@/routes/UpsellRoute').then(m => ({ default: m.UpsellRoute })))
+const ThemedUpsellRoute = lazy(() => import('@/routes/ThemedUpsellRoute').then(m => ({ default: m.ThemedUpsellRoute })))
 const PrivacyPage = lazy(() => import('@/routes/PrivacyPage').then(m => ({ default: m.PrivacyPage })))
 const TermsPage = lazy(() => import('@/routes/TermsPage').then(m => ({ default: m.TermsPage })))
 const ContactPage = lazy(() => import('@/routes/ContactPage').then(m => ({ default: m.ContactPage })))
@@ -38,7 +40,9 @@ export const router = createBrowserRouter([
       { path: '/kontak', element: <Suspense fallback={<LazyFallback />}><ContactPage /></Suspense> },
       { path: ADMIN_PATH, element: <Suspense fallback={<LazyFallback />}><AdminRoute /></Suspense> },
       { path: '/:themeSlug', element: <ThemedLandingRoute /> },
+      { path: '/upsell', element: <Suspense fallback={<LazyFallback />}><ThemeProvider themeSlug={null}><UpsellRoute /></ThemeProvider></Suspense> },
       { path: '/:themeSlug/config', element: <Suspense fallback={<LazyFallback />}><ThemedConfigRoute /></Suspense> },
+      { path: '/:themeSlug/upsell', element: <Suspense fallback={<LazyFallback />}><ThemedUpsellRoute /></Suspense> },
     ],
   },
 ])

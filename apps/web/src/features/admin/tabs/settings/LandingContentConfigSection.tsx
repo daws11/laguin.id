@@ -8,7 +8,7 @@ import { resolveApiUrl } from '@/lib/http'
 import * as adminApi from '@/features/admin/api'
 import { moveItem, parseToastItemsJson } from '@/features/admin/publicSiteDraft'
 import type { PublicSiteDraft } from '@/features/admin/types'
-import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap, Palette, ImagePlus, ShieldCheck, Megaphone, Plus, Trash2, Heart, PenLine, PartyPopper, DollarSign } from 'lucide-react'
+import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap, Palette, ImagePlus, ShieldCheck, Megaphone, Plus, Trash2, Heart, PenLine, PartyPopper, DollarSign, Gift } from 'lucide-react'
 
 interface LandingContentConfigProps {
   draft: PublicSiteDraft
@@ -74,6 +74,7 @@ export function LandingContentConfigSection({
     { id: 'config-step2', label: 'Step 2: Vibe', icon: Music, group: 'Config Steps' },
     { id: 'config-step3', label: 'Step 3: Story', icon: PenLine, group: 'Config Steps' },
     { id: 'config-step4', label: 'Step 4: Checkout', icon: PartyPopper, group: 'Config Steps' },
+    { id: 'upsell', label: 'Upsell', icon: Gift, group: 'Config Steps' },
   ]
 
   const SidebarItem = ({ item }: { item: typeof menuItems[0] }) => (
@@ -2351,6 +2352,188 @@ export function LandingContentConfigSection({
                                 </div>
                             </label>
                         ))}
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'upsell' && (
+                <div className="space-y-4 w-full animate-in fade-in duration-300">
+                    <div className="pb-2 border-b flex items-center justify-between">
+                        <div>
+                            <h3 className="text-base font-semibold">Upsell</h3>
+                            <p className="text-xs text-muted-foreground">Post-checkout upsell offers shown before payment.</p>
+                        </div>
+                        <label className="flex items-center gap-2 text-xs border rounded px-2 py-1 bg-muted/20 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={draft.upsell.enabled}
+                                onChange={(e) => setDraft(d => ({ ...d, upsell: { ...d.upsell, enabled: e.target.checked } }))}
+                            />
+                            Enabled
+                        </label>
+                    </div>
+
+                    <div className={cn("space-y-4 transition-opacity", !draft.upsell.enabled && "opacity-50 pointer-events-none")}>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium">Headline</label>
+                            <Input
+                                value={draft.upsell.headline}
+                                onChange={(e) => setDraft(d => ({ ...d, upsell: { ...d.upsell, headline: e.target.value } }))}
+                                placeholder="e.g. Tunggu, ada penawaran spesial untukmu!"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium">Footer Note</label>
+                            <Input
+                                value={draft.upsell.footerNote}
+                                onChange={(e) => setDraft(d => ({ ...d, upsell: { ...d.upsell, footerNote: e.target.value } }))}
+                                placeholder="e.g. support@laguin.id"
+                            />
+                        </div>
+
+                        <div className="space-y-3 pt-2 border-t">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-sm font-medium">Upsell Items ({draft.upsell.items.length}/3)</h4>
+                                {draft.upsell.items.length < 3 && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-1"
+                                        onClick={() => setDraft(d => ({
+                                            ...d,
+                                            upsell: {
+                                                ...d.upsell,
+                                                items: [...d.upsell.items, {
+                                                    id: `upsell_${Date.now()}`,
+                                                    icon: '',
+                                                    title: '',
+                                                    description: '',
+                                                    price: 0,
+                                                    priceLabel: 'One-time upgrade',
+                                                    ctaText: 'Yes, Add This',
+                                                    declineText: 'No Thanks, Continue',
+                                                }],
+                                            },
+                                        }))}
+                                    >
+                                        <Plus className="h-3 w-3" /> Add Item
+                                    </Button>
+                                )}
+                            </div>
+
+                            {draft.upsell.items.map((item, idx) => (
+                                <div key={item.id} className="rounded-lg border p-4 space-y-3 bg-muted/10">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Item {idx + 1}</span>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 text-xs text-destructive hover:text-destructive gap-1"
+                                            onClick={() => setDraft(d => ({
+                                                ...d,
+                                                upsell: {
+                                                    ...d.upsell,
+                                                    items: d.upsell.items.filter((_, i) => i !== idx),
+                                                },
+                                            }))}
+                                        >
+                                            <Trash2 className="h-3 w-3" /> Remove
+                                        </Button>
+                                    </div>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-medium">Icon (emoji)</label>
+                                            <Input
+                                                value={item.icon}
+                                                onChange={(e) => setDraft(d => ({
+                                                    ...d,
+                                                    upsell: { ...d.upsell, items: d.upsell.items.map((it, i) => i === idx ? { ...it, icon: e.target.value } : it) },
+                                                }))}
+                                                placeholder="e.g. 🎵"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-medium">Title</label>
+                                            <Input
+                                                value={item.title}
+                                                onChange={(e) => setDraft(d => ({
+                                                    ...d,
+                                                    upsell: { ...d.upsell, items: d.upsell.items.map((it, i) => i === idx ? { ...it, title: e.target.value } : it) },
+                                                }))}
+                                                placeholder="e.g. Unlimited Edits"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-medium">Description</label>
+                                        <Textarea
+                                            value={item.description}
+                                            onChange={(e) => setDraft(d => ({
+                                                ...d,
+                                                upsell: { ...d.upsell, items: d.upsell.items.map((it, i) => i === idx ? { ...it, description: e.target.value } : it) },
+                                            }))}
+                                            placeholder="Describe the offer..."
+                                            className="h-16"
+                                        />
+                                    </div>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-medium">Price (IDR)</label>
+                                            <Input
+                                                type="number"
+                                                value={item.price}
+                                                onChange={(e) => setDraft(d => ({
+                                                    ...d,
+                                                    upsell: { ...d.upsell, items: d.upsell.items.map((it, i) => i === idx ? { ...it, price: parseInt(e.target.value) || 0 } : it) },
+                                                }))}
+                                                min={0}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-medium">Price Label</label>
+                                            <Input
+                                                value={item.priceLabel}
+                                                onChange={(e) => setDraft(d => ({
+                                                    ...d,
+                                                    upsell: { ...d.upsell, items: d.upsell.items.map((it, i) => i === idx ? { ...it, priceLabel: e.target.value } : it) },
+                                                }))}
+                                                placeholder="e.g. One-time upgrade"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-medium">CTA Button Text</label>
+                                            <Input
+                                                value={item.ctaText}
+                                                onChange={(e) => setDraft(d => ({
+                                                    ...d,
+                                                    upsell: { ...d.upsell, items: d.upsell.items.map((it, i) => i === idx ? { ...it, ctaText: e.target.value } : it) },
+                                                }))}
+                                                placeholder="e.g. Yes, Add Unlimited Edits"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-medium">Decline Button Text</label>
+                                            <Input
+                                                value={item.declineText}
+                                                onChange={(e) => setDraft(d => ({
+                                                    ...d,
+                                                    upsell: { ...d.upsell, items: d.upsell.items.map((it, i) => i === idx ? { ...it, declineText: e.target.value } : it) },
+                                                }))}
+                                                placeholder="e.g. No Thanks, Continue"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+
+                            {draft.upsell.items.length === 0 && (
+                                <div className="rounded-lg border bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
+                                    No upsell items configured. Add up to 3 items.
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

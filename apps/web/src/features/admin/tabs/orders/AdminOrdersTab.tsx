@@ -691,6 +691,33 @@ export function AdminOrdersTab({
                   </div>
                 )}
 
+                {(() => {
+                  const upsellItems = selectedOrder.upsellItems
+                  if (!Array.isArray(upsellItems) || upsellItems.length === 0) return null
+                  const fmtIDR = (n: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
+                  return (
+                    <Card className="shadow-sm">
+                      <CardHeader className="p-3 pb-1">
+                        <CardTitle className="text-xs font-medium text-muted-foreground uppercase">
+                          Accepted Upsells
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-3 pt-1">
+                        <div className="space-y-1.5">
+                          {upsellItems.map((item: any, idx: number) => (
+                            <div key={idx} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                              <span>
+                                {item.icon ? `${item.icon} ` : ''}<span className="font-medium">{item.title}</span>
+                              </span>
+                              <span className="font-semibold text-emerald-700">{fmtIDR(item.price ?? 0)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })()}
+
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold">{t.activityLog ?? 'Activity Log'}</h3>
                   <div className="rounded-xl border bg-card p-0 overflow-hidden text-sm">

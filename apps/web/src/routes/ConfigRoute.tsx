@@ -971,6 +971,37 @@ export function ConfigRoute() {
     }
   }
 
+  const upsellConfig = useMemo(() => {
+    const cfg = publicSiteConfig && typeof publicSiteConfig === 'object' ? (publicSiteConfig as any) : {}
+    const u = cfg?.upsell && typeof cfg.upsell === 'object' ? cfg.upsell : {}
+    if (!u.enabled) return null
+    const items = Array.isArray(u.items) ? u.items.filter((it: any) => it?.id && it?.title) : []
+    if (items.length === 0) return null
+    return {
+      headline: typeof u.headline === 'string' ? u.headline : '',
+      footerNote: typeof u.footerNote === 'string' ? u.footerNote : '',
+      items: items.map((it: any) => ({
+        id: String(it.id),
+        icon: typeof it.icon === 'string' ? it.icon : '',
+        title: String(it.title),
+        description: typeof it.description === 'string' ? it.description : '',
+        price: typeof it.price === 'number' ? it.price : 0,
+        priceLabel: typeof it.priceLabel === 'string' ? it.priceLabel : '',
+        ctaText: typeof it.ctaText === 'string' ? it.ctaText : '',
+        declineText: typeof it.declineText === 'string' ? it.declineText : '',
+      })),
+    }
+  }, [publicSiteConfig])
+
+  const themeColors = useMemo(() => {
+    const cfg = publicSiteConfig && typeof publicSiteConfig === 'object' ? (publicSiteConfig as any) : {}
+    const c = cfg?.colors && typeof cfg.colors === 'object' ? cfg.colors : {}
+    return {
+      accentColor: typeof c.accentColor === 'string' ? c.accentColor : '#E11D48',
+      buttonColor: typeof c.buttonColor === 'string' ? c.buttonColor : '',
+    }
+  }, [publicSiteConfig])
+
   const onSubmit = async (data: OrderInput) => {
     if (!manualConfirmationEnabled && emailOtpEnabled) {
       if (!data.email) {
@@ -982,26 +1013,46 @@ export function ConfigRoute() {
         return
       }
     }
+
+    const basePayload: Record<string, unknown> = { ...data, whatsappNumber: whatsappEnabled ? data.whatsappNumber : '' }
+    if (!whatsappEnabled) {
+      delete basePayload.whatsappNumber
+    }
+    if (manualConfirmationEnabled || !emailOtpEnabled) {
+      delete basePayload.email
+      delete basePayload.emailVerificationId
+    }
+    if (agreementEnabled) basePayload.agreementAccepted = true
+
+    const formPayload = {
+      ...basePayload,
+      themeSlug: themeSlug ?? null,
+      ...(appliedDiscount ? { discountCode: appliedDiscount.code } : {}),
+      ...(draftKeyRef.current ? { draftKey: draftKeyRef.current } : {}),
+    }
+
+    if (upsellConfig) {
+      clearDraft()
+      const upsellPath = themeSlug ? `/${themeSlug}/upsell` : '/upsell'
+      navigate(upsellPath, {
+        state: {
+          formPayload,
+          upsellConfig,
+          themeColors,
+          wishlistPixelId,
+          manualConfirmationEnabled,
+        },
+      })
+      return
+    }
+
     setLoading(true)
     setError(null)
     try {
-      // Clear any previous server-side field errors.
       form.clearErrors('whatsappNumber')
-      const payload: Record<string, unknown> = { ...data, whatsappNumber: whatsappEnabled ? data.whatsappNumber : '' }
-      if (!whatsappEnabled) {
-        delete payload.whatsappNumber
-      }
-      if (manualConfirmationEnabled || !emailOtpEnabled) {
-        delete payload.email
-        delete payload.emailVerificationId
-      }
-      // Agreement UI is temporarily disabled, but backend may still enforce it.
-      // If enabled in settings, auto-accept to avoid blocking the public flow.
-      if (agreementEnabled) (payload as Record<string, unknown>).agreementAccepted = true
-      const res = await apiPost<{ orderId: string; xenditInvoiceUrl?: string }>('/api/orders/draft', { ...payload, themeSlug: themeSlug ?? null, ...(appliedDiscount ? { discountCode: appliedDiscount.code } : {}), ...(draftKeyRef.current ? { draftKey: draftKeyRef.current } : {}) })
+      const res = await apiPost<{ orderId: string; xenditInvoiceUrl?: string }>('/api/orders/draft', formPayload)
       clearDraft()
 
-      // Fire browser Lead pixel with the same eventID as server-side CAPI for deduplication.
       trackPixelEvent('Lead', { content_name: 'Lagu Personal', currency: 'IDR', value: 0 }, `order_created:${res.orderId}`)
 
       if (wishlistPixelId) {

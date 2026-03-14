@@ -147,4 +147,60 @@ export const adminFunnelRoutes: FastifyPluginAsync = async (app) => {
 
     return { days: results }
   })
+
+  app.get('/funnel/upsell', async (req) => {
+    const parsed = QuerySchema.safeParse(req.query)
+    const query = parsed.success ? parsed.data : {}
+
+    const offsetMinutes = query.tzOffset ? parseInt(query.tzOffset, 10) : 0
+    const offsetMs = (isNaN(offsetMinutes) ? 0 : offsetMinutes) * 60 * 1000
+
+    const now = new Date()
+    const defaultFrom = new Date(now)
+    defaultFrom.setDate(defaultFrom.getDate() - 7)
+    defaultFrom.setHours(0, 0, 0, 0)
+
+    const fromDate = query.from ? new Date(new Date(query.from + 'T00:00:00.000Z').getTime() + offsetMs) : defaultFrom
+    const toDate = query.to ? new Date(new Date(query.to + 'T23:59:59.999Z').getTime() + offsetMs) : now
+
+    const where: any = {
+      createdAt: { gte: fromDate, lte: toDate },
+      upsellItems: { not: null },
+    }
+    if (query.themeSlug) where.themeSlug = query.themeSlug
+
+    const orders = await prisma.order.findMany({
+      where,
+      select: { upsellItems: true },
+    })
+
+    const entered = orders.length
+    let acceptedAtLeastOne = 0
+    let totalRevenue = 0
+    const perItem: Record<string, { title: string; accepted: number; revenue: number }> = {}
+
+    for (const order of orders) {
+      const items = order.upsellItems as any
+      if (!Array.isArray(items)) continue
+      if (items.length > 0) {
+        acceptedAtLeastOne++
+        for (const item of items) {
+          const title = typeof item?.title === 'string' ? item.title : 'Unknown'
+          const price = typeof item?.price === 'number' ? item.price : 0
+          totalRevenue += price
+          if (!perItem[title]) perItem[title] = { title, accepted: 0, revenue: 0 }
+          perItem[title].accepted++
+          perItem[title].revenue += price
+        }
+      }
+    }
+
+    return {
+      entered,
+      acceptedAtLeastOne,
+      acceptedPct: entered > 0 ? Math.round((acceptedAtLeastOne / entered) * 1000) / 10 : 0,
+      totalRevenue,
+      items: Object.values(perItem),
+    }
+  })
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Download, Loader2, AlertCircle } from 'lucide-react'
-import { adminGetFunnel, adminGetFunnelTrend, adminGetThemes, adminEnqueueExport, adminGetExportJobStatus, type FunnelData, type TrendData, type ThemeItem } from '@/features/admin/api'
+import { adminGetFunnel, adminGetFunnelTrend, adminGetFunnelUpsell, adminGetThemes, adminEnqueueExport, adminGetExportJobStatus, type FunnelData, type TrendData, type UpsellAnalytics, type ThemeItem } from '@/features/admin/api'
 
 function formatDate(d: Date): string {
   const y = d.getFullYear()
@@ -149,6 +149,7 @@ export function AdminFunnelTab({ t, token }: { t: any; token: string }) {
   const [pendingTo, setPendingTo] = useState(to)
   const [data, setData] = useState<FunnelData | null>(null)
   const [trend, setTrend] = useState<TrendData | null>(null)
+  const [upsellData, setUpsellData] = useState<UpsellAnalytics | null>(null)
   const [loading, setLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [exportJobId, setExportJobId] = useState<string | null>(null)
@@ -173,12 +174,14 @@ export function AdminFunnelTab({ t, token }: { t: any; token: string }) {
     setLoading(true)
     setError(null)
     try {
-      const [result, trendResult] = await Promise.all([
+      const [result, trendResult, upsellResult] = await Promise.all([
         adminGetFunnel(token, f, toDate, themeFilter || undefined),
         adminGetFunnelTrend(token, f, toDate, themeFilter || undefined),
+        adminGetFunnelUpsell(token, f, toDate, themeFilter || undefined),
       ])
       setData(result)
       setTrend(trendResult)
+      setUpsellData(upsellResult)
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load funnel data')
     } finally {
@@ -405,6 +408,44 @@ export function AdminFunnelTab({ t, token }: { t: any; token: string }) {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {!loading && upsellData && upsellData.entered > 0 && (
+        <div className="rounded-lg border bg-background p-4 space-y-4">
+          <h4 className="text-sm font-semibold">Upsell Performance</h4>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-lg border bg-muted/20 p-3 text-center">
+              <div className="text-lg font-bold tabular-nums">{upsellData.entered}</div>
+              <div className="text-[11px] text-muted-foreground">Entered</div>
+            </div>
+            <div className="rounded-lg border bg-muted/20 p-3 text-center">
+              <div className="text-lg font-bold tabular-nums text-emerald-700">{upsellData.acceptedAtLeastOne}</div>
+              <div className="text-[11px] text-muted-foreground">Accepted ≥1 ({upsellData.acceptedPct}%)</div>
+            </div>
+            <div className="rounded-lg border bg-muted/20 p-3 text-center">
+              <div className="text-lg font-bold tabular-nums text-emerald-700">
+                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(upsellData.totalRevenue)}
+              </div>
+              <div className="text-[11px] text-muted-foreground">Revenue</div>
+            </div>
+          </div>
+          {upsellData.items.length > 0 && (
+            <div className="space-y-1.5">
+              <div className="text-xs font-medium text-muted-foreground uppercase">Per Item</div>
+              {upsellData.items.map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                  <span className="font-medium">{item.title}</span>
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="tabular-nums">{item.accepted}x accepted</span>
+                    <span className="font-semibold text-emerald-700 tabular-nums">
+                      {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(item.revenue)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
