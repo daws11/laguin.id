@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: laguin-api
+    runtime: node
+    buildCommand: npm install; npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_JWT_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: KAI_AI_KEY
+        sync: false
+      - key: KIE_AI_CALLBACK_URL
+        sync: false
+      - key: SITE_URL
+        sync: false
