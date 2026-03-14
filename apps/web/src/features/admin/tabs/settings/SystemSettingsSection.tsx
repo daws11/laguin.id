@@ -3,13 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { Settings } from '@/features/admin/types'
-import { Smartphone, Key, BarChart3, CreditCard, Settings2, Mail, Gift } from 'lucide-react'
+import { Smartphone, Key, BarChart3, CreditCard, Settings2, Mail, Gift, HardDrive } from 'lucide-react'
 import { WhatsappGatewayCard } from './WhatsappGatewayCard'
 import { ApiKeysCard } from './ApiKeysCard'
 import { MetaPixelCard } from './MetaPixelCard'
 import { XenditCard } from './XenditCard'
 import { EmailSettingsCard } from './EmailSettingsCard'
 import { DeliveryPageCard } from './DeliveryPageCard'
+import { ObjectStorageCard } from './ObjectStorageCard'
 
 interface SystemSettingsSectionProps {
   settings: Settings
@@ -37,6 +38,7 @@ export function SystemSettingsSection({
     { id: 'meta-pixel', label: 'Meta Pixel', icon: BarChart3, group: 'System' },
     { id: 'xendit', label: 'Xendit Payment', icon: CreditCard, group: 'System' },
     { id: 'order-rules', label: 'Order Rules', icon: Settings2, group: 'System' },
+    { id: 'object-storage', label: 'Object Storage', icon: HardDrive, group: 'System' },
     { id: 'delivery-page', label: 'Delivery Page', icon: Gift, group: 'System' },
   ]
 
@@ -168,6 +170,16 @@ export function SystemSettingsSection({
                   </div>
                 </CardContent>
               </Card>
+            </div>
+          )}
+
+          {activeTab === 'object-storage' && (
+            <div className="animate-in fade-in duration-300 h-full">
+              <ObjectStorageCard
+                settings={settings}
+                saveSettings={saveSettings}
+                loading={loading}
+              />
             </div>
           )}
 

@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { prisma } from '../lib/prisma'
 import { encryptString } from '../lib/crypto'
 import { getOrCreateSettings, maybeDecrypt } from '../lib/settings'
+import { invalidateStorageBackend } from '../lib/objectStorage'
 
 const UpdateSchema = z.object({
   instantEnabled: z.boolean().optional(),
@@ -57,6 +58,13 @@ const UpdateSchema = z.object({
 
   // Site base URL used for WhatsApp delivery links (stored in whatsappConfig.siteUrl)
   siteUrl: z.string().url().optional().nullable(),
+
+  // S3-compatible object storage (Cloudflare R2, AWS S3, MinIO, etc.)
+  s3Endpoint: z.string().url().optional().nullable(),
+  s3Bucket: z.string().min(1).optional().nullable(),
+  s3AccessKey: z.string().min(1).optional(),
+  s3SecretKey: z.string().min(1).optional(),
+  s3Region: z.string().optional().nullable(),
 
   // Email settings
   emailProvider: z.enum(['smtp', 'resend']).optional(),
@@ -155,6 +163,12 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       allowMultipleOrdersPerWhatsapp: (s as any).allowMultipleOrdersPerWhatsapp ?? false,
       kieAiCallbackUrl: process.env.KIE_AI_CALLBACK_URL || null,
 
+      s3Endpoint: (s as any).s3Endpoint ?? null,
+      s3Bucket: (s as any).s3Bucket ?? null,
+      hasS3AccessKey: Boolean(maybeDecrypt((s as any).s3AccessKeyEnc)),
+      hasS3SecretKey: Boolean(maybeDecrypt((s as any).s3SecretKeyEnc)),
+      s3Region: (s as any).s3Region ?? null,
+
       emailProvider: (s as any).emailProvider ?? 'smtp',
       smtpHost: (s as any).smtpHost ?? null,
       smtpPort: (s as any).smtpPort ?? null,
@@ -239,6 +253,15 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
     if (parsed.data.xenditSecretKey) data.xenditSecretKeyEnc = encryptString(parsed.data.xenditSecretKey)
     if (parsed.data.xenditWebhookToken !== undefined) data.xenditWebhookToken = parsed.data.xenditWebhookToken
 
+    // S3 storage
+    let s3Changed = false
+    if (parsed.data.s3Endpoint !== undefined) { data.s3Endpoint = parsed.data.s3Endpoint; s3Changed = true }
+    if (parsed.data.s3Bucket !== undefined) { data.s3Bucket = parsed.data.s3Bucket; s3Changed = true }
+    if (parsed.data.s3AccessKey) { data.s3AccessKeyEnc = encryptString(parsed.data.s3AccessKey); s3Changed = true }
+    if (parsed.data.s3SecretKey) { data.s3SecretKeyEnc = encryptString(parsed.data.s3SecretKey); s3Changed = true }
+    if (parsed.data.s3Region !== undefined) { data.s3Region = parsed.data.s3Region; s3Changed = true }
+    if (s3Changed) invalidateStorageBackend()
+
     if (parsed.data.emailProvider !== undefined) data.emailProvider = parsed.data.emailProvider
     if (parsed.data.smtpHost !== undefined) data.smtpHost = parsed.data.smtpHost
     if (parsed.data.smtpPort !== undefined) data.smtpPort = parsed.data.smtpPort
@@ -297,6 +320,12 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       metaCapiTestEventCode: (updated as any).metaCapiTestEventCode ?? null,
       allowMultipleOrdersPerWhatsapp: (updated as any).allowMultipleOrdersPerWhatsapp ?? false,
       kieAiCallbackUrl: process.env.KIE_AI_CALLBACK_URL || null,
+
+      s3Endpoint: (updated as any).s3Endpoint ?? null,
+      s3Bucket: (updated as any).s3Bucket ?? null,
+      hasS3AccessKey: Boolean(maybeDecrypt((updated as any).s3AccessKeyEnc)),
+      hasS3SecretKey: Boolean(maybeDecrypt((updated as any).s3SecretKeyEnc)),
+      s3Region: (updated as any).s3Region ?? null,
 
       emailProvider: (updated as any).emailProvider ?? 'smtp',
       smtpHost: (updated as any).smtpHost ?? null,

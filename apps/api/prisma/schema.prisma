@@ -71,6 +71,13 @@ model Settings {
   smtpFrom           String?
   resendApiKeyEnc    String?
   resendFrom         String?
+
+  s3Endpoint         String?
+  s3Bucket           String?
+  s3AccessKeyEnc     String?
+  s3SecretKeyEnc     String?
+  s3Region           String?
+
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }

@@ -61,6 +61,12 @@ export type Settings = {
   allowMultipleOrdersPerWhatsapp: boolean
   kieAiCallbackUrl: string | null
 
+  s3Endpoint: string | null
+  s3Bucket: string | null
+  hasS3AccessKey: boolean
+  hasS3SecretKey: boolean
+  s3Region: string | null
+
   emailProvider: string
   smtpHost: string | null
   smtpPort: number | null
