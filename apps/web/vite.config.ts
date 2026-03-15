@@ -24,7 +24,7 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 5000,
+    port: Number(process.env.PORT) || 5173,
     allowedHosts: true,
     headers: {
       'Cache-Control': 'no-store',

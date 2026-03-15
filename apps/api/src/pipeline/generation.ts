@@ -168,11 +168,18 @@ export async function processOrderGeneration(orderId: string) {
     language: languageValue,
   }
 
+  // Check if an accepted upsell has third_verse action
+  const orderUpsellItems: any[] = Array.isArray(order.upsellItems) ? (order.upsellItems as any[]) : []
+  const hasThirdVerse = orderUpsellItems.some((u: any) => u?.action === 'third_verse')
+
   const freshOrderForLyrics = await prisma.order.findUnique({ where: { id: order.id }, select: { lyricsText: true, moodDescription: true } })
   let lyricsText = freshOrderForLyrics?.lyricsText ?? null
   if (!lyricsText) {
     const apiKey = await getOpenAIApiKey()
-    const prompt = renderPrompt(lyricsTemplate.templateText, baseVars)
+    let prompt = renderPrompt(lyricsTemplate.templateText, baseVars)
+    if (hasThirdVerse) {
+      prompt += '\n\nIMPORTANT: This song must have exactly 3 verses instead of the standard 2 verses. Write three full verses for this song.'
+    }
 
     if (!apiKey) {
       lyricsText = `(${order.id}) Lyrics generation not configured. Set OpenRouter key in Admin Settings.`
@@ -406,6 +413,19 @@ export async function completeOrder(orderId: string, opts?: { skipTrackCheck?: b
         effectiveInstantEnabled = cd.instantEnabled ?? effectiveInstantEnabled
         effectiveDeliveryDelayHours = cd.deliveryDelayHours ?? effectiveDeliveryDelayHours
       }
+    }
+  }
+
+  // Check if an accepted upsell has express_delivery action
+  const upsellItems: any[] = Array.isArray(order.upsellItems) ? (order.upsellItems as any[]) : []
+  const expressDeliveryUpsell = upsellItems.find((u: any) => u?.action === 'express_delivery')
+  if (expressDeliveryUpsell) {
+    const deliveryTimeMinutes = expressDeliveryUpsell.actionConfig?.deliveryTimeMinutes ?? 0
+    if (deliveryTimeMinutes === 0) {
+      effectiveInstantEnabled = true
+    } else {
+      effectiveInstantEnabled = false
+      effectiveDeliveryDelayHours = deliveryTimeMinutes / 60
     }
   }
 

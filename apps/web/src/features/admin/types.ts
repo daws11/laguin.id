@@ -291,6 +291,8 @@ export type MiscTextConfig = {
   mobileCtaQuotaBadge: string
 }
 
+export type UpsellItemAction = 'none' | 'express_delivery' | 'third_verse'
+
 export type UpsellItem = {
   id: string
   icon: string
@@ -301,6 +303,10 @@ export type UpsellItem = {
   priceLabel: string
   ctaText: string
   declineText: string
+  action?: UpsellItemAction
+  actionConfig?: {
+    deliveryTimeMinutes?: number
+  }
 }
 
 export type UpsellConfig = {

@@ -32,13 +32,20 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
     const whatsappNumber = input.whatsappNumber ? normalizeWhatsappNumber(input.whatsappNumber) : null
 
     let themeCD: any = null
-    let upsellCatalog: Array<{ id: string; title: string; price: number; icon: string }> = []
+    let upsellCatalog: Array<{ id: string; title: string; price: number; icon: string; action?: string; actionConfig?: any }> = []
 
-    const extractUpsellCatalog = (src: any): Array<{ id: string; title: string; price: number; icon: string }> => {
+    const extractUpsellCatalog = (src: any): Array<{ id: string; title: string; price: number; icon: string; action?: string; actionConfig?: any }> => {
       if (!src || typeof src !== 'object' || !src.enabled || !Array.isArray(src.items)) return []
       return src.items
         .filter((it: any) => it && typeof it === 'object' && typeof it.id === 'string' && typeof it.title === 'string' && typeof it.price === 'number' && Number.isInteger(it.price) && it.price >= 0)
-        .map((it: any) => ({ id: it.id as string, title: it.title as string, price: it.price as number, icon: typeof it.icon === 'string' ? it.icon : '' }))
+        .map((it: any) => ({
+          id: it.id as string,
+          title: it.title as string,
+          price: it.price as number,
+          icon: typeof it.icon === 'string' ? it.icon : '',
+          action: typeof it.action === 'string' && it.action !== 'none' ? it.action : undefined,
+          actionConfig: it.action === 'express_delivery' && it.actionConfig && typeof it.actionConfig === 'object' ? it.actionConfig : undefined,
+        }))
     }
 
     if (themeSlug) {
@@ -182,7 +189,7 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const rawUpsells = (req.body as any)?.upsells
-    let validatedUpsells: Array<{ id: string; title: string; price: number; icon: string }> | null = null
+    let validatedUpsells: Array<{ id: string; title: string; price: number; icon: string; action?: string; actionConfig?: any }> | null = null
     if (Array.isArray(rawUpsells)) {
       if (rawUpsells.length === 0) {
         validatedUpsells = []
@@ -201,7 +208,14 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
           if (!catalogItem) {
             return reply.code(400).send({ error: `Unknown upsell item: ${clientId}` })
           }
-          validatedUpsells.push({ id: catalogItem.id, title: catalogItem.title, price: catalogItem.price, icon: catalogItem.icon })
+          validatedUpsells.push({
+            id: catalogItem.id,
+            title: catalogItem.title,
+            price: catalogItem.price,
+            icon: catalogItem.icon,
+            action: catalogItem.action,
+            actionConfig: catalogItem.actionConfig,
+          })
           paymentAmount += catalogItem.price
         }
       }

@@ -2544,6 +2544,104 @@ export function LandingContentConfigSection({
                                             />
                                         </div>
                                     </div>
+                                    <div className="space-y-2 pt-2 border-t">
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-medium">Action (optional)</label>
+                                            <select
+                                                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                                                value={item.action ?? 'none'}
+                                                onChange={(e) => {
+                                                    const action = e.target.value as 'none' | 'express_delivery' | 'third_verse'
+                                                    setDraft(d => ({
+                                                        ...d,
+                                                        upsell: {
+                                                            ...d.upsell,
+                                                            items: d.upsell.items.map((it, i) => i === idx ? {
+                                                                ...it,
+                                                                action,
+                                                                actionConfig: action === 'express_delivery' ? (it.actionConfig ?? { deliveryTimeMinutes: 0 }) : undefined,
+                                                            } : it),
+                                                        },
+                                                    }))
+                                                }}
+                                            >
+                                                <option value="none">No action</option>
+                                                <option value="express_delivery">Express Delivery</option>
+                                                <option value="third_verse">Third Verse</option>
+                                            </select>
+                                        </div>
+                                        {item.action === 'express_delivery' && (
+                                            <div className="space-y-1 pl-2 border-l-2 border-primary/20">
+                                                <label className="text-xs font-medium">Delivery Time</label>
+                                                <p className="text-[10px] text-muted-foreground">Set to 0 minutes for instant delivery.</p>
+                                                <div className="flex gap-2">
+                                                    <Input
+                                                        type="number"
+                                                        min={0}
+                                                        max={(() => {
+                                                            const cfg = item.actionConfig ?? {}
+                                                            const raw = cfg.deliveryTimeMinutes ?? 0
+                                                            return raw >= 60 ? 168 : 59
+                                                        })()}
+                                                        className="flex-1"
+                                                        value={(() => {
+                                                            const mins = item.actionConfig?.deliveryTimeMinutes ?? 0
+                                                            return mins >= 60 ? mins / 60 : mins
+                                                        })()}
+                                                        onChange={(e) => {
+                                                            const val = Math.max(0, Number(e.target.value) || 0)
+                                                            const currentMins = item.actionConfig?.deliveryTimeMinutes ?? 0
+                                                            const isHours = currentMins >= 60
+                                                            const newMinutes = isHours ? val * 60 : val
+                                                            setDraft(d => ({
+                                                                ...d,
+                                                                upsell: {
+                                                                    ...d.upsell,
+                                                                    items: d.upsell.items.map((it, i) => i === idx ? {
+                                                                        ...it,
+                                                                        actionConfig: { ...it.actionConfig, deliveryTimeMinutes: newMinutes },
+                                                                    } : it),
+                                                                },
+                                                            }))
+                                                        }}
+                                                    />
+                                                    <select
+                                                        className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                                                        value={(item.actionConfig?.deliveryTimeMinutes ?? 0) >= 60 ? 'hours' : 'minutes'}
+                                                        onChange={(e) => {
+                                                            const currentMins = item.actionConfig?.deliveryTimeMinutes ?? 0
+                                                            const isCurrentlyHours = currentMins >= 60
+                                                            const switchToHours = e.target.value === 'hours'
+                                                            let newMinutes = currentMins
+                                                            if (!isCurrentlyHours && switchToHours) {
+                                                                newMinutes = Math.max(60, currentMins * 60)
+                                                            } else if (isCurrentlyHours && !switchToHours) {
+                                                                newMinutes = Math.round(currentMins / 60)
+                                                            }
+                                                            setDraft(d => ({
+                                                                ...d,
+                                                                upsell: {
+                                                                    ...d.upsell,
+                                                                    items: d.upsell.items.map((it, i) => i === idx ? {
+                                                                        ...it,
+                                                                        actionConfig: { ...it.actionConfig, deliveryTimeMinutes: newMinutes },
+                                                                    } : it),
+                                                                },
+                                                            }))
+                                                        }}
+                                                    >
+                                                        <option value="minutes">Minutes</option>
+                                                        <option value="hours">Hours</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {item.action === 'third_verse' && (
+                                            <p className="text-[10px] text-muted-foreground pl-2 border-l-2 border-primary/20">
+                                                When purchased, the lyrics prompt will request 3 verses instead of 2.
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
 
