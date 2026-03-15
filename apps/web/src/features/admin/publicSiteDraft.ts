@@ -540,6 +540,10 @@ function buildUpsell(raw: any): UpsellConfig {
     priceLabel: asString(x?.priceLabel, ''),
     ctaText: asString(x?.ctaText, ''),
     declineText: asString(x?.declineText, ''),
+    action: (['none', 'express_delivery', 'third_verse'].includes(x?.action) ? x.action : 'none') as 'none' | 'express_delivery' | 'third_verse',
+    ...(x?.action === 'express_delivery' && x?.actionConfig && typeof x.actionConfig === 'object'
+      ? { actionConfig: { deliveryTimeMinutes: asNumber(x.actionConfig.deliveryTimeMinutes, 0) } }
+      : {}),
   })).filter((x: any) => x.id && x.title)
   return {
     enabled: asBool(s?.enabled, d.enabled),
@@ -1057,6 +1061,8 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
       priceLabel: item.priceLabel.trim(),
       ctaText: item.ctaText.trim(),
       declineText: item.declineText.trim(),
+      action: item.action ?? 'none',
+      ...(item.action === 'express_delivery' && item.actionConfig ? { actionConfig: item.actionConfig } : {}),
     })).filter((item) => item.id && item.title),
   }
 
