@@ -363,11 +363,20 @@ function AdminRouteLegacy() {
     setTemplates(items)
   }
 
+  function hasSection(section: string) {
+    if (!currentUser || currentUser.role === 'admin') return true
+    return (currentUser.permissions ?? []).includes(section)
+  }
+
   useEffect(() => {
     if (!token) return
+    const tasks: Promise<void>[] = []
+    if (hasSection('settings')) tasks.push(refreshSettings())
+    if (hasSection('prompts')) tasks.push(refreshTemplates())
+    if (tasks.length === 0) return
     setLoading(true)
     setError(null)
-    Promise.all([refreshSettings(), refreshTemplates()])
+    Promise.all(tasks)
       .catch((e) => setError(e?.message ?? t.failedLoadAdmin))
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
