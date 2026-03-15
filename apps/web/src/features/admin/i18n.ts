@@ -6,7 +6,7 @@ export const translations = {
     loginTitle: 'Admin',
     loginSubtitle: 'Masuk untuk mengelola sistem.',
     loginHeader: 'Masuk',
-    loginDesc: 'Gunakan `ADMIN_PASSWORD` dari environment API.',
+    loginDesc: 'Masukkan username dan password untuk masuk.',
     loginButton: 'Masuk',
     loggingIn: 'Sedang masuk…',
     loginFailed: 'Login gagal',
@@ -237,14 +237,13 @@ export const translations = {
     confirmDeleteUser: 'Yakin ingin menghapus pengguna ini?',
     cannotDeleteSelf: 'Tidak bisa menghapus akun sendiri.',
     cannotDeleteLastAdmin: 'Tidak bisa menghapus admin terakhir.',
-    loginDesc: 'Masukkan username dan password untuk masuk.',
   },
   en: {
     adminPanel: 'Admin Panel',
     loginTitle: 'Admin',
     loginSubtitle: 'Login to manage the system.',
     loginHeader: 'Login',
-    loginDesc: 'Use `ADMIN_PASSWORD` from API environment.',
+    loginDesc: 'Enter your username and password to log in.',
     loginButton: 'Login',
     loggingIn: 'Logging in...',
     loginFailed: 'Login failed',
@@ -475,7 +474,6 @@ export const translations = {
     confirmDeleteUser: 'Are you sure you want to delete this user?',
     cannotDeleteSelf: 'Cannot delete your own account.',
     cannotDeleteLastAdmin: 'Cannot delete the last admin.',
-    loginDesc: 'Enter your username and password to log in.',
   },
 } as const
 

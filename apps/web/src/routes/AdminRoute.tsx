@@ -659,7 +659,7 @@ function AdminRouteLegacy() {
       })()}
       activeNav={tab}
       onSelectNav={(v) => {
-        setTab(v)
+        setTab(v as typeof tab)
         setIsSidebarOpen(false)
       }}
       lang={lang}
