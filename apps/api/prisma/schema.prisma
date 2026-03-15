@@ -173,6 +173,7 @@ model Order {
   updatedAt          DateTime       @updatedAt
 
   regenerationCount  Int            @default(0)
+  additionalRevisions Int           @default(0)
 
   events             OrderEvent[]
   xenditWebhookLogs  XenditWebhookLog[]

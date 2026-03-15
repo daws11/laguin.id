@@ -177,6 +177,10 @@ export async function adminMarkDelivered(token: string, id: string) {
   return apiPost<any>(`/api/admin/orders/${encodeURIComponent(id)}/mark-delivered`, {}, { token })
 }
 
+export async function adminAddRevisions(token: string, id: string, count: number) {
+  return apiPost<any>(`/api/admin/orders/${encodeURIComponent(id)}/add-revisions`, { count }, { token })
+}
+
 export async function adminBulkDeleteOrders(token: string, ids: string[]) {
   return apiPost<{ ok: true; deleted: number }>('/api/admin/orders/bulk-delete', { ids }, { token })
 }
