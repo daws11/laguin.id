@@ -176,6 +176,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
         trackUrl: true,
         trackMetadata: true,
         regenerationCount: true,
+        additionalRevisions: true,
         themeSlug: true,
         testimonialVideos: {
           select: { id: true, status: true, createdAt: true },
@@ -187,7 +188,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
 
     if (!o) return reply.code(404).send({ error: 'not_found' })
 
-    const maxRegens = await getMaxRegenerations(o.themeSlug)
+    const maxRegens = await getMaxRegenerations(o.themeSlug) + (o.additionalRevisions ?? 0)
     const payload = (o.inputPayload && typeof o.inputPayload === 'object' ? o.inputPayload : {}) as Record<string, any>
     const meta = (o.trackMetadata && typeof o.trackMetadata === 'object' ? o.trackMetadata : {}) as Record<string, any>
     const kieTracks: string[] = Array.isArray(meta.tracks) ? meta.tracks.filter(Boolean) : o.trackUrl ? [o.trackUrl] : []
@@ -238,6 +239,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
         trackUrl: true,
         trackMetadata: true,
         regenerationCount: true,
+        additionalRevisions: true,
         themeSlug: true,
         testimonialVideos: {
           select: { id: true, status: true, createdAt: true },
@@ -255,7 +257,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
       const kieTracks: string[] = Array.isArray(meta.tracks) ? meta.tracks.filter(Boolean) : o.trackUrl ? [o.trackUrl] : []
       const storedTracks: string[] = Array.isArray(meta.storedTracks) ? meta.storedTracks.filter(Boolean) : []
       const tracks = storedTracks.length > 0 ? storedTracks : kieTracks
-      const maxRegens = await getMaxRegenerations(o.themeSlug)
+      const maxRegens = await getMaxRegenerations(o.themeSlug) + (o.additionalRevisions ?? 0)
 
       return {
         id: o.id,
@@ -293,6 +295,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
         id: true,
         status: true,
         regenerationCount: true,
+        additionalRevisions: true,
         inputPayload: true,
         lyricsText: true,
         themeSlug: true,
@@ -303,7 +306,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
     if (order.status !== 'completed') {
       return reply.code(400).send({ error: 'order_not_completed' })
     }
-    const maxRegens = await getMaxRegenerations(order.themeSlug)
+    const maxRegens = await getMaxRegenerations(order.themeSlug) + (order.additionalRevisions ?? 0)
     if (order.regenerationCount >= maxRegens) {
       return reply.code(400).send({ error: 'max_regenerations_reached' })
     }

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import type { OrderDetail, OrderListItem } from '@/features/admin/types'
-import { adminGetOrders, adminGetThemes, adminUpdateOrderInput, type ThemeItem } from '@/features/admin/api'
+import { adminGetOrders, adminGetThemes, adminUpdateOrderInput, adminAddRevisions, type ThemeItem } from '@/features/admin/api'
 import {
   Search,
   RotateCcw,
@@ -31,6 +31,7 @@ import {
   HardDrive,
   Cloud,
   RefreshCw,
+  Plus,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -686,6 +687,63 @@ export function AdminOrdersTab({
                   </Card>
                 </div>
 
+                {(() => {
+                  const themeSettings = themes.find((th) => th.slug === selectedOrder.themeSlug)?.settings
+                  const baseMax = typeof themeSettings?.creationDelivery?.maxRegenerations === 'number'
+                    ? themeSettings.creationDelivery.maxRegenerations
+                    : 2
+                  const additional = selectedOrder.additionalRevisions ?? 0
+                  const totalMax = baseMax + additional
+                  const used = selectedOrder.regenerationCount ?? 0
+                  const remaining = Math.max(0, totalMax - used)
+
+                  return (
+                    <Card className="shadow-sm">
+                      <CardHeader className="p-3 pb-1">
+                        <CardTitle className="text-xs font-medium text-muted-foreground uppercase">
+                          Revisions
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-3 pt-1">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-2xl font-bold">{remaining}</span>
+                              <span className="text-sm text-muted-foreground">remaining</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {used} used / {totalMax} total
+                              {additional > 0 && (
+                                <span className="text-primary ml-1">(+{additional} added)</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className={cn(
+                            'h-2.5 w-2.5 rounded-full',
+                            remaining > 0 ? 'bg-green-500' : 'bg-red-500'
+                          )} />
+                        </div>
+                        <div className="mt-3">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={loading}
+                            onClick={async () => {
+                              try {
+                                const updated = await adminAddRevisions(token, selectedOrder.id, 1)
+                                onSelectOrder(updated)
+                              } catch {}
+                            }}
+                            className="h-8 text-xs gap-2 w-full"
+                          >
+                            <Plus className="h-3 w-3" /> Add Revision
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })()}
+
                 {selectedOrder.errorMessage && (
                   <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 flex items-start gap-3 text-sm text-destructive">
                     <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
@@ -794,6 +852,8 @@ export function AdminOrdersTab({
                           admin_resend_email: { label: 'Email resent by admin', icon: '📧' },
                           admin_resend_whatsapp: { label: 'WhatsApp resent by admin', icon: '💬' },
                           admin_mark_delivered: { label: 'Marked as delivered by admin', icon: '👤', color: 'text-green-600' },
+                          admin_add_revisions: { label: 'Additional revisions granted by admin', icon: '🔄', color: 'text-blue-600' },
+                          regeneration_requested: { label: 'Revision requested by customer', icon: '🔄' },
                         }
                         const info = eventInfo[ev.type] ?? { label: ev.type, icon: '📋' }
                         return (

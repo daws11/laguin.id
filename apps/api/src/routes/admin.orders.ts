@@ -428,6 +428,34 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     return updated
   })
 
+  app.post('/orders/:id/add-revisions', async (req, reply) => {
+    const params = ParamsIdSchema.safeParse(req.params)
+    if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
+
+    const bodySchema = z.object({ count: z.coerce.number().int().min(1).max(50) })
+    const body = bodySchema.safeParse(req.body)
+    if (!body.success) return reply.code(400).send({ error: 'invalid_body' })
+
+    const order = await prisma.order.findUnique({ where: { id: params.data.id } })
+    if (!order) return reply.code(404).send({ error: 'not_found' })
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { additionalRevisions: { increment: body.data.count } },
+    })
+    await addOrderEvent({
+      orderId: order.id,
+      type: 'admin_add_revisions',
+      message: `Admin added ${body.data.count} additional revision${body.data.count > 1 ? 's' : ''}.`,
+    })
+
+    const updated = await prisma.order.findUnique({
+      where: { id: order.id },
+      include: { customer: true, events: { orderBy: { createdAt: 'desc' }, take: 200 } },
+    })
+    return updated
+  })
+
   app.post('/orders/:id/resend-whatsapp', async (req, reply) => {
     const params = ParamsIdSchema.safeParse(req.params)
     if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
