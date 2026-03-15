@@ -520,13 +520,13 @@ async function exportCleanupTick() {
 
 console.log('[worker] started')
 
-// Every 5 seconds: attempt one generation job.
-cron.schedule('*/5 * * * * *', () => {
+// Every 15 seconds: attempt one generation job.
+cron.schedule('*/15 * * * * *', () => {
   void generationTick()
 })
 
-// Every 10 seconds: attempt one delivery job.
-cron.schedule('*/10 * * * * *', () => {
+// Every 30 seconds: attempt one delivery job.
+cron.schedule('*/30 * * * * *', () => {
   void deliveryTick()
 })
 
@@ -535,8 +535,8 @@ cron.schedule('* * * * *', () => {
   void reminderTick()
 })
 
-// Every 10 seconds: process export jobs.
-cron.schedule('*/10 * * * * *', () => {
+// Every 30 seconds: process export jobs.
+cron.schedule('*/30 * * * * *', () => {
   void exportTick()
 })
 
