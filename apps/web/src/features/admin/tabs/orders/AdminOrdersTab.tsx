@@ -30,6 +30,7 @@ import {
   CheckCircle2,
   HardDrive,
   Cloud,
+  RefreshCw,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -850,6 +851,37 @@ export function AdminOrdersTab({
                     {t.noInputData ?? 'No input data found.'}
                   </div>
                 )}
+
+                {(() => {
+                  const revHistory = (selectedOrder.inputPayload as any)?.revisionHistory
+                  if (!Array.isArray(revHistory) || revHistory.length === 0) return null
+                  return (
+                    <div className="space-y-3 pt-4 border-t">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-2">
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        Revision History ({revHistory.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {revHistory.map((rev: any, idx: number) => (
+                          <div key={idx} className="p-3 bg-muted/30 rounded-lg text-sm border space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-xs">Revision #{rev.revisionNumber ?? idx + 1} — {rev.type === 'describe' ? 'Describe changes' : rev.type === 'lyrics' ? 'Edit lyrics' : rev.type === 'new_story' ? 'New story' : rev.type}</span>
+                              <span className="text-xs text-muted-foreground">{rev.submittedAt ? new Date(rev.submittedAt).toLocaleString() : ''}</span>
+                            </div>
+                            {rev.description && (
+                              <div className="text-xs text-muted-foreground whitespace-pre-wrap bg-background/50 rounded p-2 mt-1">{rev.description}</div>
+                            )}
+                            <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+                              {rev.musicStyle && <span>Music: <strong>{rev.musicStyle}</strong></span>}
+                              {rev.voiceStyle && <span>Voice: <strong>{rev.voiceStyle}</strong></span>}
+                              {rev.hasNewLyrics && <span className="text-amber-600 font-medium">Custom lyrics provided</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 {(selectedOrder.lyricsText || selectedOrder.moodDescription || (selectedOrder.trackMetadata as any)?.prompt || (selectedOrder.trackMetadata as any)?.style) && (
                   <div className="space-y-4 pt-4 border-t">

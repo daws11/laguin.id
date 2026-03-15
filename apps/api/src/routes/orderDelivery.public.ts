@@ -233,6 +233,20 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
     const updatedPayload = { ...currentPayload }
     updatedPayload.revisionSubmittedAt = new Date().toISOString()
 
+    // Build revision history entry
+    const revisionEntry: Record<string, any> = {
+      revisionNumber: order.regenerationCount + 1,
+      type: body.data.revisionType,
+      submittedAt: updatedPayload.revisionSubmittedAt,
+    }
+    if (body.data.description) revisionEntry.description = body.data.description
+    if (body.data.newLyrics) revisionEntry.hasNewLyrics = true
+    if (body.data.musicStyle && body.data.musicStyle !== 'keep') revisionEntry.musicStyle = body.data.musicStyle
+    if (body.data.voiceStyle && body.data.voiceStyle !== 'keep') revisionEntry.voiceStyle = body.data.voiceStyle
+
+    const existingHistory = Array.isArray(updatedPayload.revisionHistory) ? updatedPayload.revisionHistory : []
+    updatedPayload.revisionHistory = [...existingHistory, revisionEntry]
+
     if (body.data.revisionType === 'describe' && body.data.description) {
       updatedPayload.revisionDescription = body.data.description
     } else {
@@ -271,7 +285,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
         moodDescription: (body.data.revisionType === 'describe' || body.data.revisionType === 'new_story')
           ? null
           : undefined,
-        ...(body.data.revisionType === 'new_story' ? { lyricsText: null } : {}),
+        ...((body.data.revisionType === 'describe' || body.data.revisionType === 'new_story') ? { lyricsText: null } : {}),
       },
     })
 
