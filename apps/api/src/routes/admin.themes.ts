@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import { generateTextWithOpenAI } from '../clients/openaiClient'
 import { prisma } from '../lib/prisma'
-import { getOrCreateSettings, getOpenAIApiKey, getOpenAIModel } from '../lib/settings'
+import { getOrCreateSettings, getOpenAIApiKey, getOpenAIModel, invalidateSettingsCache } from '../lib/settings'
 
 const SlugRegex = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]{2}$/
 
@@ -106,6 +106,7 @@ export const adminThemeRoutes: FastifyPluginAsync = async (app) => {
           where: { id: settings.id },
           data: { defaultThemeSlug: newSlug },
         })
+        invalidateSettingsCache()
       }
     }
 
