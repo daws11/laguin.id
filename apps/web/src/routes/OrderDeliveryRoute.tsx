@@ -809,7 +809,19 @@ export function OrderDeliveryRoute() {
 
     const allProcessing = unlockedOrders.every((o) => o.status !== 'completed')
 
-    if (allProcessing && orderStatus) {
+    // Check if delivery is still pending (delivery window not yet reached)
+    const deliveryNotReady = orderStatus && (() => {
+      if (orderStatus.deliveryScheduledAt) {
+        return new Date(orderStatus.deliveryScheduledAt).getTime() > Date.now()
+      }
+      if (orderStatus.confirmedAt && orderStatus.deliveryDelayHours) {
+        const target = new Date(orderStatus.confirmedAt).getTime() + orderStatus.deliveryDelayHours * 60 * 60 * 1000
+        return target > Date.now()
+      }
+      return false
+    })()
+
+    if ((allProcessing || deliveryNotReady) && orderStatus) {
       return <OrderProcessingScreen orderStatus={orderStatus} accent={accent} />
     }
 
