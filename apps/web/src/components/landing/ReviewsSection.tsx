@@ -42,7 +42,7 @@ export function ReviewsSection({ sectionLabel, sectionHeadline, sectionSubtext, 
                 </div>
                 <p className="font-medium text-lg mb-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: `"${sanitizeHtml(review.quote || '')}"` }} />
                 <div className="flex items-center gap-3">
-                  {review.authorAvatarUrl && <img src={review.authorAvatarUrl} alt="" className="w-10 h-10 rounded-full border-2 border-white/50 object-cover" loading="lazy" />}
+                  {review.authorAvatarUrl && <img src={review.authorAvatarUrl} alt="" className="w-10 h-10 rounded-full border-2 border-white/50 object-cover" loading="lazy" width="40" height="40" />}
                   <div>
                     <div className="font-bold">{review.authorName}</div>
                     <div className="text-xs opacity-80">{review.authorMeta}</div>
@@ -64,7 +64,7 @@ export function ReviewsSection({ sectionLabel, sectionHeadline, sectionSubtext, 
                   ))}
                 </div>
                 <div className="mt-6 flex items-center gap-3 pt-6 border-t border-white/10">
-                  {review.authorAvatarUrl && <img src={review.authorAvatarUrl} alt="" className="w-10 h-10 rounded-full border-2 border-white/50 object-cover" loading="lazy" />}
+                  {review.authorAvatarUrl && <img src={review.authorAvatarUrl} alt="" className="w-10 h-10 rounded-full border-2 border-white/50 object-cover" loading="lazy" width="40" height="40" />}
                   <div>
                     <div className="font-bold">{review.authorName}</div>
                     <div className="text-xs opacity-80">{review.authorMeta}</div>
@@ -81,7 +81,7 @@ export function ReviewsSection({ sectionLabel, sectionHeadline, sectionSubtext, 
               </div>
               <p className="font-medium text-gray-800 text-lg mb-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: `"${sanitizeHtml(review.quote || '')}"` }} />
               <div className="flex items-center gap-3">
-                {review.authorAvatarUrl && <img src={review.authorAvatarUrl} alt="" className="w-10 h-10 rounded-full border-2 border-gray-100 object-cover" loading="lazy" />}
+                {review.authorAvatarUrl && <img src={review.authorAvatarUrl} alt="" className="w-10 h-10 rounded-full border-2 border-gray-100 object-cover" loading="lazy" width="40" height="40" />}
                 <div>
                   <div className="font-bold text-gray-900">{review.authorName}</div>
                   <div className="text-xs text-gray-500">{review.authorMeta}</div>
