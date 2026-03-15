@@ -116,17 +116,18 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
       subtitle: typeof oppRaw?.subtitle === 'string' ? oppRaw.subtitle : 'Tim kami sedang membuat lagu spesial untuk Anda',
       countdownLabel: typeof oppRaw?.countdownLabel === 'string' ? oppRaw.countdownLabel : 'Estimasi selesai dalam',
       bottomText: typeof oppRaw?.bottomText === 'string' ? oppRaw.bottomText : 'Kami akan mengirimkan notifikasi via WhatsApp ketika lagu Anda sudah siap.',
-      upsellItemId: typeof oppRaw?.upsellItemId === 'string' ? oppRaw.upsellItemId : null,
+      upsellItemIds: Array.isArray(oppRaw?.upsellItemIds) ? oppRaw.upsellItemIds.filter((id: any) => typeof id === 'string') : (typeof oppRaw?.upsellItemId === 'string' && oppRaw.upsellItemId ? [oppRaw.upsellItemId] : []),
     }
 
-    // Resolve upsell item details if configured
-    let processingUpsellItem: Record<string, any> | null = null
-    if (orderProcessingPage.upsellItemId) {
+    // Resolve upsell item details for processing page
+    let processingUpsellItems: Record<string, any>[] = []
+    if (orderProcessingPage.upsellItemIds.length > 0) {
       const upsellConfig = themeConfig?.upsell ?? psc?.upsell ?? {}
       const upsellItems = Array.isArray(upsellConfig?.items) ? upsellConfig.items : []
-      const found = upsellItems.find((item: any) => item?.id === orderProcessingPage.upsellItemId)
-      if (found) {
-        processingUpsellItem = {
+      processingUpsellItems = orderProcessingPage.upsellItemIds
+        .map((id: string) => upsellItems.find((item: any) => item?.id === id))
+        .filter(Boolean)
+        .map((found: any) => ({
           id: found.id,
           icon: found.icon ?? '',
           title: found.title ?? '',
@@ -137,8 +138,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
           ctaText: found.ctaText ?? '',
           action: found.action ?? 'none',
           actionConfig: found.actionConfig ?? null,
-        }
-      }
+        }))
     }
 
     // Check which upsells were already purchased
@@ -154,7 +154,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
       deliveryScheduledAt: order.deliveryScheduledAt,
       deliveryDelayHours,
       orderProcessingPage,
-      processingUpsellItem,
+      processingUpsellItems,
       purchasedUpsells,
     }
   })

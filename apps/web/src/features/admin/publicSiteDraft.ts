@@ -231,7 +231,7 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
     subtitle: 'Tim kami sedang membuat lagu spesial untuk Anda',
     countdownLabel: 'Estimasi selesai dalam',
     bottomText: 'Kami akan mengirimkan notifikasi via WhatsApp ketika lagu Anda sudah siap.',
-    upsellItemId: null,
+    upsellItemIds: [],
   },
   configSteps: {
     step0: {
@@ -554,6 +554,7 @@ function buildUpsell(raw: any): UpsellConfig {
     ...(x?.action === 'express_delivery' && x?.actionConfig && typeof x.actionConfig === 'object'
       ? { actionConfig: { deliveryTimeMinutes: asNumber(x.actionConfig.deliveryTimeMinutes, 0) } }
       : {}),
+    ...(x?.orderProcessingOnly ? { orderProcessingOnly: true } : {}),
   })).filter((x: any) => x.id && x.title)
   return {
     enabled: asBool(s?.enabled, d.enabled),
@@ -571,7 +572,7 @@ function buildOrderProcessingPage(raw: any): PublicSiteDraft['orderProcessingPag
     subtitle: asString(s?.subtitle, d.subtitle),
     countdownLabel: asString(s?.countdownLabel, d.countdownLabel),
     bottomText: asString(s?.bottomText, d.bottomText),
-    upsellItemId: typeof s?.upsellItemId === 'string' && s.upsellItemId.trim() ? s.upsellItemId : null,
+    upsellItemIds: Array.isArray(s?.upsellItemIds) ? s.upsellItemIds.filter((id: any) => typeof id === 'string' && id.trim()) : (typeof s?.upsellItemId === 'string' && s.upsellItemId.trim() ? [s.upsellItemId] : []),
   }
 }
 
@@ -1086,6 +1087,7 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
       declineText: item.declineText.trim(),
       action: item.action ?? 'none',
       ...(item.action === 'express_delivery' && item.actionConfig ? { actionConfig: item.actionConfig } : {}),
+      ...(item.orderProcessingOnly ? { orderProcessingOnly: true } : {}),
     })).filter((item) => item.id && item.title),
   }
 
@@ -1094,7 +1096,7 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
     subtitle: draft.orderProcessingPage.subtitle.trim(),
     countdownLabel: draft.orderProcessingPage.countdownLabel.trim(),
     bottomText: draft.orderProcessingPage.bottomText.trim(),
-    upsellItemId: draft.orderProcessingPage.upsellItemId || null,
+    upsellItemIds: draft.orderProcessingPage.upsellItemIds.filter(id => id.trim()),
   }
 
   return { logoUrl, faviconUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, heroCheckmarks: nextHeroCheckmarks, trustBadges: nextTrustBadges, statsBar: nextStatsBar, reviews: nextReviews, promoBanner: nextPromoBanner, configSteps: nextConfigSteps, audioSamplesSection: nextAudioSamplesSection, comparisonSection: nextComparisonSection, howItWorksSection: nextHowItWorksSection, guaranteeSection: nextGuaranteeSection, faqSection: nextFaqSection, footer: nextFooter, miscText: nextMiscText, priceVisibility: nextPriceVisibility, upsell: nextUpsell, orderProcessingPage: nextOrderProcessingPage }

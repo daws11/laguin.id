@@ -2653,6 +2653,21 @@ export function LandingContentConfigSection({
                                             </p>
                                         )}
                                     </div>
+                                    <label className="flex items-center gap-2 text-xs pt-2 border-t cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={!!item.orderProcessingOnly}
+                                            onChange={(e) => setDraft(d => ({
+                                                ...d,
+                                                upsell: {
+                                                    ...d.upsell,
+                                                    items: d.upsell.items.map((it, i) => i === idx ? { ...it, orderProcessingOnly: e.target.checked } : it),
+                                                },
+                                            }))}
+                                        />
+                                        <span>Order processing only</span>
+                                        <span className="text-[10px] text-muted-foreground ml-auto">Skip checkout, show only on processing page</span>
+                                    </label>
                                 </div>
                             ))}
 
@@ -2707,19 +2722,34 @@ export function LandingContentConfigSection({
                         />
                     </div>
 
-                    <div className="space-y-1 pt-2 border-t">
-                        <label className="text-xs font-medium">Upsell Item (shown on processing page)</label>
-                        <p className="text-[10px] text-muted-foreground">Select an upsell item from the Upsell catalog to display on the order processing page.</p>
-                        <select
-                            className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-                            value={draft.orderProcessingPage.upsellItemId ?? ''}
-                            onChange={(e) => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, upsellItemId: e.target.value || null } }))}
-                        >
-                            <option value="">None</option>
-                            {draft.upsell.items.map((item) => (
-                                <option key={item.id} value={item.id}>{item.icon} {item.title} — Rp {item.price.toLocaleString()}</option>
-                            ))}
-                        </select>
+                    <div className="space-y-2 pt-2 border-t">
+                        <label className="text-xs font-medium">Upsell Items (shown on processing page)</label>
+                        <p className="text-[10px] text-muted-foreground">Select which upsell items to display on the order processing page.</p>
+                        {draft.upsell.items.length === 0 ? (
+                            <p className="text-xs text-muted-foreground italic">No upsell items configured. Add items in the Upsell tab first.</p>
+                        ) : (
+                            <div className="space-y-1">
+                                {draft.upsell.items.map((item) => (
+                                    <label key={item.id} className="flex items-center gap-2 text-sm rounded-md border px-3 py-2 cursor-pointer hover:bg-muted/30">
+                                        <input
+                                            type="checkbox"
+                                            checked={draft.orderProcessingPage.upsellItemIds.includes(item.id)}
+                                            onChange={(e) => setDraft(d => ({
+                                                ...d,
+                                                orderProcessingPage: {
+                                                    ...d.orderProcessingPage,
+                                                    upsellItemIds: e.target.checked
+                                                        ? [...d.orderProcessingPage.upsellItemIds, item.id]
+                                                        : d.orderProcessingPage.upsellItemIds.filter(id => id !== item.id),
+                                                },
+                                            }))}
+                                        />
+                                        <span>{item.icon} {item.title} — Rp {item.price.toLocaleString()}</span>
+                                        {item.orderProcessingOnly && <span className="text-[10px] text-muted-foreground ml-auto">(processing only)</span>}
+                                    </label>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

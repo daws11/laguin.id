@@ -44,7 +44,7 @@ type OrderProcessingPageConfig = {
   subtitle?: string
   countdownLabel?: string
   bottomText?: string
-  upsellItemId?: string | null
+  upsellItemIds?: string[]
 }
 
 type ProcessingUpsellItem = {
@@ -70,7 +70,7 @@ type OrderStatus = {
   deliveryScheduledAt?: string | null
   deliveryDelayHours?: number
   orderProcessingPage?: OrderProcessingPageConfig
-  processingUpsellItem?: ProcessingUpsellItem | null
+  processingUpsellItems?: ProcessingUpsellItem[]
   purchasedUpsells?: any[]
 }
 
@@ -157,13 +157,12 @@ function OrderProcessingScreen({
   orderStatus: OrderStatus
   accent: string
 }) {
-  const [purchasing, setPurchasing] = useState(false)
+  const [purchasingId, setPurchasingId] = useState<string | null>(null)
   const [purchaseError, setPurchaseError] = useState<string | null>(null)
 
   const opp = orderStatus.orderProcessingPage ?? {}
-  const upsell = orderStatus.processingUpsellItem
+  const upsells = orderStatus.processingUpsellItems ?? []
   const purchasedIds = (orderStatus.purchasedUpsells ?? []).map((u: any) => u?.id).filter(Boolean)
-  const alreadyPurchased = upsell ? purchasedIds.includes(upsell.id) : false
 
   // Calculate countdown target
   let targetTime: number | null = null
@@ -175,15 +174,14 @@ function OrderProcessingScreen({
 
   const { hours, minutes, seconds } = useCountdown(targetTime)
 
-  const handleUpsellPurchase = async () => {
-    if (!upsell) return
-    setPurchasing(true)
+  const handleUpsellPurchase = async (upsellId: string) => {
+    setPurchasingId(upsellId)
     setPurchaseError(null)
     try {
       const res = await fetch(`/api/public/order/${encodeURIComponent(orderStatus.id)}/upsell-purchase`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ upsellItemId: upsell.id }),
+        body: JSON.stringify({ upsellItemId: upsellId }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
@@ -197,7 +195,7 @@ function OrderProcessingScreen({
     } catch {
       setPurchaseError('Kesalahan koneksi. Silakan coba lagi.')
     } finally {
-      setPurchasing(false)
+      setPurchasingId(null)
     }
   }
 
@@ -243,52 +241,59 @@ function OrderProcessingScreen({
           {opp.bottomText || 'Kami akan mengirimkan notifikasi via WhatsApp ketika lagu Anda sudah siap.'}
         </p>
 
-        {/* Upsell Card */}
-        {upsell && !alreadyPurchased && (
-          <div className="mt-8 rounded-2xl border bg-white p-5 shadow-sm text-left">
-            <div className="flex items-start gap-3">
-              {upsell.icon && <span className="text-2xl">{upsell.icon}</span>}
-              <div className="flex-1">
-                <h3 className="text-sm font-bold text-gray-900">{upsell.title}</h3>
-                {upsell.description && (
-                  <p className="mt-1 text-xs text-gray-500">{upsell.description}</p>
-                )}
-                {upsell.action === 'express_delivery' && upsell.actionConfig?.deliveryTimeMinutes && (
-                  <p className="mt-1 text-xs font-medium" style={{ color: accent }}>
-                    Terima lagu Anda dalam {upsell.actionConfig.deliveryTimeMinutes < 60
-                      ? `${upsell.actionConfig.deliveryTimeMinutes} menit`
-                      : `${Math.round(upsell.actionConfig.deliveryTimeMinutes / 60)} jam`
-                    }!
-                  </p>
-                )}
-              </div>
-            </div>
+        {/* Upsell Cards */}
+        {upsells.length > 0 && (
+          <div className="mt-8 space-y-4">
             {purchaseError && (
-              <p className="mt-3 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{purchaseError}</p>
+              <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{purchaseError}</p>
             )}
-            <button
-              onClick={handleUpsellPurchase}
-              disabled={purchasing}
-              className="mt-4 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
-              style={{ backgroundColor: accent }}
-            >
-              {purchasing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  {upsell.ctaText || `Beli — ${upsell.priceLabel || `Rp ${(upsell.price ?? 0).toLocaleString()}`}`}
-                </>
-              )}
-            </button>
-          </div>
-        )}
-
-        {/* Already purchased upsell indicator */}
-        {upsell && alreadyPurchased && (
-          <div className="mt-8 rounded-2xl border border-green-200 bg-green-50 p-4 text-center">
-            <CheckCircle className="h-5 w-5 text-green-600 mx-auto mb-1" />
-            <p className="text-sm font-medium text-green-800">{upsell.title} — Aktif!</p>
+            {upsells.map((upsell) => {
+              const isPurchased = purchasedIds.includes(upsell.id)
+              if (isPurchased) {
+                return (
+                  <div key={upsell.id} className="rounded-2xl border border-green-200 bg-green-50 p-4 text-center">
+                    <CheckCircle className="h-5 w-5 text-green-600 mx-auto mb-1" />
+                    <p className="text-sm font-medium text-green-800">{upsell.title} — Aktif!</p>
+                  </div>
+                )
+              }
+              return (
+                <div key={upsell.id} className="rounded-2xl border bg-white p-5 shadow-sm text-left">
+                  <div className="flex items-start gap-3">
+                    {upsell.icon && <span className="text-2xl">{upsell.icon}</span>}
+                    <div className="flex-1">
+                      <h3 className="text-sm font-bold text-gray-900">{upsell.title}</h3>
+                      {upsell.description && (
+                        <p className="mt-1 text-xs text-gray-500">{upsell.description}</p>
+                      )}
+                      {upsell.action === 'express_delivery' && upsell.actionConfig?.deliveryTimeMinutes && (
+                        <p className="mt-1 text-xs font-medium" style={{ color: accent }}>
+                          Terima lagu Anda dalam {upsell.actionConfig.deliveryTimeMinutes < 60
+                            ? `${upsell.actionConfig.deliveryTimeMinutes} menit`
+                            : `${Math.round(upsell.actionConfig.deliveryTimeMinutes / 60)} jam`
+                          }!
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleUpsellPurchase(upsell.id)}
+                    disabled={purchasingId !== null}
+                    className="mt-4 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+                    style={{ backgroundColor: accent }}
+                  >
+                    {purchasingId === upsell.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4" />
+                        {upsell.ctaText || `Beli — ${upsell.priceLabel || `Rp ${(upsell.price ?? 0).toLocaleString()}`}`}
+                      </>
+                    )}
+                  </button>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>

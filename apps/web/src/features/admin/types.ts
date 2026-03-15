@@ -307,6 +307,7 @@ export type UpsellItem = {
   actionConfig?: {
     deliveryTimeMinutes?: number
   }
+  orderProcessingOnly?: boolean
 }
 
 export type UpsellConfig = {
@@ -321,7 +322,7 @@ export type OrderProcessingPageConfig = {
   subtitle: string
   countdownLabel: string
   bottomText: string
-  upsellItemId: string | null
+  upsellItemIds: string[]
 }
 
 export type PriceVisibility = {

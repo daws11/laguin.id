@@ -976,7 +976,7 @@ export function ConfigRoute() {
     const cfg = publicSiteConfig && typeof publicSiteConfig === 'object' ? (publicSiteConfig as any) : {}
     const u = cfg?.upsell && typeof cfg.upsell === 'object' ? cfg.upsell : {}
     if (!u.enabled) return null
-    const items = Array.isArray(u.items) ? u.items.filter((it: any) => it?.id && it?.title) : []
+    const items = Array.isArray(u.items) ? u.items.filter((it: any) => it?.id && it?.title && !it?.orderProcessingOnly) : []
     if (items.length === 0) return null
     return {
       headline: typeof u.headline === 'string' ? u.headline : '',
