@@ -412,6 +412,7 @@ export type PublicSiteDraft = {
     manualConfirmationEnabled: boolean
     deliveryDelayHours: number
     deliveryDelayUnit: 'hours' | 'days'
+    maxRegenerations: number
     paymentAmount: number
     originalAmount: number
   }

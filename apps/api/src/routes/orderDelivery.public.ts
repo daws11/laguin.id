@@ -21,7 +21,20 @@ const RegenerationSchema = z.object({
   voiceStyle: z.string().max(100).optional(),
 })
 
-const MAX_REGENERATIONS = 2
+const DEFAULT_MAX_REGENERATIONS = 2
+
+async function getMaxRegenerations(themeSlug: string | null): Promise<number> {
+  if (themeSlug) {
+    const theme = await prisma.theme.findUnique({ where: { slug: themeSlug }, select: { settings: true } })
+    if (theme?.settings && typeof theme.settings === 'object') {
+      const cd = (theme.settings as any)?.creationDelivery
+      if (cd && typeof cd === 'object' && typeof cd.maxRegenerations === 'number') {
+        return cd.maxRegenerations
+      }
+    }
+  }
+  return DEFAULT_MAX_REGENERATIONS
+}
 
 const verifyAttempts = new Map<string, { count: number; resetAt: number }>()
 const MAX_ATTEMPTS = 5
@@ -103,6 +116,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
         trackUrl: true,
         trackMetadata: true,
         regenerationCount: true,
+        themeSlug: true,
         testimonialVideos: {
           select: { id: true, status: true, createdAt: true },
           orderBy: { createdAt: 'desc' },
@@ -113,6 +127,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
 
     if (!o) return reply.code(404).send({ error: 'not_found' })
 
+    const maxRegens = await getMaxRegenerations(o.themeSlug)
     const payload = (o.inputPayload && typeof o.inputPayload === 'object' ? o.inputPayload : {}) as Record<string, any>
     const meta = (o.trackMetadata && typeof o.trackMetadata === 'object' ? o.trackMetadata : {}) as Record<string, any>
     const kieTracks: string[] = Array.isArray(meta.tracks) ? meta.tracks.filter(Boolean) : o.trackUrl ? [o.trackUrl] : []
@@ -128,7 +143,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
         tracks,
         lyricsText: o.lyricsText ?? null,
         regenerationCount: o.regenerationCount,
-        maxRegenerations: MAX_REGENERATIONS,
+        maxRegenerations: maxRegens,
         hasTestimonial: o.testimonialVideos.length > 0,
         testimonialStatus: o.testimonialVideos[0]?.status ?? null,
         revisionSubmittedAt: payload.revisionSubmittedAt ?? null,
@@ -163,6 +178,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
         trackUrl: true,
         trackMetadata: true,
         regenerationCount: true,
+        themeSlug: true,
         testimonialVideos: {
           select: { id: true, status: true, createdAt: true },
           orderBy: { createdAt: 'desc' },
@@ -172,13 +188,14 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
       orderBy: { createdAt: 'desc' },
     })
 
-    const orders = allOrders.map((o) => {
+    const orders = await Promise.all(allOrders.map(async (o) => {
       const payload = (o.inputPayload && typeof o.inputPayload === 'object' ? o.inputPayload : {}) as Record<string, any>
       const meta = (o.trackMetadata && typeof o.trackMetadata === 'object' ? o.trackMetadata : {}) as Record<string, any>
 
       const kieTracks: string[] = Array.isArray(meta.tracks) ? meta.tracks.filter(Boolean) : o.trackUrl ? [o.trackUrl] : []
       const storedTracks: string[] = Array.isArray(meta.storedTracks) ? meta.storedTracks.filter(Boolean) : []
       const tracks = storedTracks.length > 0 ? storedTracks : kieTracks
+      const maxRegens = await getMaxRegenerations(o.themeSlug)
 
       return {
         id: o.id,
@@ -188,11 +205,11 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
         tracks,
         lyricsText: o.lyricsText ?? null,
         regenerationCount: o.regenerationCount,
-        maxRegenerations: MAX_REGENERATIONS,
+        maxRegenerations: maxRegens,
         hasTestimonial: o.testimonialVideos.length > 0,
         testimonialStatus: o.testimonialVideos[0]?.status ?? null,
       }
-    })
+    }))
 
     return { orders }
   })
@@ -218,6 +235,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
         regenerationCount: true,
         inputPayload: true,
         lyricsText: true,
+        themeSlug: true,
       },
     })
 
@@ -225,7 +243,8 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
     if (order.status !== 'completed') {
       return reply.code(400).send({ error: 'order_not_completed' })
     }
-    if (order.regenerationCount >= MAX_REGENERATIONS) {
+    const maxRegens = await getMaxRegenerations(order.themeSlug)
+    if (order.regenerationCount >= maxRegens) {
       return reply.code(400).send({ error: 'max_regenerations_reached' })
     }
 
@@ -307,7 +326,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
     return {
       ok: true,
       regenerationCount: order.regenerationCount + 1,
-      maxRegenerations: MAX_REGENERATIONS,
+      maxRegenerations: maxRegens,
     }
   })
 

@@ -133,6 +133,7 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
     manualConfirmationEnabled: false,
     deliveryDelayHours: 24,
     deliveryDelayUnit: 'hours' as 'hours' | 'days',
+    maxRegenerations: 2,
     paymentAmount: 497000,
     originalAmount: 497000,
   },
@@ -511,6 +512,7 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
       manualConfirmationEnabled: asBool(cd?.manualConfirmationEnabled, defaultPublicSiteDraft.creationDelivery.manualConfirmationEnabled),
       deliveryDelayHours: asNumber(cd?.deliveryDelayHours, defaultPublicSiteDraft.creationDelivery.deliveryDelayHours),
       deliveryDelayUnit: (cd?.deliveryDelayUnit === 'days' ? 'days' : 'hours') as 'hours' | 'days',
+      maxRegenerations: asNumber(cd?.maxRegenerations, defaultPublicSiteDraft.creationDelivery.maxRegenerations),
       paymentAmount: asNumber(cd?.paymentAmount, defaultPublicSiteDraft.creationDelivery.paymentAmount),
       originalAmount: asNumber(cd?.originalAmount, defaultPublicSiteDraft.creationDelivery.originalAmount),
     },
@@ -859,6 +861,7 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
     agreementEnabled: draft.creationDelivery.agreementEnabled,
     manualConfirmationEnabled: draft.creationDelivery.manualConfirmationEnabled,
     deliveryDelayHours: draft.creationDelivery.deliveryDelayHours,
+    maxRegenerations: draft.creationDelivery.maxRegenerations,
     paymentAmount: draft.creationDelivery.paymentAmount,
     originalAmount: draft.creationDelivery.originalAmount,
   }
