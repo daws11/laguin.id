@@ -232,6 +232,7 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
     countdownLabel: 'Estimasi selesai dalam',
     bottomText: 'Kami akan mengirimkan notifikasi via WhatsApp ketika lagu Anda sudah siap.',
     upsellItemIds: [],
+    imageUrl: '',
   },
   configSteps: {
     step0: {
@@ -573,6 +574,7 @@ function buildOrderProcessingPage(raw: any): PublicSiteDraft['orderProcessingPag
     countdownLabel: asString(s?.countdownLabel, d.countdownLabel),
     bottomText: asString(s?.bottomText, d.bottomText),
     upsellItemIds: Array.isArray(s?.upsellItemIds) ? s.upsellItemIds.filter((id: any) => typeof id === 'string' && id.trim()) : (typeof s?.upsellItemId === 'string' && s.upsellItemId.trim() ? [s.upsellItemId] : []),
+    imageUrl: asString(s?.imageUrl, d.imageUrl),
   }
 }
 
@@ -1097,6 +1099,7 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
     countdownLabel: draft.orderProcessingPage.countdownLabel.trim(),
     bottomText: draft.orderProcessingPage.bottomText.trim(),
     upsellItemIds: draft.orderProcessingPage.upsellItemIds.filter(id => id.trim()),
+    imageUrl: draft.orderProcessingPage.imageUrl.trim(),
   }
 
   return { logoUrl, faviconUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, heroCheckmarks: nextHeroCheckmarks, trustBadges: nextTrustBadges, statsBar: nextStatsBar, reviews: nextReviews, promoBanner: nextPromoBanner, configSteps: nextConfigSteps, audioSamplesSection: nextAudioSamplesSection, comparisonSection: nextComparisonSection, howItWorksSection: nextHowItWorksSection, guaranteeSection: nextGuaranteeSection, faqSection: nextFaqSection, footer: nextFooter, miscText: nextMiscText, priceVisibility: nextPriceVisibility, upsell: nextUpsell, orderProcessingPage: nextOrderProcessingPage }

@@ -323,6 +323,7 @@ export type OrderProcessingPageConfig = {
   countdownLabel: string
   bottomText: string
   upsellItemIds: string[]
+  imageUrl: string
 }
 
 export type PriceVisibility = {

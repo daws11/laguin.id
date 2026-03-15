@@ -45,6 +45,7 @@ type OrderProcessingPageConfig = {
   countdownLabel?: string
   bottomText?: string
   upsellItemIds?: string[]
+  imageUrl?: string
 }
 
 type ProcessingUpsellItem = {
@@ -202,9 +203,13 @@ function OrderProcessingScreen({
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-white px-4 py-12">
       <div className="text-center max-w-md w-full">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: accent + '15' }}>
-          <Clock className="h-8 w-8" style={{ color: accent }} />
-        </div>
+        {opp.imageUrl ? (
+          <img src={opp.imageUrl} alt="" className="mx-auto mb-4 max-h-24 object-contain" />
+        ) : (
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: accent + '15' }}>
+            <Clock className="h-8 w-8" style={{ color: accent }} />
+          </div>
+        )}
         <h1 className="text-xl font-semibold text-gray-800">
           {opp.headline || 'Lagu Anda Sedang Dibuat!'}
         </h1>
@@ -276,10 +281,16 @@ function OrderProcessingScreen({
                       )}
                     </div>
                   </div>
+                  {(upsell.price ?? 0) > 0 && (
+                    <div className="mt-3 rounded-lg bg-gray-50 px-4 py-2.5 text-center">
+                      <span className="text-lg font-bold" style={{ color: accent }}>Rp {(upsell.price ?? 0).toLocaleString('id-ID')}</span>
+                      {upsell.priceLabel && <p className="text-xs text-gray-500">{upsell.priceLabel}</p>}
+                    </div>
+                  )}
                   <button
                     onClick={() => handleUpsellPurchase(upsell.id)}
                     disabled={purchasingId !== null}
-                    className="mt-4 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="mt-3 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
                     style={{ backgroundColor: accent }}
                   >
                     {purchasingId === upsell.id ? (
@@ -287,7 +298,7 @@ function OrderProcessingScreen({
                     ) : (
                       <>
                         <Sparkles className="h-4 w-4" />
-                        {upsell.ctaText || `Beli — ${upsell.priceLabel || `Rp ${(upsell.price ?? 0).toLocaleString()}`}`}
+                        {upsell.ctaText || 'Beli Sekarang'}
                       </>
                     )}
                   </button>

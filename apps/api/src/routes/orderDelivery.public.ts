@@ -117,6 +117,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
       countdownLabel: typeof oppRaw?.countdownLabel === 'string' ? oppRaw.countdownLabel : 'Estimasi selesai dalam',
       bottomText: typeof oppRaw?.bottomText === 'string' ? oppRaw.bottomText : 'Kami akan mengirimkan notifikasi via WhatsApp ketika lagu Anda sudah siap.',
       upsellItemIds: Array.isArray(oppRaw?.upsellItemIds) ? oppRaw.upsellItemIds.filter((id: any) => typeof id === 'string') : (typeof oppRaw?.upsellItemId === 'string' && oppRaw.upsellItemId ? [oppRaw.upsellItemId] : []),
+      imageUrl: typeof oppRaw?.imageUrl === 'string' ? oppRaw.imageUrl : '',
     }
 
     // Resolve upsell item details for processing page

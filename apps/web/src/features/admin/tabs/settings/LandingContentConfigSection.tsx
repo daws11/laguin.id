@@ -2688,6 +2688,26 @@ export function LandingContentConfigSection({
                         <p className="text-xs text-muted-foreground">Content shown while the order is being processed.</p>
                     </div>
 
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium">Header Image</label>
+                        <p className="text-[10px] text-muted-foreground">Replaces the clock icon. Recommended: square or landscape, transparent background.</p>
+                        {draft.orderProcessingPage.imageUrl && (
+                            <div className="relative inline-block">
+                                <img src={draft.orderProcessingPage.imageUrl} alt="Processing header" className="max-h-24 object-contain" />
+                                <button
+                                    type="button"
+                                    className="absolute -top-1 -right-1 bg-destructive text-white rounded-full h-5 w-5 flex items-center justify-center text-xs"
+                                    onClick={() => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, imageUrl: '' } }))}
+                                >×</button>
+                            </div>
+                        )}
+                        <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleUpload(e, 'image', (path) => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, imageUrl: path } })))}
+                        />
+                    </div>
+
                     <div className="space-y-1">
                         <label className="text-xs font-medium">Headline</label>
                         <Input
