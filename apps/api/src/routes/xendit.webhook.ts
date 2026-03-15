@@ -68,6 +68,7 @@ export const xenditWebhookRoutes: FastifyPluginAsync = async (app) => {
           status: true,
           upsellItems: true,
           themeSlug: true,
+          confirmedAt: true,
           deliveryScheduledAt: true,
           generationCompletedAt: true,
         },
@@ -127,8 +128,16 @@ export const xenditWebhookRoutes: FastifyPluginAsync = async (app) => {
                 order.generationCompletedAt.getTime() + deliveryTimeMinutes * 60 * 1000,
               )
             }
+          } else if (order.confirmedAt) {
+            // Order still processing — recalculate from confirmedAt
+            if (deliveryTimeMinutes === 0) {
+              updateData.deliveryScheduledAt = new Date()
+            } else {
+              updateData.deliveryScheduledAt = new Date(
+                order.confirmedAt.getTime() + deliveryTimeMinutes * 60 * 1000,
+              )
+            }
           }
-          // If still processing, generation.ts will read upsellItems at completion time
         }
 
         await prisma.order.update({ where: { id: orderId }, data: updateData })
