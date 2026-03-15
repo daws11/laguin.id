@@ -447,18 +447,18 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
     // Build the externalId with upsell separator
     const externalId = `${order.id}__upsell__${body.data.upsellItemId}`
 
-    const settings = await getOrCreateSettings()
-    const siteUrl = (settings as any).siteUrl ?? ''
-    const successUrl = siteUrl ? `${siteUrl}/order/${order.id}` : undefined
-    const failureUrl = successUrl
+    const host = req.headers['x-forwarded-host'] || req.headers.host || ''
+    const proto = req.headers['x-forwarded-proto'] || 'https'
+    const baseUrl = `${proto}://${host}`
+    const redirectUrl = `${baseUrl}/order/${order.id}`
 
     const invoice = await createXenditInvoice({
       externalId,
       amount,
       payerEmail: order.customer?.email ?? undefined,
-      description: `Upsell: ${upsellItem.title ?? 'Add-on'}`,
-      successRedirectUrl: successUrl,
-      failureRedirectUrl: failureUrl,
+      description: upsellItem.title ?? 'Add-on',
+      successRedirectUrl: redirectUrl,
+      failureRedirectUrl: redirectUrl,
     })
 
     await addOrderEvent({
