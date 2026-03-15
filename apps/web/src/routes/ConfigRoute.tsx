@@ -1093,7 +1093,7 @@ export function ConfigRoute() {
         return
       }
 
-      navigate(`/checkout?orderId=${encodeURIComponent(res.orderId)}`)
+      navigate(`/order/${encodeURIComponent(res.orderId)}`)
     } catch (err: unknown) {
       const msg = getErrorMessage(err, 'Something went wrong. Please try again.')
       if (whatsappEnabled) {

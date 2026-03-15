@@ -640,6 +640,7 @@ export function OrderDeliveryRoute() {
   const [unlockedOrders, setUnlockedOrders] = useState<UnlockedOrder[] | null>(null)
   const [notFound, setNotFound] = useState(false)
   const [loading, setLoading] = useState(true)
+  const hasAutoConfirmed = useRef(false)
   const [lyricsExpanded, setLyricsExpanded] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
@@ -661,6 +662,21 @@ export function OrderDeliveryRoute() {
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
   }, [orderId])
+
+  // Auto-confirm order if status is 'created' (not yet confirmed)
+  useEffect(() => {
+    if (!orderId || !orderStatus) return
+    if (orderStatus.status !== 'created') return
+    if (hasAutoConfirmed.current) return
+    hasAutoConfirmed.current = true
+
+    fetch(`/api/orders/${encodeURIComponent(orderId)}/confirm`, { method: 'POST' })
+      .then(async () => {
+        const statusRes = await fetch(`/api/public/order/${encodeURIComponent(orderId)}/status`)
+        if (statusRes.ok) setOrderStatus(await statusRes.json())
+      })
+      .catch(() => {})
+  }, [orderId, orderStatus?.status])
 
   // Poll for status updates while order is processing
   useEffect(() => {

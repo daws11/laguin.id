@@ -331,8 +331,8 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
           amount: paymentAmount,
           payerEmail: (normalizedInput as any).email ?? undefined,
           description: `Lagu personal untuk ${(normalizedInput as any).recipientName ?? 'pasangan'}`,
-          successRedirectUrl: `${baseUrl}/checkout?orderId=${order.id}`,
-          failureRedirectUrl: `${baseUrl}/checkout?orderId=${order.id}`,
+          successRedirectUrl: `${baseUrl}/order/${order.id}`,
+          failureRedirectUrl: `${baseUrl}/order/${order.id}`,
         })
 
         await prisma.order.update({
