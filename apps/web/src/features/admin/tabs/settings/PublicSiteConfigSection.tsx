@@ -18,7 +18,6 @@ import {
   Zap,
   Smartphone,
   Key,
-  Clock
 } from 'lucide-react'
 import { CreationDeliveryCard } from './CreationDeliveryCard'
 import { WhatsappGatewayCard } from './WhatsappGatewayCard'
@@ -77,7 +76,6 @@ export function PublicSiteConfigSection({
     { id: 'landing-player', label: 'Hero Player', icon: PlayCircle, group: 'Landing Page' },
     { id: 'music', label: 'Music Playlist', icon: Music, group: 'Content' },
     { id: 'toast', label: 'Activity Toast', icon: MessageSquare, group: 'Content' },
-    { id: 'order-processing', label: 'Order Processing', icon: Clock, group: 'Content' },
     { id: 'creation-delivery', label: 'Creation & Delivery', icon: Zap, group: 'System' },
     { id: 'whatsapp-gateway', label: 'WhatsApp Gateway', icon: Smartphone, group: 'System' },
     { id: 'api-keys', label: 'API Keys', icon: Key, group: 'System' },
@@ -601,67 +599,6 @@ export function PublicSiteConfigSection({
                         </div>
                     </div>
                 </div>
-            )}
-
-            {/* --- ORDER PROCESSING PAGE --- */}
-            {activeTab === 'order-processing' && (
-              <div className="space-y-4 w-full animate-in fade-in duration-300">
-                <div className="pb-2 border-b">
-                  <h3 className="text-base font-semibold">Order Processing Page</h3>
-                  <p className="text-xs text-muted-foreground">Configure the page shown to customers while their order is being processed.</p>
-                </div>
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">Headline</label>
-                    <Input
-                      value={draft.orderProcessingPage.headline}
-                      onChange={(e) => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, headline: e.target.value } }))}
-                      placeholder="Lagu Anda Sedang Dibuat!"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">Subtitle</label>
-                    <Input
-                      value={draft.orderProcessingPage.subtitle}
-                      onChange={(e) => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, subtitle: e.target.value } }))}
-                      placeholder="Tim kami sedang membuat lagu spesial untuk Anda"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">Countdown Label</label>
-                    <Input
-                      value={draft.orderProcessingPage.countdownLabel}
-                      onChange={(e) => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, countdownLabel: e.target.value } }))}
-                      placeholder="Estimasi selesai dalam"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">Bottom Text</label>
-                    <Textarea
-                      value={draft.orderProcessingPage.bottomText}
-                      onChange={(e) => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, bottomText: e.target.value } }))}
-                      placeholder="Kami akan mengirimkan notifikasi via WhatsApp..."
-                      className="h-20"
-                    />
-                  </div>
-                  <div className="space-y-1 pt-2 border-t">
-                    <label className="text-xs font-medium">Upsell Item (optional)</label>
-                    <p className="text-[10px] text-muted-foreground">Select an upsell item to display on the processing page. Items are configured in the Upsell section of your theme.</p>
-                    <select
-                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-                      value={draft.orderProcessingPage.upsellItemId ?? ''}
-                      onChange={(e) => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, upsellItemId: e.target.value || null } }))}
-                    >
-                      <option value="">None</option>
-                      {draft.upsell.items.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.title} — Rp {item.price.toLocaleString()} {item.action === 'express_delivery' ? '(Express)' : item.action === 'third_verse' ? '(Third Verse)' : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
             )}
 
             {/* --- SYSTEM SECTIONS --- */}

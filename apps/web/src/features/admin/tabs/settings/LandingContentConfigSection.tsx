@@ -8,7 +8,7 @@ import { resolveApiUrl } from '@/lib/http'
 import * as adminApi from '@/features/admin/api'
 import { moveItem, parseToastItemsJson } from '@/features/admin/publicSiteDraft'
 import type { PublicSiteDraft } from '@/features/admin/types'
-import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap, Palette, ImagePlus, ShieldCheck, Megaphone, Plus, Trash2, Heart, PenLine, PartyPopper, DollarSign, Gift } from 'lucide-react'
+import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap, Palette, ImagePlus, ShieldCheck, Megaphone, Plus, Trash2, Heart, PenLine, PartyPopper, DollarSign, Gift, Clock } from 'lucide-react'
 
 interface LandingContentConfigProps {
   draft: PublicSiteDraft
@@ -75,6 +75,7 @@ export function LandingContentConfigSection({
     { id: 'config-step3', label: 'Step 3: Story', icon: PenLine, group: 'Config Steps' },
     { id: 'config-step4', label: 'Step 4: Checkout', icon: PartyPopper, group: 'Config Steps' },
     { id: 'upsell', label: 'Upsell', icon: Gift, group: 'Config Steps' },
+    { id: 'order-processing', label: 'Order Processing', icon: Clock, group: 'Config Steps' },
   ]
 
   const SidebarItem = ({ item }: { item: typeof menuItems[0] }) => (
@@ -2661,6 +2662,64 @@ export function LandingContentConfigSection({
                                 </div>
                             )}
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'order-processing' && (
+                <div className="space-y-4 w-full animate-in fade-in duration-300">
+                    <div className="pb-2 border-b">
+                        <h3 className="text-base font-semibold">Order Processing Page</h3>
+                        <p className="text-xs text-muted-foreground">Content shown while the order is being processed.</p>
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-xs font-medium">Headline</label>
+                        <Input
+                            value={draft.orderProcessingPage.headline}
+                            onChange={(e) => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, headline: e.target.value } }))}
+                            placeholder="e.g. Lagu Anda Sedang Dibuat!"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-medium">Subtitle</label>
+                        <Input
+                            value={draft.orderProcessingPage.subtitle}
+                            onChange={(e) => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, subtitle: e.target.value } }))}
+                            placeholder="e.g. Tim kami sedang membuat lagu spesial untuk Anda"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-medium">Countdown Label</label>
+                        <Input
+                            value={draft.orderProcessingPage.countdownLabel}
+                            onChange={(e) => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, countdownLabel: e.target.value } }))}
+                            placeholder="e.g. Estimasi selesai dalam"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-medium">Bottom Text</label>
+                        <Textarea
+                            value={draft.orderProcessingPage.bottomText}
+                            onChange={(e) => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, bottomText: e.target.value } }))}
+                            placeholder="e.g. Kami akan mengirimkan notifikasi via WhatsApp..."
+                            rows={3}
+                        />
+                    </div>
+
+                    <div className="space-y-1 pt-2 border-t">
+                        <label className="text-xs font-medium">Upsell Item (shown on processing page)</label>
+                        <p className="text-[10px] text-muted-foreground">Select an upsell item from the Upsell catalog to display on the order processing page.</p>
+                        <select
+                            className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                            value={draft.orderProcessingPage.upsellItemId ?? ''}
+                            onChange={(e) => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, upsellItemId: e.target.value || null } }))}
+                        >
+                            <option value="">None</option>
+                            {draft.upsell.items.map((item) => (
+                                <option key={item.id} value={item.id}>{item.icon} {item.title} — Rp {item.price.toLocaleString()}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
             )}

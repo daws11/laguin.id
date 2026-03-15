@@ -1089,6 +1089,14 @@ export function buildPublicSiteConfigPayload(draft: PublicSiteDraft) {
     })).filter((item) => item.id && item.title),
   }
 
-  return { logoUrl, faviconUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, heroCheckmarks: nextHeroCheckmarks, trustBadges: nextTrustBadges, statsBar: nextStatsBar, reviews: nextReviews, promoBanner: nextPromoBanner, configSteps: nextConfigSteps, audioSamplesSection: nextAudioSamplesSection, comparisonSection: nextComparisonSection, howItWorksSection: nextHowItWorksSection, guaranteeSection: nextGuaranteeSection, faqSection: nextFaqSection, footer: nextFooter, miscText: nextMiscText, priceVisibility: nextPriceVisibility, upsell: nextUpsell }
+  const nextOrderProcessingPage: PublicSiteDraft['orderProcessingPage'] = {
+    headline: draft.orderProcessingPage.headline.trim(),
+    subtitle: draft.orderProcessingPage.subtitle.trim(),
+    countdownLabel: draft.orderProcessingPage.countdownLabel.trim(),
+    bottomText: draft.orderProcessingPage.bottomText.trim(),
+    upsellItemId: draft.orderProcessingPage.upsellItemId || null,
+  }
+
+  return { logoUrl, faviconUrl, colors: nextColors, landing: nextLanding, activityToast: nextToast, creationDelivery: nextCreationDelivery, heroCheckmarks: nextHeroCheckmarks, trustBadges: nextTrustBadges, statsBar: nextStatsBar, reviews: nextReviews, promoBanner: nextPromoBanner, configSteps: nextConfigSteps, audioSamplesSection: nextAudioSamplesSection, comparisonSection: nextComparisonSection, howItWorksSection: nextHowItWorksSection, guaranteeSection: nextGuaranteeSection, faqSection: nextFaqSection, footer: nextFooter, miscText: nextMiscText, priceVisibility: nextPriceVisibility, upsell: nextUpsell, orderProcessingPage: nextOrderProcessingPage }
 }
 
