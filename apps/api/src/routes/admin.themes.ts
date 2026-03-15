@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { generateTextWithOpenAI } from '../clients/openaiClient'
 import { prisma } from '../lib/prisma'
 import { getOrCreateSettings, getOpenAIApiKey, getOpenAIModel, invalidateSettingsCache } from '../lib/settings'
+import { invalidateThemeCache } from '../lib/themes'
 
 const SlugRegex = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]{2}$/
 
@@ -66,6 +67,7 @@ export const adminThemeRoutes: FastifyPluginAsync = async (app) => {
       },
     })
 
+    invalidateThemeCache(parsed.data.slug)
     return theme
   })
 
@@ -99,7 +101,9 @@ export const adminThemeRoutes: FastifyPluginAsync = async (app) => {
       },
     })
 
+    invalidateThemeCache(params.data.slug)
     if (newSlug && newSlug !== params.data.slug) {
+      invalidateThemeCache(newSlug)
       const settings = await getOrCreateSettings()
       if (settings.defaultThemeSlug === params.data.slug) {
         await prisma.settings.update({
@@ -126,6 +130,7 @@ export const adminThemeRoutes: FastifyPluginAsync = async (app) => {
     }
 
     await prisma.theme.delete({ where: { slug: params.data.slug } })
+    invalidateThemeCache(params.data.slug)
     return { ok: true }
   })
 

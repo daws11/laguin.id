@@ -10,6 +10,7 @@ import { addOrderEvent } from '../lib/events'
 import { uploadBuffer } from '../lib/objectStorage'
 import { triggerGenerationInBackground } from '../pipeline/triggerGeneration'
 import { createXenditInvoice } from '../lib/xendit'
+import { getCachedThemeBySlug } from '../lib/themes'
 
 const ParamsSchema = z.object({ id: z.string().min(1) })
 const VerifySchema = z.object({ phone: z.string().min(4) })
@@ -26,7 +27,7 @@ const DEFAULT_MAX_REGENERATIONS = 2
 
 async function getMaxRegenerations(themeSlug: string | null): Promise<number> {
   if (themeSlug) {
-    const theme = await prisma.theme.findUnique({ where: { slug: themeSlug }, select: { settings: true } })
+    const theme = await getCachedThemeBySlug(themeSlug)
     if (theme?.settings && typeof theme.settings === 'object') {
       const cd = (theme.settings as any)?.creationDelivery
       if (cd && typeof cd === 'object' && typeof cd.maxRegenerations === 'number') {
@@ -100,7 +101,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
     // Resolve theme-level settings for processing page
     let themeConfig: Record<string, any> = {}
     if (order.themeSlug) {
-      const theme = await prisma.theme.findUnique({ where: { slug: order.themeSlug }, select: { settings: true } })
+      const theme = await getCachedThemeBySlug(order.themeSlug!)
       if (theme?.settings && typeof theme.settings === 'object') {
         themeConfig = theme.settings as Record<string, any>
       }
@@ -421,7 +422,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
     // Resolve upsell item from theme config
     let themeConfig: Record<string, any> = {}
     if (order.themeSlug) {
-      const theme = await prisma.theme.findUnique({ where: { slug: order.themeSlug }, select: { settings: true } })
+      const theme = await getCachedThemeBySlug(order.themeSlug!)
       if (theme?.settings && typeof theme.settings === 'object') {
         themeConfig = theme.settings as Record<string, any>
       }

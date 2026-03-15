@@ -8,6 +8,7 @@ import { getOrCreateSettings, maybeDecrypt } from '../lib/settings'
 import { normalizeEmail, normalizeWhatsappNumber } from '../lib/normalize'
 import { sendMetaCapiEvent } from '../lib/metaCapi'
 import { createXenditInvoice } from '../lib/xendit'
+import { getCachedThemeBySlug } from '../lib/themes'
 
 const ParamsSchema = z.object({ id: z.string().min(1) })
 
@@ -49,7 +50,7 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
     }
 
     if (themeSlug) {
-      const theme = await prisma.theme.findUnique({ where: { slug: themeSlug } })
+      const theme = await getCachedThemeBySlug(themeSlug)
       if (theme?.settings && typeof theme.settings === 'object') {
         const ts = theme.settings as any
         if (ts.creationDelivery && typeof ts.creationDelivery === 'object') {

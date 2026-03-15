@@ -4,6 +4,7 @@ import { addOrderEvent } from '../lib/events'
 import { getXenditWebhookToken, verifyXenditWebhookToken } from '../lib/xendit'
 import { getOrCreateSettings } from '../lib/settings'
 import { triggerGenerationInBackground } from '../pipeline/triggerGeneration'
+import { getCachedThemeBySlug } from '../lib/themes'
 
 export const xenditWebhookRoutes: FastifyPluginAsync = async (app) => {
   app.post('/xendit/callback', async (req, reply) => {
@@ -88,7 +89,7 @@ export const xenditWebhookRoutes: FastifyPluginAsync = async (app) => {
         // Resolve the upsell item from theme/global config
         let upsellItem: any = null
         if (order.themeSlug) {
-          const theme = await prisma.theme.findUnique({ where: { slug: order.themeSlug }, select: { settings: true } })
+          const theme = await getCachedThemeBySlug(order.themeSlug!)
           if (theme?.settings && typeof theme.settings === 'object') {
             const items = (theme.settings as any)?.upsell?.items
             if (Array.isArray(items)) {
