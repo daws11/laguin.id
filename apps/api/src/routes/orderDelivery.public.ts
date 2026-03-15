@@ -9,6 +9,7 @@ import { normalizeWhatsappNumber } from '../lib/normalize'
 import { addOrderEvent } from '../lib/events'
 import { uploadBuffer } from '../lib/objectStorage'
 import { triggerGenerationInBackground } from '../pipeline/triggerGeneration'
+import { createXenditInvoice } from '../lib/xendit'
 
 const ParamsSchema = z.object({ id: z.string().min(1) })
 const VerifySchema = z.object({ phone: z.string().min(4) })
@@ -81,6 +82,10 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
         status: true,
         createdAt: true,
         inputPayload: true,
+        confirmedAt: true,
+        deliveryScheduledAt: true,
+        themeSlug: true,
+        upsellItems: true,
       },
     })
 
@@ -92,12 +97,65 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
     const psc = (settings.publicSiteConfig && typeof settings.publicSiteConfig === 'object' ? settings.publicSiteConfig : {}) as Record<string, any>
     const deliveryPageConfig = psc.deliveryPage ?? {}
 
+    // Resolve theme-level settings for processing page
+    let themeConfig: Record<string, any> = {}
+    if (order.themeSlug) {
+      const theme = await prisma.theme.findUnique({ where: { slug: order.themeSlug }, select: { settings: true } })
+      if (theme?.settings && typeof theme.settings === 'object') {
+        themeConfig = theme.settings as Record<string, any>
+      }
+    }
+
+    const cd = themeConfig?.creationDelivery && typeof themeConfig.creationDelivery === 'object' ? themeConfig.creationDelivery : psc?.creationDelivery ?? {}
+    const deliveryDelayHours = typeof cd?.deliveryDelayHours === 'number' ? cd.deliveryDelayHours : (settings.deliveryDelayHours ?? 24)
+
+    // Order processing page config (theme-level overrides global)
+    const oppRaw = themeConfig?.orderProcessingPage ?? psc?.orderProcessingPage ?? {}
+    const orderProcessingPage = {
+      headline: typeof oppRaw?.headline === 'string' ? oppRaw.headline : 'Lagu Anda Sedang Dibuat!',
+      subtitle: typeof oppRaw?.subtitle === 'string' ? oppRaw.subtitle : 'Tim kami sedang membuat lagu spesial untuk Anda',
+      countdownLabel: typeof oppRaw?.countdownLabel === 'string' ? oppRaw.countdownLabel : 'Estimasi selesai dalam',
+      bottomText: typeof oppRaw?.bottomText === 'string' ? oppRaw.bottomText : 'Kami akan mengirimkan notifikasi via WhatsApp ketika lagu Anda sudah siap.',
+      upsellItemId: typeof oppRaw?.upsellItemId === 'string' ? oppRaw.upsellItemId : null,
+    }
+
+    // Resolve upsell item details if configured
+    let processingUpsellItem: Record<string, any> | null = null
+    if (orderProcessingPage.upsellItemId) {
+      const upsellConfig = themeConfig?.upsell ?? psc?.upsell ?? {}
+      const upsellItems = Array.isArray(upsellConfig?.items) ? upsellConfig.items : []
+      const found = upsellItems.find((item: any) => item?.id === orderProcessingPage.upsellItemId)
+      if (found) {
+        processingUpsellItem = {
+          id: found.id,
+          icon: found.icon ?? '',
+          title: found.title ?? '',
+          headline: found.headline ?? '',
+          description: found.description ?? '',
+          price: found.price ?? 0,
+          priceLabel: found.priceLabel ?? '',
+          ctaText: found.ctaText ?? '',
+          action: found.action ?? 'none',
+          actionConfig: found.actionConfig ?? null,
+        }
+      }
+    }
+
+    // Check which upsells were already purchased
+    const purchasedUpsells: any[] = Array.isArray(order.upsellItems) ? (order.upsellItems as any[]) : []
+
     return {
       id: order.id,
       status: order.status,
       recipientName: payload.recipientName ?? payload.recipient ?? '',
       createdAt: order.createdAt,
       config: deliveryPageConfig,
+      confirmedAt: order.confirmedAt,
+      deliveryScheduledAt: order.deliveryScheduledAt,
+      deliveryDelayHours,
+      orderProcessingPage,
+      processingUpsellItem,
+      purchasedUpsells,
     }
   })
 
@@ -328,6 +386,88 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
       regenerationCount: order.regenerationCount + 1,
       maxRegenerations: maxRegens,
     }
+  })
+
+  app.post('/public/order/:id/upsell-purchase', async (req, reply) => {
+    const params = ParamsSchema.safeParse(req.params)
+    if (!params.success) return reply.code(400).send({ error: 'invalid_params' })
+
+    const body = z.object({ upsellItemId: z.string().min(1) }).safeParse(req.body)
+    if (!body.success) return reply.code(400).send({ error: 'invalid_body' })
+
+    const order = await prisma.order.findUnique({
+      where: { id: params.data.id },
+      select: {
+        id: true,
+        status: true,
+        themeSlug: true,
+        upsellItems: true,
+        customer: { select: { email: true } },
+      },
+    })
+
+    if (!order) return reply.code(404).send({ error: 'not_found' })
+    if (order.status !== 'processing' && order.status !== 'completed') {
+      return reply.code(400).send({ error: 'order_not_eligible' })
+    }
+
+    // Check if already purchased this upsell
+    const existingUpsells: any[] = Array.isArray(order.upsellItems) ? (order.upsellItems as any[]) : []
+    if (existingUpsells.some((u: any) => u?.id === body.data.upsellItemId)) {
+      return reply.code(400).send({ error: 'already_purchased' })
+    }
+
+    // Resolve upsell item from theme config
+    let themeConfig: Record<string, any> = {}
+    if (order.themeSlug) {
+      const theme = await prisma.theme.findUnique({ where: { slug: order.themeSlug }, select: { settings: true } })
+      if (theme?.settings && typeof theme.settings === 'object') {
+        themeConfig = theme.settings as Record<string, any>
+      }
+    }
+    if (!Object.keys(themeConfig).length) {
+      const settings = await getOrCreateSettings()
+      const psc = (settings.publicSiteConfig && typeof settings.publicSiteConfig === 'object' ? settings.publicSiteConfig : {}) as Record<string, any>
+      themeConfig = psc
+    }
+
+    const upsellConfig = themeConfig?.upsell ?? {}
+    const catalogItems = Array.isArray(upsellConfig?.items) ? upsellConfig.items : []
+    const upsellItem = catalogItems.find((item: any) => item?.id === body.data.upsellItemId)
+    if (!upsellItem) {
+      return reply.code(404).send({ error: 'upsell_item_not_found' })
+    }
+
+    const amount = typeof upsellItem.price === 'number' ? upsellItem.price : 0
+    if (amount <= 0) {
+      return reply.code(400).send({ error: 'invalid_upsell_price' })
+    }
+
+    // Build the externalId with upsell separator
+    const externalId = `${order.id}__upsell__${body.data.upsellItemId}`
+
+    const settings = await getOrCreateSettings()
+    const siteUrl = (settings as any).siteUrl ?? ''
+    const successUrl = siteUrl ? `${siteUrl}/order/${order.id}` : undefined
+    const failureUrl = successUrl
+
+    const invoice = await createXenditInvoice({
+      externalId,
+      amount,
+      payerEmail: order.customer?.email ?? undefined,
+      description: `Upsell: ${upsellItem.title ?? 'Add-on'}`,
+      successRedirectUrl: successUrl,
+      failureRedirectUrl: failureUrl,
+    })
+
+    await addOrderEvent({
+      orderId: order.id,
+      type: 'upsell_invoice_created',
+      message: `Upsell invoice created: ${upsellItem.title ?? 'Add-on'} (Rp ${amount})`,
+      data: { upsellItemId: body.data.upsellItemId, xenditInvoiceId: invoice.id, amount } as any,
+    })
+
+    return { invoiceUrl: invoice.invoice_url }
   })
 
   app.post('/public/order/:id/testimonial', async (req, reply) => {

@@ -226,6 +226,13 @@ export const defaultPublicSiteDraft: PublicSiteDraft = {
     footerNote: '',
     items: [],
   },
+  orderProcessingPage: {
+    headline: 'Lagu Anda Sedang Dibuat!',
+    subtitle: 'Tim kami sedang membuat lagu spesial untuk Anda',
+    countdownLabel: 'Estimasi selesai dalam',
+    bottomText: 'Kami akan mengirimkan notifikasi via WhatsApp ketika lagu Anda sudah siap.',
+    upsellItemId: null,
+  },
   configSteps: {
     step0: {
       enabled: true,
@@ -517,6 +524,7 @@ export function buildDraftFromSettings(s: Settings | null): PublicSiteDraft {
       originalAmount: asNumber(cd?.originalAmount, defaultPublicSiteDraft.creationDelivery.originalAmount),
     },
     upsell: buildUpsell(cfg?.upsell),
+    orderProcessingPage: buildOrderProcessingPage(cfg?.orderProcessingPage),
     configSteps: buildConfigSteps(cfg?.configSteps),
     audioSamplesSection: buildAudioSamplesSection(cfg?.audioSamplesSection),
     comparisonSection: buildComparisonSection(cfg?.comparisonSection),
@@ -552,6 +560,18 @@ function buildUpsell(raw: any): UpsellConfig {
     headline: asString(s?.headline, d.headline),
     footerNote: asString(s?.footerNote, d.footerNote),
     items,
+  }
+}
+
+function buildOrderProcessingPage(raw: any): PublicSiteDraft['orderProcessingPage'] {
+  const s = raw && typeof raw === 'object' ? raw : {}
+  const d = defaultPublicSiteDraft.orderProcessingPage
+  return {
+    headline: asString(s?.headline, d.headline),
+    subtitle: asString(s?.subtitle, d.subtitle),
+    countdownLabel: asString(s?.countdownLabel, d.countdownLabel),
+    bottomText: asString(s?.bottomText, d.bottomText),
+    upsellItemId: typeof s?.upsellItemId === 'string' && s.upsellItemId.trim() ? s.upsellItemId : null,
   }
 }
 

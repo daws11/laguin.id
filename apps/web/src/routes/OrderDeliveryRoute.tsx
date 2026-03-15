@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import {
   Music, Download, FileText, Loader2, Clock,
-  RefreshCw, Video, CheckCircle, ChevronDown, ChevronUp, Upload,
+  RefreshCw, Video, CheckCircle, ChevronDown, ChevronUp, Upload, Sparkles,
 } from 'lucide-react'
 
 type DeliveryConfig = {
@@ -39,12 +39,39 @@ type DeliveryConfig = {
   testimonialApprovedMessage?: string
 }
 
+type OrderProcessingPageConfig = {
+  headline?: string
+  subtitle?: string
+  countdownLabel?: string
+  bottomText?: string
+  upsellItemId?: string | null
+}
+
+type ProcessingUpsellItem = {
+  id: string
+  icon?: string
+  title?: string
+  headline?: string
+  description?: string
+  price?: number
+  priceLabel?: string
+  ctaText?: string
+  action?: string
+  actionConfig?: { deliveryTimeMinutes?: number }
+}
+
 type OrderStatus = {
   id: string
   status: string
   recipientName: string
   createdAt: string
   config: DeliveryConfig
+  confirmedAt?: string | null
+  deliveryScheduledAt?: string | null
+  deliveryDelayHours?: number
+  orderProcessingPage?: OrderProcessingPageConfig
+  processingUpsellItem?: ProcessingUpsellItem | null
+  purchasedUpsells?: any[]
 }
 
 type UnlockedOrder = {
@@ -118,6 +145,152 @@ function RevisionWaitScreen({ order, accent, cfg }: { order: UnlockedOrder; acce
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  )
+}
+
+function OrderProcessingScreen({
+  orderStatus,
+  accent,
+}: {
+  orderStatus: OrderStatus
+  accent: string
+}) {
+  const [purchasing, setPurchasing] = useState(false)
+  const [purchaseError, setPurchaseError] = useState<string | null>(null)
+
+  const opp = orderStatus.orderProcessingPage ?? {}
+  const upsell = orderStatus.processingUpsellItem
+  const purchasedIds = (orderStatus.purchasedUpsells ?? []).map((u: any) => u?.id).filter(Boolean)
+  const alreadyPurchased = upsell ? purchasedIds.includes(upsell.id) : false
+
+  // Calculate countdown target
+  let targetTime: number | null = null
+  if (orderStatus.deliveryScheduledAt) {
+    targetTime = new Date(orderStatus.deliveryScheduledAt).getTime()
+  } else if (orderStatus.confirmedAt && orderStatus.deliveryDelayHours) {
+    targetTime = new Date(orderStatus.confirmedAt).getTime() + orderStatus.deliveryDelayHours * 60 * 60 * 1000
+  }
+
+  const { hours, minutes, seconds } = useCountdown(targetTime)
+
+  const handleUpsellPurchase = async () => {
+    if (!upsell) return
+    setPurchasing(true)
+    setPurchaseError(null)
+    try {
+      const res = await fetch(`/api/public/order/${encodeURIComponent(orderStatus.id)}/upsell-purchase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ upsellItemId: upsell.id }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setPurchaseError(data.error === 'already_purchased' ? 'Anda sudah membeli add-on ini.' : 'Terjadi kesalahan. Silakan coba lagi.')
+        return
+      }
+      const data = await res.json()
+      if (data.invoiceUrl) {
+        window.location.href = data.invoiceUrl
+      }
+    } catch {
+      setPurchaseError('Kesalahan koneksi. Silakan coba lagi.')
+    } finally {
+      setPurchasing(false)
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-white px-4 py-12">
+      <div className="text-center max-w-md w-full">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: accent + '15' }}>
+          <Clock className="h-8 w-8" style={{ color: accent }} />
+        </div>
+        <h1 className="text-xl font-semibold text-gray-800">
+          {opp.headline || 'Lagu Anda Sedang Dibuat!'}
+        </h1>
+        <p className="mt-2 text-sm text-gray-500">
+          {opp.subtitle || 'Tim kami sedang membuat lagu spesial untuk Anda'}
+        </p>
+
+        {targetTime && (
+          <>
+            <p className="mt-5 text-xs font-medium text-gray-400 uppercase tracking-wider">
+              {opp.countdownLabel || 'Estimasi selesai dalam'}
+            </p>
+            <div className="mt-3 flex justify-center gap-3">
+              {[
+                { value: hours, label: 'Jam' },
+                { value: minutes, label: 'Menit' },
+                { value: seconds, label: 'Detik' },
+              ].map((unit) => (
+                <div key={unit.label} className="flex flex-col items-center">
+                  <div
+                    className="flex h-16 w-16 items-center justify-center rounded-xl text-2xl font-bold text-white"
+                    style={{ backgroundColor: accent }}
+                  >
+                    {String(unit.value).padStart(2, '0')}
+                  </div>
+                  <span className="mt-1 text-xs text-gray-500">{unit.label}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        <p className="mt-6 text-sm text-gray-500 max-w-xs mx-auto">
+          {opp.bottomText || 'Kami akan mengirimkan notifikasi via WhatsApp ketika lagu Anda sudah siap.'}
+        </p>
+
+        {/* Upsell Card */}
+        {upsell && !alreadyPurchased && (
+          <div className="mt-8 rounded-2xl border bg-white p-5 shadow-sm text-left">
+            <div className="flex items-start gap-3">
+              {upsell.icon && <span className="text-2xl">{upsell.icon}</span>}
+              <div className="flex-1">
+                <h3 className="text-sm font-bold text-gray-900">{upsell.title}</h3>
+                {upsell.description && (
+                  <p className="mt-1 text-xs text-gray-500">{upsell.description}</p>
+                )}
+                {upsell.action === 'express_delivery' && upsell.actionConfig?.deliveryTimeMinutes && (
+                  <p className="mt-1 text-xs font-medium" style={{ color: accent }}>
+                    Terima lagu Anda dalam {upsell.actionConfig.deliveryTimeMinutes < 60
+                      ? `${upsell.actionConfig.deliveryTimeMinutes} menit`
+                      : `${Math.round(upsell.actionConfig.deliveryTimeMinutes / 60)} jam`
+                    }!
+                  </p>
+                )}
+              </div>
+            </div>
+            {purchaseError && (
+              <p className="mt-3 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{purchaseError}</p>
+            )}
+            <button
+              onClick={handleUpsellPurchase}
+              disabled={purchasing}
+              className="mt-4 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+              style={{ backgroundColor: accent }}
+            >
+              {purchasing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  {upsell.ctaText || `Beli — ${upsell.priceLabel || `Rp ${(upsell.price ?? 0).toLocaleString()}`}`}
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Already purchased upsell indicator */}
+        {upsell && alreadyPurchased && (
+          <div className="mt-8 rounded-2xl border border-green-200 bg-green-50 p-4 text-center">
+            <CheckCircle className="h-5 w-5 text-green-600 mx-auto mb-1" />
+            <p className="text-sm font-medium text-green-800">{upsell.title} — Aktif!</p>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -484,6 +657,33 @@ export function OrderDeliveryRoute() {
       .finally(() => setLoading(false))
   }, [orderId])
 
+  // Poll for status updates while order is processing
+  useEffect(() => {
+    if (!orderId || !orderStatus) return
+    const isProcessing = orderStatus.status === 'processing' || orderStatus.status === 'created'
+    if (!isProcessing) return
+
+    const poll = async () => {
+      try {
+        const [statusRes, contentRes] = await Promise.all([
+          fetch(`/api/public/order/${encodeURIComponent(orderId)}/status`),
+          fetch(`/api/public/order/${encodeURIComponent(orderId)}/content`),
+        ])
+        if (statusRes.ok) {
+          const statusData = await statusRes.json()
+          setOrderStatus(statusData)
+        }
+        if (contentRes.ok) {
+          const contentData = await contentRes.json()
+          setUnlockedOrders(contentData.orders ?? [])
+        }
+      } catch {}
+    }
+
+    const id = setInterval(poll, 10000)
+    return () => clearInterval(id)
+  }, [orderId, orderStatus?.status])
+
   const cfg = orderStatus?.config ?? {}
   const accent = cfg.accentColor || '#E11D48'
 
@@ -577,22 +777,8 @@ export function OrderDeliveryRoute() {
 
     const allProcessing = unlockedOrders.every((o) => o.status !== 'completed')
 
-    if (allProcessing) {
-      return (
-        <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-white px-4">
-          <div className="text-center max-w-md">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: accent + '15' }}>
-              <Loader2 className="h-8 w-8 animate-spin" style={{ color: accent }} />
-            </div>
-            <h1 className="text-xl font-semibold text-gray-800">
-              {cfg.processingMessage || 'Lagu Anda sedang dibuat!'}
-            </h1>
-            <p className="mt-2 text-sm text-gray-500">
-              Kami sedang mengerjakan lagu pribadi Anda. Silakan periksa kembali segera.
-            </p>
-          </div>
-        </div>
-      )
+    if (allProcessing && orderStatus) {
+      return <OrderProcessingScreen orderStatus={orderStatus} accent={accent} />
     }
 
     return (

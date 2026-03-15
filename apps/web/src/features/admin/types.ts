@@ -316,6 +316,14 @@ export type UpsellConfig = {
   items: UpsellItem[]
 }
 
+export type OrderProcessingPageConfig = {
+  headline: string
+  subtitle: string
+  countdownLabel: string
+  bottomText: string
+  upsellItemId: string | null
+}
+
 export type PriceVisibility = {
   promoBanner: boolean
   header: boolean
@@ -426,6 +434,7 @@ export type PublicSiteDraft = {
   miscText: MiscTextConfig
   priceVisibility: PriceVisibility
   upsell: UpsellConfig
+  orderProcessingPage: OrderProcessingPageConfig
 }
 
 export type CustomerListItem = {
