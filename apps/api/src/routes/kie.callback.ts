@@ -5,7 +5,7 @@ import { prisma } from '../lib/prisma'
 import { addOrderEvent } from '../lib/events'
 import { completeOrder } from '../pipeline/generation'
 import { tryDeliverOrder } from '../pipeline/triggerGeneration'
-import { storeAllTracks } from '../lib/trackStorage'
+import { storeAllTracks, type TrackMeta } from '../lib/trackStorage'
 
 function verifyKieWebhookSignature(params: {
   webhookHmacKey: string
@@ -112,7 +112,9 @@ export const kieCallbackRoutes: FastifyPluginAsync = async (app) => {
         try {
           if (mergedTracks.length > 0) {
             try {
-              const { localUrls, errors } = await storeAllTracks(order.id, mergedTracks)
+              const ip: any = order.inputPayload && typeof order.inputPayload === 'object' ? order.inputPayload : {}
+              const trackMeta: TrackMeta = { recipientName: ip.recipientName ?? ip.recipient ?? '' }
+              const { localUrls, errors } = await storeAllTracks(order.id, mergedTracks, trackMeta)
               if (localUrls.length > 0) {
                 const freshOrder = await prisma.order.findUnique({ where: { id: order.id } })
                 const meta: any = (freshOrder?.trackMetadata && typeof freshOrder.trackMetadata === 'object' ? freshOrder.trackMetadata : {})
