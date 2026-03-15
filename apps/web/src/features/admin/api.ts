@@ -1,8 +1,44 @@
 import { apiGet, apiPost, apiPut, apiUpload, apiDelete } from '@/lib/http'
 import type { CustomerDetail, CustomerListItem, DraftDetail, OrderDetail, OrderListItem, PromptTemplate, Settings } from './types'
 
-export async function adminLogin(password: string) {
-  return apiPost<{ token: string }>('/api/admin/login', { password })
+export async function adminLogin(username: string, password: string) {
+  return apiPost<{ token: string }>('/api/admin/login', { username, password })
+}
+
+export async function adminGetMe(token: string) {
+  return apiGet<{ userId: string; username: string; role: string; permissions: string[] }>('/api/admin/me', { token })
+}
+
+export type AdminUserItem = {
+  id: string
+  username: string
+  role: 'admin' | 'user'
+  permissions: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export async function adminGetUsers(token: string) {
+  return apiGet<AdminUserItem[]>('/api/admin/users', { token })
+}
+
+export async function adminCreateUser(
+  token: string,
+  body: { username: string; password: string; role: 'admin' | 'user'; permissions: string[] },
+) {
+  return apiPost<AdminUserItem>('/api/admin/users', body, { token })
+}
+
+export async function adminUpdateUser(
+  token: string,
+  id: string,
+  body: { username?: string; password?: string; role?: 'admin' | 'user'; permissions?: string[] },
+) {
+  return apiPut<AdminUserItem>(`/api/admin/users/${encodeURIComponent(id)}`, body, { token })
+}
+
+export async function adminDeleteUser(token: string, id: string) {
+  return apiDelete<{ ok: boolean }>(`/api/admin/users/${encodeURIComponent(id)}`, { token })
 }
 
 export type TestimonialVideoItem = {
@@ -214,7 +250,7 @@ export async function adminCreateTheme(token: string, body: { slug: string; name
   return apiPost<ThemeItem>('/api/admin/themes', body, { token })
 }
 
-export async function adminUpdateTheme(token: string, slug: string, body: { name?: string; isActive?: boolean; settings?: any }) {
+export async function adminUpdateTheme(token: string, slug: string, body: { slug?: string; name?: string; isActive?: boolean; settings?: any }) {
   return apiPut<ThemeItem>(`/api/admin/themes/${encodeURIComponent(slug)}`, body, { token })
 }
 

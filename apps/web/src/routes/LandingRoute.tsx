@@ -793,7 +793,7 @@ export function LandingRoute() {
                    <div className="font-serif italic text-lg sm:text-2xl md:text-3xl leading-snug">"{overlayQuote}"</div>
                    <div className="mt-2 text-xs sm:text-sm font-medium opacity-90 flex items-center gap-2">
                      {authorAvatarUrl ? (
-                       <img src={authorAvatarUrl} className="w-6 h-6 rounded-full border border-white" />
+                       <img src={authorAvatarUrl} alt="" className="w-6 h-6 rounded-full border border-white" loading="lazy" width="24" height="24" />
                      ) : (
                        <div className="w-6 h-6 rounded-full border border-white bg-white/20" />
                      )}

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Settings as SettingsIcon, MessageSquare, Users, ShoppingBag, BarChart3, Palette, Video, Tag } from 'lucide-react'
+import { Settings as SettingsIcon, MessageSquare, Users, ShoppingBag, BarChart3, Palette, Video, Tag, Shield } from 'lucide-react'
 
 import { AdminApp } from '@/features/admin/AdminApp'
 import * as adminApi from '@/features/admin/api'
 import { translations as importedTranslations, type AdminLang } from '@/features/admin/i18n'
-import { tokenStorage } from '@/features/admin/storage'
+import { tokenStorage, type StoredUser } from '@/features/admin/storage'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -20,6 +20,7 @@ import { AdminFunnelTab } from '@/features/admin/tabs/funnel/AdminFunnelTab'
 import { AdminThemesTab } from '@/features/admin/tabs/themes/AdminThemesTab'
 import { AdminTestimonialsTab } from '@/features/admin/tabs/testimonials/AdminTestimonialsTab'
 import { AdminDiscountsTab } from '@/features/admin/tabs/discounts/AdminDiscountsTab'
+import { AdminUsersTab } from '@/features/admin/tabs/users/AdminUsersTab'
 
 const translations = importedTranslations
 /*
@@ -294,11 +295,13 @@ function AdminRouteLegacy() {
   const storage = useMemo(() => tokenStorage(), [])
   const [token, setToken] = useState<string | null>(() => storage.get())
 
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState<string | null>(null)
   const [loadingAuth, setLoadingAuth] = useState(false)
+  const [currentUser, setCurrentUser] = useState<StoredUser | null>(() => storage.getUser())
 
-    const [tab, setTab] = useState<'settings' | 'prompts' | 'customers' | 'orders' | 'funnel' | 'themes' | 'testimonials' | 'discounts'>('orders')
+    const [tab, setTab] = useState<'settings' | 'prompts' | 'customers' | 'orders' | 'funnel' | 'themes' | 'testimonials' | 'discounts' | 'users'>('orders')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [lang, setLang] = useState<AdminLang>('en')
@@ -319,8 +322,17 @@ function AdminRouteLegacy() {
     setLoadingAuth(true)
     setAuthError(null)
     try {
-      const res = await adminApi.adminLogin(password)
+      const res = await adminApi.adminLogin(username, password)
       storage.set(res.token)
+      const me = await adminApi.adminGetMe(res.token)
+      const user: StoredUser = {
+        userId: me.userId,
+        username: me.username,
+        role: me.role as 'admin' | 'user',
+        permissions: me.permissions,
+      }
+      storage.setUser(user)
+      setCurrentUser(user)
       setToken(res.token)
     } catch (e: any) {
       setAuthError(e?.message ?? t.loginFailed)
@@ -332,6 +344,7 @@ function AdminRouteLegacy() {
   async function logout() {
     storage.clear()
     setToken(null)
+    setCurrentUser(null)
     setSettings(null)
     setTemplates([])
     setSelectedCustomer(null)
@@ -350,11 +363,20 @@ function AdminRouteLegacy() {
     setTemplates(items)
   }
 
+  function hasSection(section: string) {
+    if (!currentUser || currentUser.role === 'admin') return true
+    return (currentUser.permissions ?? []).includes(section)
+  }
+
   useEffect(() => {
     if (!token) return
+    const tasks: Promise<void>[] = []
+    if (hasSection('settings')) tasks.push(refreshSettings())
+    if (hasSection('prompts')) tasks.push(refreshTemplates())
+    if (tasks.length === 0) return
     setLoading(true)
     setError(null)
-    Promise.all([refreshSettings(), refreshTemplates()])
+    Promise.all(tasks)
       .catch((e) => setError(e?.message ?? t.failedLoadAdmin))
       .finally(() => setLoading(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -593,14 +615,23 @@ function AdminRouteLegacy() {
         <Card className="mt-8">
           <CardHeader className="p-4 pb-2">
             <CardTitle className="text-base">{t.loginHeader}</CardTitle>
-            <CardDescription>{t.loginDesc}</CardDescription>
+            <CardDescription>{t.loginDesc ?? 'Enter your credentials to log in.'}</CardDescription>
           </CardHeader>
           <CardContent className="p-4 pt-0 space-y-3">
+            <Input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder={t.username ?? 'Username'}
+              autoComplete="username"
+            />
             <Input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="ADMIN_PASSWORD"
+              placeholder={t.password ?? 'Password'}
+              autoComplete="current-password"
+              onKeyDown={(e) => { if (e.key === 'Enter') void login() }}
             />
             <Button className="w-full" onClick={() => void login()} disabled={loadingAuth}>
               {loadingAuth ? t.loggingIn : t.loginButton}
@@ -619,19 +650,25 @@ function AdminRouteLegacy() {
       isLoading={loading}
       loadingLabel={t.loading}
       error={error}
-      navItems={[
-        { value: 'orders', icon: ShoppingBag, label: t.orders },
-        { value: 'funnel', icon: BarChart3, label: t.funnel },
-        { value: 'customers', icon: Users, label: t.customers },
-        { value: 'settings', icon: SettingsIcon, label: t.settings },
-        { value: 'prompts', icon: MessageSquare, label: t.prompts },
-        { value: 'themes', icon: Palette, label: t.themes },
-        { value: 'testimonials', icon: Video, label: t.testimonials },
-        { value: 'discounts', icon: Tag, label: t.discounts ?? 'Discounts' },
-      ]}
+      navItems={(() => {
+        const all = [
+          { value: 'orders', icon: ShoppingBag, label: t.orders },
+          { value: 'funnel', icon: BarChart3, label: t.funnel },
+          { value: 'customers', icon: Users, label: t.customers },
+          { value: 'settings', icon: SettingsIcon, label: t.settings },
+          { value: 'prompts', icon: MessageSquare, label: t.prompts },
+          { value: 'themes', icon: Palette, label: t.themes },
+          { value: 'testimonials', icon: Video, label: t.testimonials },
+          { value: 'discounts', icon: Tag, label: t.discounts ?? 'Discounts' },
+          ...(currentUser?.role === 'admin' ? [{ value: 'users', icon: Shield, label: t.users ?? 'Users' }] : []),
+        ]
+        if (!currentUser || currentUser.role === 'admin') return all
+        const perms = currentUser.permissions ?? []
+        return all.filter((item) => perms.includes(item.value))
+      })()}
       activeNav={tab}
       onSelectNav={(v) => {
-        setTab(v)
+        setTab(v as typeof tab)
         setIsSidebarOpen(false)
       }}
       lang={lang}
@@ -745,6 +782,12 @@ function AdminRouteLegacy() {
       {tab === 'discounts' && token && (
         <AdminSettingsTab>
           <AdminDiscountsTab token={token} t={t} />
+        </AdminSettingsTab>
+      )}
+
+      {tab === 'users' && token && currentUser?.role === 'admin' && (
+        <AdminSettingsTab>
+          <AdminUsersTab token={token} t={t} currentUserId={currentUser.userId} />
         </AdminSettingsTab>
       )}
     </AdminLayout>

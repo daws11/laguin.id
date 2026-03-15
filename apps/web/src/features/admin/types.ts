@@ -307,6 +307,7 @@ export type UpsellItem = {
   actionConfig?: {
     deliveryTimeMinutes?: number
   }
+  orderProcessingOnly?: boolean
 }
 
 export type UpsellConfig = {
@@ -314,6 +315,15 @@ export type UpsellConfig = {
   headline: string
   footerNote: string
   items: UpsellItem[]
+}
+
+export type OrderProcessingPageConfig = {
+  headline: string
+  subtitle: string
+  countdownLabel: string
+  bottomText: string
+  upsellItemIds: string[]
+  imageUrl: string
 }
 
 export type PriceVisibility = {
@@ -412,6 +422,7 @@ export type PublicSiteDraft = {
     manualConfirmationEnabled: boolean
     deliveryDelayHours: number
     deliveryDelayUnit: 'hours' | 'days'
+    maxRegenerations: number
     paymentAmount: number
     originalAmount: number
   }
@@ -425,6 +436,7 @@ export type PublicSiteDraft = {
   miscText: MiscTextConfig
   priceVisibility: PriceVisibility
   upsell: UpsellConfig
+  orderProcessingPage: OrderProcessingPageConfig
 }
 
 export type CustomerListItem = {

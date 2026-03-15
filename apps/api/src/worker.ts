@@ -231,6 +231,15 @@ async function reminderTick() {
 
     const now = Date.now()
 
+    // Build a list of all due reminders across all drafts.
+    type ReminderTask = {
+      draft: typeof drafts[number]
+      reminder: typeof reminderTemplates[number]
+      reminderKey: string
+      alreadySent: string[]
+    }
+    const tasks: ReminderTask[] = []
+
     for (const draft of drafts) {
       if (!draft.whatsappCapturedAt || !draft.whatsappNumber) continue
 
@@ -248,51 +257,76 @@ async function reminderTick() {
         if (now < dueAt) continue
         if (alreadySent.includes(reminderKey)) continue
 
-        try {
-          const payload = {
-            from,
-            to: draft.whatsappNumber,
-            type: 'template',
-            template: {
-              name: reminder.templateName,
-              language: { code: reminder.templateLangCode },
-            },
-            externalId: `reminder:${draft.id}:${reminderKey}`,
-          }
+        tasks.push({ draft, reminder, reminderKey, alreadySent })
+      }
+    }
 
-          const res = await fetch('https://api.ycloud.com/v2/whatsapp/messages', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-API-Key': apiKey,
-            },
-            body: JSON.stringify(payload),
-          })
-
-          if (res.ok) {
-            const updatedSent = [...alreadySent, reminderKey]
-            await prisma.orderDraft.update({
-              where: { id: draft.id },
-              data: { remindersSent: updatedSent },
-            })
-            alreadySent.push(reminderKey)
-            console.log(
-              `[worker] Reminder sent: draft=${draft.id} template=${reminder.templateName} delay=${reminder.delayMinutes}m`,
-            )
-            await prisma.whatsAppLog.create({
-              data: {
-                type: 'reminder_sent',
-                phone: draft.whatsappNumber!,
-                templateName: reminder.templateName,
-                templateLangCode: reminder.templateLangCode,
-                draftId: draft.id,
+    // Process reminders in parallel batches (concurrency limit of 10).
+    const BATCH_SIZE = 10
+    for (let i = 0; i < tasks.length; i += BATCH_SIZE) {
+      const batch = tasks.slice(i, i + BATCH_SIZE)
+      await Promise.allSettled(
+        batch.map(async ({ draft, reminder, reminderKey, alreadySent }) => {
+          try {
+            const payload = {
+              from,
+              to: draft.whatsappNumber,
+              type: 'template',
+              template: {
+                name: reminder.templateName,
+                language: { code: reminder.templateLangCode },
               },
+              externalId: `reminder:${draft.id}:${reminderKey}`,
+            }
+
+            const res = await fetch('https://api.ycloud.com/v2/whatsapp/messages', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': apiKey,
+              },
+              body: JSON.stringify(payload),
             })
-          } else {
-            const body = await res.json().catch(() => null)
+
+            if (res.ok) {
+              const updatedSent = [...alreadySent, reminderKey]
+              await prisma.orderDraft.update({
+                where: { id: draft.id },
+                data: { remindersSent: updatedSent },
+              })
+              console.log(
+                `[worker] Reminder sent: draft=${draft.id} template=${reminder.templateName} delay=${reminder.delayMinutes}m`,
+              )
+              await prisma.whatsAppLog.create({
+                data: {
+                  type: 'reminder_sent',
+                  phone: draft.whatsappNumber!,
+                  templateName: reminder.templateName,
+                  templateLangCode: reminder.templateLangCode,
+                  draftId: draft.id,
+                },
+              })
+            } else {
+              const body = await res.json().catch(() => null)
+              console.error(
+                `[worker] Reminder send failed: draft=${draft.id} status=${res.status}`,
+                body,
+              )
+              await prisma.whatsAppLog.create({
+                data: {
+                  type: 'reminder_failed',
+                  phone: draft.whatsappNumber!,
+                  templateName: reminder.templateName,
+                  templateLangCode: reminder.templateLangCode,
+                  draftId: draft.id,
+                  error: `HTTP ${res.status}: ${JSON.stringify(body)}`,
+                },
+              })
+            }
+          } catch (err: any) {
             console.error(
-              `[worker] Reminder send failed: draft=${draft.id} status=${res.status}`,
-              body,
+              `[worker] Reminder exception: draft=${draft.id} template=${reminder.templateName}`,
+              err?.message,
             )
             await prisma.whatsAppLog.create({
               data: {
@@ -301,27 +335,12 @@ async function reminderTick() {
                 templateName: reminder.templateName,
                 templateLangCode: reminder.templateLangCode,
                 draftId: draft.id,
-                error: `HTTP ${res.status}: ${JSON.stringify(body)}`,
+                error: err?.message ?? String(err),
               },
-            })
+            }).catch(() => {})
           }
-        } catch (err: any) {
-          console.error(
-            `[worker] Reminder exception: draft=${draft.id} template=${reminder.templateName}`,
-            err?.message,
-          )
-          await prisma.whatsAppLog.create({
-            data: {
-              type: 'reminder_failed',
-              phone: draft.whatsappNumber!,
-              templateName: reminder.templateName,
-              templateLangCode: reminder.templateLangCode,
-              draftId: draft.id,
-              error: err?.message ?? String(err),
-            },
-          }).catch(() => {})
-        }
-      }
+        }),
+      )
     }
   } catch (err: any) {
     console.error('[worker] reminderTick error:', err?.message)
@@ -501,13 +520,13 @@ async function exportCleanupTick() {
 
 console.log('[worker] started')
 
-// Every 5 seconds: attempt one generation job.
-cron.schedule('*/5 * * * * *', () => {
+// Every 15 seconds: attempt one generation job.
+cron.schedule('*/15 * * * * *', () => {
   void generationTick()
 })
 
-// Every 10 seconds: attempt one delivery job.
-cron.schedule('*/10 * * * * *', () => {
+// Every 30 seconds: attempt one delivery job.
+cron.schedule('*/30 * * * * *', () => {
   void deliveryTick()
 })
 
@@ -516,8 +535,8 @@ cron.schedule('* * * * *', () => {
   void reminderTick()
 })
 
-// Every 10 seconds: process export jobs.
-cron.schedule('*/10 * * * * *', () => {
+// Every 30 seconds: process export jobs.
+cron.schedule('*/30 * * * * *', () => {
   void exportTick()
 })
 

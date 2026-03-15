@@ -8,16 +8,16 @@ import { resolveApiUrl } from '@/lib/http'
 import * as adminApi from '@/features/admin/api'
 import { moveItem, parseToastItemsJson } from '@/features/admin/publicSiteDraft'
 import type { PublicSiteDraft, Settings } from '@/features/admin/types'
-import { 
-  LayoutTemplate, 
-  Music, 
-  MessageSquare, 
-  Image as ImageIcon, 
-  Type, 
+import {
+  LayoutTemplate,
+  Music,
+  MessageSquare,
+  Image as ImageIcon,
+  Type,
   PlayCircle,
   Zap,
   Smartphone,
-  Key
+  Key,
 } from 'lucide-react'
 import { CreationDeliveryCard } from './CreationDeliveryCard'
 import { WhatsappGatewayCard } from './WhatsappGatewayCard'

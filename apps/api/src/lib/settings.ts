@@ -52,7 +52,12 @@ const defaultPublicSiteConfig = {
   },
 } as const
 
-export async function getOrCreateSettings() {
+// --- In-memory settings cache (TTL-based) ---
+let _cachedSettings: Awaited<ReturnType<typeof _fetchSettings>> | null = null
+let _cacheExpiresAt = 0
+const SETTINGS_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+
+async function _fetchSettings() {
   const existing = await prisma.settings.findFirst()
   if (existing) return existing
   return prisma.settings.create({
@@ -63,6 +68,21 @@ export async function getOrCreateSettings() {
       publicSiteConfig: defaultPublicSiteConfig as any,
     },
   })
+}
+
+export async function getOrCreateSettings() {
+  const now = Date.now()
+  if (_cachedSettings && now < _cacheExpiresAt) return _cachedSettings
+  const settings = await _fetchSettings()
+  _cachedSettings = settings
+  _cacheExpiresAt = now + SETTINGS_CACHE_TTL_MS
+  return settings
+}
+
+/** Call after any settings update to force the next read to hit the DB. */
+export function invalidateSettingsCache() {
+  _cachedSettings = null
+  _cacheExpiresAt = 0
 }
 
 export function maybeDecrypt(value: string | null | undefined) {

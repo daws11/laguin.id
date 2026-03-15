@@ -8,7 +8,7 @@ import { resolveApiUrl } from '@/lib/http'
 import * as adminApi from '@/features/admin/api'
 import { moveItem, parseToastItemsJson } from '@/features/admin/publicSiteDraft'
 import type { PublicSiteDraft } from '@/features/admin/types'
-import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap, Palette, ImagePlus, ShieldCheck, Megaphone, Plus, Trash2, Heart, PenLine, PartyPopper, DollarSign, Gift } from 'lucide-react'
+import { LayoutTemplate, Music, MessageSquare, Image as ImageIcon, Type, PlayCircle, Zap, Palette, ImagePlus, ShieldCheck, Megaphone, Plus, Trash2, Heart, PenLine, PartyPopper, DollarSign, Gift, Clock } from 'lucide-react'
 
 interface LandingContentConfigProps {
   draft: PublicSiteDraft
@@ -75,6 +75,7 @@ export function LandingContentConfigSection({
     { id: 'config-step3', label: 'Step 3: Story', icon: PenLine, group: 'Config Steps' },
     { id: 'config-step4', label: 'Step 4: Checkout', icon: PartyPopper, group: 'Config Steps' },
     { id: 'upsell', label: 'Upsell', icon: Gift, group: 'Config Steps' },
+    { id: 'order-processing', label: 'Order Processing', icon: Clock, group: 'Config Steps' },
   ]
 
   const SidebarItem = ({ item }: { item: typeof menuItems[0] }) => (
@@ -1385,6 +1386,16 @@ export function LandingContentConfigSection({
                             </div>
                         </div>
                         <div className="space-y-1">
+                            <label className="text-xs font-medium text-muted-foreground">Max revisions (0 = no revisions allowed)</label>
+                            <Input
+                                type="number"
+                                min={0}
+                                max={10}
+                                value={draft.creationDelivery.maxRegenerations}
+                                onChange={(e) => setDraft(d => ({ ...d, creationDelivery: { ...d.creationDelivery, maxRegenerations: Math.max(0, Math.min(10, Number(e.target.value))) } }))}
+                            />
+                        </div>
+                        <div className="space-y-1">
                             <label className="text-xs font-medium text-muted-foreground">Harga Pembayaran (IDR) — 0 = gratis</label>
                             <Input
                                 type="number"
@@ -2642,6 +2653,21 @@ export function LandingContentConfigSection({
                                             </p>
                                         )}
                                     </div>
+                                    <label className="flex items-center gap-2 text-xs pt-2 border-t cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={!!item.orderProcessingOnly}
+                                            onChange={(e) => setDraft(d => ({
+                                                ...d,
+                                                upsell: {
+                                                    ...d.upsell,
+                                                    items: d.upsell.items.map((it, i) => i === idx ? { ...it, orderProcessingOnly: e.target.checked } : it),
+                                                },
+                                            }))}
+                                        />
+                                        <span>Order processing only</span>
+                                        <span className="text-[10px] text-muted-foreground ml-auto">Skip checkout, show only on processing page</span>
+                                    </label>
                                 </div>
                             ))}
 
@@ -2651,6 +2677,99 @@ export function LandingContentConfigSection({
                                 </div>
                             )}
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'order-processing' && (
+                <div className="space-y-4 w-full animate-in fade-in duration-300">
+                    <div className="pb-2 border-b">
+                        <h3 className="text-base font-semibold">Order Processing Page</h3>
+                        <p className="text-xs text-muted-foreground">Content shown while the order is being processed.</p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium">Header Image</label>
+                        <p className="text-[10px] text-muted-foreground">Replaces the clock icon. Recommended: square or landscape, transparent background.</p>
+                        {draft.orderProcessingPage.imageUrl && (
+                            <div className="relative inline-block">
+                                <img src={draft.orderProcessingPage.imageUrl} alt="Processing header" className="max-h-24 object-contain" />
+                                <button
+                                    type="button"
+                                    className="absolute -top-1 -right-1 bg-destructive text-white rounded-full h-5 w-5 flex items-center justify-center text-xs"
+                                    onClick={() => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, imageUrl: '' } }))}
+                                >×</button>
+                            </div>
+                        )}
+                        <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleUpload(e, 'image', (path) => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, imageUrl: path } })))}
+                        />
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-xs font-medium">Headline</label>
+                        <Input
+                            value={draft.orderProcessingPage.headline}
+                            onChange={(e) => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, headline: e.target.value } }))}
+                            placeholder="e.g. Lagu Anda Sedang Dibuat!"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-medium">Subtitle</label>
+                        <Input
+                            value={draft.orderProcessingPage.subtitle}
+                            onChange={(e) => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, subtitle: e.target.value } }))}
+                            placeholder="e.g. Tim kami sedang membuat lagu spesial untuk Anda"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-medium">Countdown Label</label>
+                        <Input
+                            value={draft.orderProcessingPage.countdownLabel}
+                            onChange={(e) => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, countdownLabel: e.target.value } }))}
+                            placeholder="e.g. Estimasi selesai dalam"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-medium">Bottom Text</label>
+                        <Textarea
+                            value={draft.orderProcessingPage.bottomText}
+                            onChange={(e) => setDraft(d => ({ ...d, orderProcessingPage: { ...d.orderProcessingPage, bottomText: e.target.value } }))}
+                            placeholder="e.g. Kami akan mengirimkan notifikasi via WhatsApp..."
+                            rows={3}
+                        />
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t">
+                        <label className="text-xs font-medium">Upsell Items (shown on processing page)</label>
+                        <p className="text-[10px] text-muted-foreground">Select which upsell items to display on the order processing page.</p>
+                        {draft.upsell.items.length === 0 ? (
+                            <p className="text-xs text-muted-foreground italic">No upsell items configured. Add items in the Upsell tab first.</p>
+                        ) : (
+                            <div className="space-y-1">
+                                {draft.upsell.items.map((item) => (
+                                    <label key={item.id} className="flex items-center gap-2 text-sm rounded-md border px-3 py-2 cursor-pointer hover:bg-muted/30">
+                                        <input
+                                            type="checkbox"
+                                            checked={draft.orderProcessingPage.upsellItemIds.includes(item.id)}
+                                            onChange={(e) => setDraft(d => ({
+                                                ...d,
+                                                orderProcessingPage: {
+                                                    ...d.orderProcessingPage,
+                                                    upsellItemIds: e.target.checked
+                                                        ? [...d.orderProcessingPage.upsellItemIds, item.id]
+                                                        : d.orderProcessingPage.upsellItemIds.filter(id => id !== item.id),
+                                                },
+                                            }))}
+                                        />
+                                        <span>{item.icon} {item.title} — Rp {item.price.toLocaleString()}</span>
+                                        {item.orderProcessingOnly && <span className="text-[10px] text-muted-foreground ml-auto">(processing only)</span>}
+                                    </label>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

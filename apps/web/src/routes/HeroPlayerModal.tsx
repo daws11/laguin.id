@@ -103,7 +103,7 @@ export function HeroPlayerModal({
                     <div className="font-serif italic text-xl sm:text-3xl leading-tight">“{quote}”</div>
                     <div className="mt-2 sm:mt-4 flex items-center gap-2 sm:gap-3">
                       {authorAvatarUrl ? (
-                        <img src={authorAvatarUrl} className="h-8 w-8 sm:h-10 sm:w-10 rounded-full border border-white/60" />
+                        <img src={authorAvatarUrl} alt="" className="h-8 w-8 sm:h-10 sm:w-10 rounded-full border border-white/60" loading="lazy" width="40" height="40" />
                       ) : (
                         <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-white/20 border border-white/60" />
                       )}

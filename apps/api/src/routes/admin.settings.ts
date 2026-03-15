@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import { prisma } from '../lib/prisma'
 import { encryptString } from '../lib/crypto'
-import { getOrCreateSettings, maybeDecrypt } from '../lib/settings'
+import { getOrCreateSettings, invalidateSettingsCache, maybeDecrypt } from '../lib/settings'
 import { invalidateStorageBackend } from '../lib/objectStorage'
 
 const UpdateSchema = z.object({
@@ -282,6 +282,7 @@ export const adminSettingsRoutes: FastifyPluginAsync = async (app) => {
       where: { id: s.id },
       data,
     })
+    invalidateSettingsCache()
 
     const cfg = (updated.whatsappConfig && typeof updated.whatsappConfig === 'object' ? updated.whatsappConfig : null) ?? {}
     const ycloud = (cfg as any).ycloud ?? {}

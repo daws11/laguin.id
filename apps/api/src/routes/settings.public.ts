@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma'
 import { getOrCreateSettings, maybeDecrypt } from '../lib/settings'
+import { getCachedThemeBySlug } from '../lib/themes'
 
 const QuerySchema = z.object({
   theme: z.string().optional(),
@@ -17,7 +18,7 @@ export const publicSettingsRoutes: FastifyPluginAsync = async (app) => {
     
     let themeSettings: any = null
     if (themeSlug) {
-      const theme = await prisma.theme.findUnique({ where: { slug: themeSlug } })
+      const theme = await getCachedThemeBySlug(themeSlug)
       if (theme && theme.isActive) {
         themeSettings = theme.settings
       }

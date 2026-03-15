@@ -3,6 +3,7 @@ import { renderPrompt, OrderInputSchema } from 'shared'
 import { prisma } from '../lib/prisma'
 import { addOrderEvent } from '../lib/events'
 import { getKaiAiApiKey, getOpenAIApiKey, getOpenAIModel, getOrCreateSettings } from '../lib/settings'
+import { getCachedThemeBySlug } from '../lib/themes'
 import { generateTextWithOpenAI } from '../clients/openaiClient'
 import { createSunoTaskWithKieAi, getSunoTaskWithKieAi } from '../clients/kaiAiClient'
 import type { Prisma } from '@prisma/client'
@@ -414,7 +415,7 @@ export async function completeOrder(orderId: string, opts?: { skipTrackCheck?: b
   let effectiveInstantEnabled = settings.instantEnabled
   let effectiveDeliveryDelayHours = settings.deliveryDelayHours ?? 24
   if (order.themeSlug) {
-    const theme = await prisma.theme.findUnique({ where: { slug: order.themeSlug } })
+    const theme = await getCachedThemeBySlug(order.themeSlug)
     if (theme?.settings && typeof theme.settings === 'object') {
       const cd = (theme.settings as any)?.creationDelivery
       if (cd && typeof cd === 'object') {

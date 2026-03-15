@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Controller, useForm, type FieldErrors, type Path } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -11,11 +11,22 @@ import { CountdownTimer } from '@/components/landing/CountdownTimer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { SelectionChip } from '@/components/ui/selection-chip' // Adjust import path if needed
-import { VibeCard } from '@/components/ui/vibe-card' // Adjust import path
-import { PromptChip } from '@/components/ui/prompt-chip' // Adjust import path
+import { SelectionChip } from '@/components/ui/selection-chip'
+import { VibeCard } from '@/components/ui/vibe-card'
+import { PromptChip } from '@/components/ui/prompt-chip'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { DraftCountdown } from './config/DraftCountdown'
+import {
+  type PersistedConfigDraft,
+  CONFIG_DRAFT_STORAGE_KEY,
+  fmtCurrency,
+  getErrorMessage,
+  getPersistableFormValues,
+  hasMeaningfulDraft,
+  generateDraftKey,
+  resolveAsset,
+} from './config/utils'
 
 import {
   Heart,
@@ -24,7 +35,6 @@ import {
   ShieldCheck,
   Clock,
   ChevronLeft,
-  Timer,
   Sparkles,
   Zap,
   PartyPopper,
@@ -41,18 +51,6 @@ import {
   Clipboard
 } from 'lucide-react'
 
-type PersistedConfigDraft = {
-  v: 1
-  draftKey?: string | null
-  step: number
-  relationship: string
-  emailVerificationId: string | null
-  formValues: Partial<OrderInput>
-  updatedAt: number
-}
-
-const CONFIG_DRAFT_STORAGE_KEY = 'laguin:config_draft:v1'
-
 export function ConfigRoute() {
   const themeSlug = useThemeSlug()
   const navigate = useNavigate()
@@ -60,7 +58,7 @@ export function ConfigRoute() {
   const [isHydrated, setIsHydrated] = useState(false)
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [_error, setError] = useState<string | null>(null)
   const [relationship, setRelationship] = useState('Pasangan')
   const storyTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const whatsappSectionRef = useRef<HTMLDivElement | null>(null)
@@ -79,22 +77,11 @@ export function ConfigRoute() {
   const [pixelStep4Script, setPixelStep4Script] = useState<string | null>(null)
   const pixelStep1Fired = useRef(false)
   const pixelStep4Fired = useRef(false)
-  const [draftCountdown, setDraftCountdown] = useState(10 * 60)
-  const draftCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
   const [discountCodeInput, setDiscountCodeInput] = useState('')
   const [discountValidating, setDiscountValidating] = useState(false)
   const [discountError, setDiscountError] = useState<string | null>(null)
   const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; amount: number } | null>(null)
   const [discountExpanded, setDiscountExpanded] = useState(false)
-
-  const fmtCurrency = (amt: number) => {
-    if (amt === 0) return 'GRATIS'
-    if (amt >= 100000 && amt < 1000000) {
-      return `Rp ${Math.floor(amt / 1000)}rb`
-    }
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amt)
-  }
 
   const deliveryEta = useMemo(() => {
     if (instantEnabled) {
@@ -454,15 +441,6 @@ export function ConfigRoute() {
     extraNotes: '',
   }
 
-  const getErrorMessage = (e: unknown, fallback: string): string => {
-    if (e instanceof Error && e.message) return e.message
-    if (typeof e === 'string') return e
-    if (e && typeof e === 'object' && 'message' in e && typeof e.message === 'string') {
-      return e.message
-    }
-    return fallback
-  }
-
   const form = useForm<OrderInput>({
     // NOTE: keep build stable across Zod typings changes between deps.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -483,41 +461,12 @@ export function ConfigRoute() {
   const didHydrateDraftRef = useRef(false)
   const suppressOtpResetOnceRef = useRef(false)
 
-  function generateDraftKey() {
-    const uuid = globalThis.crypto?.randomUUID?.()
-    if (uuid) return uuid
-    // Fallback: long-enough opaque token (best-effort).
-    return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`
-  }
-
   function getOrCreateDraftKey() {
     if (draftKeyRef.current) return draftKeyRef.current
     const next = generateDraftKey()
     draftKeyRef.current = next
     setDraftKey(next)
     return next
-  }
-
-  const getPersistableFormValues = (values: Partial<OrderInput>): Partial<OrderInput> => ({
-    yourName: values.yourName,
-    recipientName: values.recipientName,
-    occasion: values.occasion,
-    story: values.story,
-    musicPreferences: values.musicPreferences,
-    whatsappNumber: values.whatsappNumber,
-    email: values.email,
-    extraNotes: values.extraNotes,
-  })
-
-  const hasMeaningfulDraft = (values: Partial<OrderInput>) => {
-    const s = (v: unknown) => String(v ?? '').trim()
-    return Boolean(
-      s(values.recipientName) ||
-        s(values.email) ||
-        s(values.whatsappNumber) ||
-        s(values.story) ||
-        s(values.extraNotes)
-    )
   }
 
   const serverDraftSyncTimerRef = useRef<number | null>(null)
@@ -765,7 +714,7 @@ export function ConfigRoute() {
 
   const minStep = configSteps.step0.enabled ? 0 : 1
 
-  const handleNext = async () => {
+  const handleNext = useCallback(async () => {
     if (step === 0) {
       setStep(1)
       window.scrollTo(0, 0)
@@ -781,12 +730,12 @@ export function ConfigRoute() {
       setStep((prev) => Math.min(prev + 1, 4))
       window.scrollTo(0, 0)
     }
-  }
+  }, [step, form])
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     setStep((prev) => Math.max(prev - 1, minStep))
     window.scrollTo(0, 0)
-  }
+  }, [minStep])
 
   // Reset OTP state if email changes (but not if already verified)
   useEffect(() => {
@@ -976,7 +925,7 @@ export function ConfigRoute() {
     const cfg = publicSiteConfig && typeof publicSiteConfig === 'object' ? (publicSiteConfig as any) : {}
     const u = cfg?.upsell && typeof cfg.upsell === 'object' ? cfg.upsell : {}
     if (!u.enabled) return null
-    const items = Array.isArray(u.items) ? u.items.filter((it: any) => it?.id && it?.title) : []
+    const items = Array.isArray(u.items) ? u.items.filter((it: any) => it?.id && it?.title && !it?.orderProcessingOnly) : []
     if (items.length === 0) return null
     return {
       headline: typeof u.headline === 'string' ? u.headline : '',
@@ -1050,6 +999,7 @@ export function ConfigRoute() {
 
     setLoading(true)
     setError(null)
+    let navigatingAway = false
     try {
       form.clearErrors('whatsappNumber')
       const res = await apiPost<{ orderId: string; xenditInvoiceUrl?: string }>('/api/orders/draft', formPayload)
@@ -1084,16 +1034,18 @@ export function ConfigRoute() {
         ].join('\n')
 
         const url = `https://wa.me/${adminNumber}?text=${encodeURIComponent(message)}`
+        navigatingAway = true
         window.location.assign(url)
         return
       }
 
       if (res.xenditInvoiceUrl) {
+        navigatingAway = true
         window.location.href = res.xenditInvoiceUrl
         return
       }
 
-      navigate(`/checkout?orderId=${encodeURIComponent(res.orderId)}`)
+      navigate(`/order/${encodeURIComponent(res.orderId)}`)
     } catch (err: unknown) {
       const msg = getErrorMessage(err, 'Something went wrong. Please try again.')
       if (whatsappEnabled) {
@@ -1104,7 +1056,7 @@ export function ConfigRoute() {
         setError(msg)
       }
     } finally {
-      setLoading(false)
+      if (!navigatingAway) setLoading(false)
     }
   }
 
@@ -1125,33 +1077,6 @@ export function ConfigRoute() {
     setEmailVerified(false)
   }, [manualConfirmationEnabled, form, setValue, step])
 
-  useEffect(() => {
-    if (!error) return
-  }, [error])
-
-  useEffect(() => {
-    if (step === 4) {
-      setDraftCountdown(10 * 60)
-      draftCountdownRef.current = setInterval(() => {
-        setDraftCountdown((prev) => {
-          if (prev <= 1) {
-            if (draftCountdownRef.current) clearInterval(draftCountdownRef.current)
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-    } else {
-      if (draftCountdownRef.current) {
-        clearInterval(draftCountdownRef.current)
-        draftCountdownRef.current = null
-      }
-    }
-    return () => {
-      if (draftCountdownRef.current) clearInterval(draftCountdownRef.current)
-    }
-  }, [step])
-
   const rawThemeColors = (publicSiteConfig as any)?.colors
   const themeStyle = {
     '--theme-accent': rawThemeColors?.accentColor || '#E11D48',
@@ -1160,13 +1085,6 @@ export function ConfigRoute() {
     '--theme-bg': rawThemeColors?.bgColor2 || '#FFFFFF',
   } as React.CSSProperties
 
-  const apiBase = import.meta.env.VITE_API_BASE_URL ?? ''
-  const resolveAsset = (v: string) => {
-    const s = (v ?? '').trim()
-    if (!s) return ''
-    if (/^https?:\/\//i.test(s)) return s
-    return apiBase + s
-  }
   const logoUrl = typeof (publicSiteConfig as any)?.logoUrl === 'string' && (publicSiteConfig as any).logoUrl.trim()
     ? resolveAsset((publicSiteConfig as any).logoUrl)
     : '/logo.webp'
@@ -1635,6 +1553,9 @@ export function ConfigRoute() {
 
                 {/* Agreement UI temporarily disabled (keep announcement step). */}
 
+                {/* Draft urgency countdown (isolated — does not re-render parent) */}
+                <DraftCountdown text={configSteps.step4.draftTimerText} />
+
                 {/* Primary CTA after contact inputs */}
                 <Button
                   type="submit"
@@ -1918,12 +1839,6 @@ export function ConfigRoute() {
           {/* BOTTOM NAV / CTA — hidden on step 4 (inline CTAs used instead) */}
           <div className={`fixed inset-x-0 bottom-0 z-50 bg-white border-t border-gray-100 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]${step === 4 ? ' hidden' : ''}`}>
              <div className="mx-auto max-w-4xl flex flex-col gap-2">
-               {step === 4 && (
-                 <div className="text-center text-[10px] sm:text-xs text-gray-500 flex justify-center items-center gap-1 mb-1">
-                   <Timer className="h-3 w-3" /> {configSteps.step4.draftTimerText.replace('{timer}', `${Math.floor(draftCountdown / 60)}:${String(draftCountdown % 60).padStart(2, '0')}`)}
-                 </div>
-               )}
-
                {/* Intentionally no global error banner here (avoid duplicate warnings). */}
                
                <div className="flex gap-3">

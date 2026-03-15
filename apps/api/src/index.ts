@@ -28,9 +28,12 @@ import { adminFunnelRoutes } from './routes/admin.funnel'
 import { adminThemeRoutes } from './routes/admin.themes'
 import { adminDiscountRoutes } from './routes/admin.discounts'
 import { adminWhatsAppLogRoutes } from './routes/admin.whatsappLogs'
+import { adminUserRoutes } from './routes/admin.users'
 import { publicDiscountRoutes } from './routes/discount.public'
 import { xenditWebhookRoutes } from './routes/xendit.webhook'
 import { ycloudWebhookRoutes } from './routes/ycloud.webhook'
+import { prisma } from './lib/prisma'
+import { hashPassword } from './lib/password'
 
 const app = Fastify({ logger: true })
 
@@ -122,8 +125,21 @@ async function adminAuth(req: any, reply: any) {
   }
 
   const user = (req as any).user
-  if (!user || user.role !== 'admin') {
+  if (!user || !['admin', 'user'].includes(user.role)) {
     return reply.code(403).send({ error: 'forbidden' })
+  }
+}
+
+function requireSection(...sections: string[]) {
+  return async function (req: any, reply: any) {
+    const user = (req as any).user
+    if (!user) return reply.code(401).send({ error: 'unauthorized' })
+    if (user.role === 'admin') return
+    const perms: string[] = Array.isArray(user.permissions) ? user.permissions : []
+    const has = sections.some((s) => perms.includes(s))
+    if (!has) {
+      return reply.code(403).send({ error: 'forbidden', message: 'insufficient_permissions' })
+    }
   }
 }
 
@@ -144,16 +160,54 @@ await app.register(ycloudWebhookRoutes, { prefix: '/api' })
 await app.register(adminAuthRoutes, { prefix: '/api/admin' })
 await app.register(async (adminApp) => {
   adminApp.addHook('preHandler', adminAuth)
-  await adminApp.register(adminPromptRoutes)
-  await adminApp.register(adminSettingsRoutes)
-  await adminApp.register(adminCustomerRoutes)
-  await adminApp.register(adminOrderDraftRoutes)
-  await adminApp.register(adminOrderRoutes)
-  await adminApp.register(adminUploadsRoutes)
-  await adminApp.register(adminFunnelRoutes)
-  await adminApp.register(adminThemeRoutes)
-  await adminApp.register(adminDiscountRoutes)
-  await adminApp.register(adminWhatsAppLogRoutes)
+
+  // Orders + Testimonials (testimonial routes are inside adminOrderRoutes)
+  await adminApp.register(async (section) => {
+    section.addHook('preHandler', requireSection('orders', 'testimonials'))
+    await section.register(adminOrderRoutes)
+    await section.register(adminWhatsAppLogRoutes)
+  })
+
+  // Funnel
+  await adminApp.register(async (section) => {
+    section.addHook('preHandler', requireSection('funnel'))
+    await section.register(adminFunnelRoutes)
+  })
+
+  // Customers
+  await adminApp.register(async (section) => {
+    section.addHook('preHandler', requireSection('customers'))
+    await section.register(adminCustomerRoutes)
+    await section.register(adminOrderDraftRoutes)
+  })
+
+  // Settings
+  await adminApp.register(async (section) => {
+    section.addHook('preHandler', requireSection('settings'))
+    await section.register(adminSettingsRoutes)
+    await section.register(adminUploadsRoutes)
+  })
+
+  // Prompts
+  await adminApp.register(async (section) => {
+    section.addHook('preHandler', requireSection('prompts'))
+    await section.register(adminPromptRoutes)
+  })
+
+  // Themes
+  await adminApp.register(async (section) => {
+    section.addHook('preHandler', requireSection('themes'))
+    await section.register(adminThemeRoutes)
+  })
+
+  // Discounts
+  await adminApp.register(async (section) => {
+    section.addHook('preHandler', requireSection('discounts'))
+    await section.register(adminDiscountRoutes)
+  })
+
+  // Users (admin-only, enforced inside the route file)
+  await adminApp.register(adminUserRoutes)
 }, { prefix: '/api/admin' })
 
 if (hasWebDist) {
@@ -173,3 +227,19 @@ const host = process.env.HOST ?? '0.0.0.0'
 
 await app.listen({ port, host })
 
+// Auto-seed default admin user on first startup
+try {
+  const adminCount = await prisma.adminUser.count()
+  if (adminCount === 0) {
+    const pw = process.env.ADMIN_PASSWORD
+    if (pw) {
+      const hash = await hashPassword(pw)
+      await prisma.adminUser.create({
+        data: { username: 'admin', passwordHash: hash, role: 'admin', permissions: [] },
+      })
+      app.log.info('Default admin user created from ADMIN_PASSWORD')
+    }
+  }
+} catch (e) {
+  app.log.warn(e, 'Failed to auto-seed admin user (migration may not have run yet)')
+}

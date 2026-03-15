@@ -108,7 +108,7 @@ export function UpsellRoute() {
         return
       }
 
-      navigate(`/checkout?orderId=${encodeURIComponent(res.orderId)}`)
+      navigate(`/order/${encodeURIComponent(res.orderId)}`)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Something went wrong.'
       setError(msg)

@@ -115,10 +115,14 @@ export function AdminThemesTab({ t, token, defaultThemeSlug, onDefaultThemeChang
     setLoading(true)
     try {
       const payload = buildPublicSiteConfigPayload(themeDraft)
-      await adminApi.adminUpdateTheme(token, editing.slug, { name: formName, isActive: formActive, settings: payload })
+      const slugChanged = formSlug !== editing.slug ? formSlug : undefined
+      await adminApi.adminUpdateTheme(token, editing.slug, { slug: slugChanged, name: formName, isActive: formActive, settings: payload })
       setThemeSavedAt(new Date().toLocaleTimeString())
       setThemeDraftBaseline(JSON.stringify(payload))
       await refresh()
+      if (slugChanged) {
+        setEditing({ ...editing, slug: slugChanged, name: formName, isActive: formActive })
+      }
     } catch (e: any) {
       setThemeError(e?.message ?? 'Failed to save theme')
     } finally {
@@ -250,7 +254,7 @@ export function AdminThemesTab({ t, token, defaultThemeSlug, onDefaultThemeChang
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold">{formName || editing.name}</h3>
-            <p className="text-sm text-muted-foreground">/{editing.slug}</p>
+            <p className="text-sm text-muted-foreground">/{formSlug || editing.slug}</p>
           </div>
         </div>
 
@@ -263,7 +267,11 @@ export function AdminThemesTab({ t, token, defaultThemeSlug, onDefaultThemeChang
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">{t.themeSlug ?? 'Slug (URL path)'}</label>
-                <Input value={formSlug} disabled className="bg-muted/30" />
+                <Input
+                  value={formSlug}
+                  onChange={(e) => setFormSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                />
+                {formSlug && formSlug !== editing.slug && <p className="text-xs text-muted-foreground">URL: /{formSlug}</p>}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -324,7 +332,7 @@ export function AdminThemesTab({ t, token, defaultThemeSlug, onDefaultThemeChang
             draft={themeDraft}
             setDraft={setThemeDraft}
             onSave={handleSaveTheme}
-            isDirty={themeDraftIsDirty || formName !== editing.name || formActive !== editing.isActive}
+            isDirty={themeDraftIsDirty || formName !== editing.name || formSlug !== editing.slug || formActive !== editing.isActive}
             savedAt={themeSavedAt}
             error={themeError}
             setError={setThemeError}

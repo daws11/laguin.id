@@ -183,6 +183,13 @@ model Order {
   @@index([deliveryStatus])
   @@index([customerId, createdAt])
   @@index([themeSlug])
+  // Composite indexes for worker polling (high-frequency queries)
+  @@index([status, generationCompletedAt, createdAt])
+  @@index([status, deliveryStatus, deliveryScheduledAt])
+  // Composite index for admin order list filtering
+  @@index([status, deliveryStatus, themeSlug, createdAt])
+  // Composite index for discount usage count
+  @@index([discountCode, customerId])
 }
 
 model OrderEvent {
@@ -236,6 +243,8 @@ model OrderDraft {
   @@index([whatsappNumber])
   @@index([themeSlug])
   @@index([whatsappCapturedAt])
+  // Composite index for worker reminder tick (find unconverted drafts with WhatsApp)
+  @@index([convertedOrderId, whatsappCapturedAt])
 }
 
 model PageView {
@@ -308,6 +317,16 @@ model ExportJob {
   @@index([createdAt])
 }
 
+model AdminUser {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  role         String   @default("user")
+  permissions  Json     @default("[]")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 enum DiscountCodeStatus {
   active
   paused
@@ -326,5 +345,4 @@ model DiscountCode {
   updatedAt       DateTime           @updatedAt
 
   @@index([status])
-  @@index([code])
 }
