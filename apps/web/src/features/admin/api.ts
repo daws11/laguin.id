@@ -250,7 +250,7 @@ export async function adminCreateTheme(token: string, body: { slug: string; name
   return apiPost<ThemeItem>('/api/admin/themes', body, { token })
 }
 
-export async function adminUpdateTheme(token: string, slug: string, body: { name?: string; isActive?: boolean; settings?: any }) {
+export async function adminUpdateTheme(token: string, slug: string, body: { slug?: string; name?: string; isActive?: boolean; settings?: any }) {
   return apiPut<ThemeItem>(`/api/admin/themes/${encodeURIComponent(slug)}`, body, { token })
 }
 

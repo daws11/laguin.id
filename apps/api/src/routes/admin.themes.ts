@@ -19,6 +19,12 @@ const CreateSchema = z.object({
 })
 
 const UpdateSchema = z.object({
+  slug: z
+    .string()
+    .min(2)
+    .max(50)
+    .regex(SlugRegex, 'slug must be lowercase alphanumeric + hyphens only')
+    .optional(),
   name: z.string().min(1).max(200).optional(),
   isActive: z.boolean().optional(),
   settings: z.unknown().optional(),
@@ -75,14 +81,33 @@ export const adminThemeRoutes: FastifyPluginAsync = async (app) => {
     const existing = await prisma.theme.findUnique({ where: { slug: params.data.slug } })
     if (!existing) return reply.code(404).send({ error: 'not_found' })
 
+    const newSlug = parsed.data.slug
+    if (newSlug && newSlug !== params.data.slug) {
+      const conflict = await prisma.theme.findUnique({ where: { slug: newSlug } })
+      if (conflict) {
+        return reply.code(409).send({ error: 'slug_taken', message: 'A theme with this slug already exists.' })
+      }
+    }
+
     const updated = await prisma.theme.update({
       where: { slug: params.data.slug },
       data: {
+        slug: newSlug ?? undefined,
         name: parsed.data.name,
         isActive: parsed.data.isActive,
         settings: parsed.data.settings as any,
       },
     })
+
+    if (newSlug && newSlug !== params.data.slug) {
+      const settings = await getOrCreateSettings()
+      if (settings.defaultThemeSlug === params.data.slug) {
+        await prisma.settings.update({
+          where: { id: settings.id },
+          data: { defaultThemeSlug: newSlug },
+        })
+      }
+    }
 
     return updated
   })
