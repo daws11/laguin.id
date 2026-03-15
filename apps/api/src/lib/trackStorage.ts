@@ -23,7 +23,7 @@ function writeId3Tags(buf: Buffer, meta: TrackMeta): Buffer {
     artist: 'Laguin.id',
     comment: { language: 'ind', text: 'Ubah ceritamu menjadi musik di Laguin.id' },
   }
-  const tagged = NodeID3.update(tags, buf) as Buffer
+  const tagged = NodeID3.write(tags, buf) as Buffer
   return tagged ?? buf
 }
 
