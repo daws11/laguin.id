@@ -104,34 +104,10 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
       if (!whatsappNumber) {
         return reply.code(400).send({ error: 'Nomor WhatsApp tidak valid.' })
       }
-      if (!allowMultipleOrders) {
-        const existingByWhatsapp = await prisma.customer.findUnique({
-          where: { whatsappNumber },
-          select: { id: true },
-        })
-        if (existingByWhatsapp) {
-          return reply
-            .code(409)
-            .send({
-              error: 'duplicate_whatsapp',
-              message:
-                'Nomor WhatsApp ini sudah terdaftar dan pernah digunakan untuk membuat pesanan. Untuk menjaga keamanan dan kualitas layanan, setiap nomor WhatsApp hanya dapat melakukan pemesanan satu kali.',
-            })
-        }
-      }
     }
     const emailRequired = !manualConfirmationEnabled && emailOtpEnabled
     if (emailRequired) {
       if (!emailLower) return reply.code(400).send({ error: 'Email tidak valid.' })
-      if (!allowMultipleOrders) {
-        const existingByEmail = await prisma.customer.findFirst({
-          where: { emailLower },
-          select: { id: true },
-        })
-        if (existingByEmail) {
-          return reply.code(409).send({ error: 'Email sudah terdaftar. Setiap email hanya bisa mendaftar sekali.' })
-        }
-      }
     }
 
     const normalizedInput = {
@@ -270,7 +246,15 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
         })
       } catch (e: any) {
         if (e?.code === 'P2002') {
-          return reply.code(409).send({ error: 'Email atau nomor WhatsApp sudah terdaftar.' })
+          const target = Array.isArray(e.meta?.target) ? e.meta.target : []
+          if (target.includes('whatsappNumber')) {
+            return reply.code(409).send({
+              error: 'duplicate_whatsapp',
+              message:
+                'Nomor WhatsApp ini sudah terdaftar dan pernah digunakan untuk membuat pesanan. Untuk menjaga keamanan dan kualitas layanan, setiap nomor WhatsApp hanya dapat melakukan pemesanan satu kali.',
+            })
+          }
+          return reply.code(409).send({ error: 'Email sudah terdaftar. Setiap email hanya bisa mendaftar sekali.' })
         }
         throw e
       }
