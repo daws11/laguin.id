@@ -131,6 +131,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
         maxRegenerations: MAX_REGENERATIONS,
         hasTestimonial: o.testimonialVideos.length > 0,
         testimonialStatus: o.testimonialVideos[0]?.status ?? null,
+        revisionSubmittedAt: payload.revisionSubmittedAt ?? null,
       }],
     }
   })
@@ -230,6 +231,7 @@ export const orderDeliveryRoutes: FastifyPluginAsync = async (app) => {
 
     const currentPayload = (order.inputPayload && typeof order.inputPayload === 'object' ? order.inputPayload : {}) as Record<string, any>
     const updatedPayload = { ...currentPayload }
+    updatedPayload.revisionSubmittedAt = new Date().toISOString()
 
     if (body.data.revisionType === 'describe' && body.data.description) {
       updatedPayload.revisionDescription = body.data.description

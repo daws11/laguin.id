@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import {
-  Music, Download, FileText, Loader2,
+  Music, Download, FileText, Loader2, Clock,
   RefreshCw, Video, CheckCircle, ChevronDown, ChevronUp, Upload,
 } from 'lucide-react'
 
@@ -58,6 +58,69 @@ type UnlockedOrder = {
   maxRegenerations: number
   hasTestimonial: boolean
   testimonialStatus: string | null
+  revisionSubmittedAt: string | null
+}
+
+const REVISION_WAIT_MS = 24 * 60 * 60 * 1000 // 24 hours
+
+function useCountdown(targetTime: number | null) {
+  const [remaining, setRemaining] = useState(() => {
+    if (!targetTime) return 0
+    return Math.max(0, targetTime - Date.now())
+  })
+
+  useEffect(() => {
+    if (!targetTime) return
+    const tick = () => setRemaining(Math.max(0, targetTime - Date.now()))
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [targetTime])
+
+  const hours = Math.floor(remaining / (1000 * 60 * 60))
+  const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60))
+  const seconds = Math.floor((remaining % (1000 * 60)) / 1000)
+
+  return { remaining, hours, minutes, seconds }
+}
+
+function RevisionWaitScreen({ order, accent, cfg }: { order: UnlockedOrder; accent: string; cfg: DeliveryConfig }) {
+  const submittedAt = order.revisionSubmittedAt ? new Date(order.revisionSubmittedAt).getTime() : null
+  const targetTime = submittedAt ? submittedAt + REVISION_WAIT_MS : null
+  const { hours, minutes, seconds } = useCountdown(targetTime)
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-gray-50 to-white px-4">
+      <div className="text-center max-w-md">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: accent + '15' }}>
+          <Clock className="h-8 w-8" style={{ color: accent }} />
+        </div>
+        <h1 className="text-xl font-semibold text-gray-800">
+          {cfg.processingMessage || 'Revisi Anda sedang diproses!'}
+        </h1>
+        <p className="mt-2 text-sm text-gray-500">
+          Kami sedang mengerjakan versi baru lagu Anda. Perkiraan waktu selesai:
+        </p>
+        <div className="mt-6 flex justify-center gap-3">
+          {[
+            { value: hours, label: 'Jam' },
+            { value: minutes, label: 'Menit' },
+            { value: seconds, label: 'Detik' },
+          ].map((unit) => (
+            <div key={unit.label} className="flex flex-col items-center">
+              <div
+                className="flex h-16 w-16 items-center justify-center rounded-xl text-2xl font-bold text-white"
+                style={{ backgroundColor: accent }}
+              >
+                {String(unit.value).padStart(2, '0')}
+              </div>
+              <span className="mt-1 text-xs text-gray-500">{unit.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 type RevisionType = 'describe' | 'lyrics' | 'new_story'
@@ -501,6 +564,17 @@ export function OrderDeliveryRoute() {
   }
 
   if (unlockedOrders && unlockedOrders.length > 0) {
+    // Check if any order is within 24h revision wait period
+    const revisionWaitOrder = unlockedOrders.find((o) => {
+      if (!o.revisionSubmittedAt || o.regenerationCount === 0) return false
+      const elapsed = Date.now() - new Date(o.revisionSubmittedAt).getTime()
+      return elapsed < REVISION_WAIT_MS
+    })
+
+    if (revisionWaitOrder) {
+      return <RevisionWaitScreen order={revisionWaitOrder} accent={accent} cfg={cfg} />
+    }
+
     const allProcessing = unlockedOrders.every((o) => o.status !== 'completed')
 
     if (allProcessing) {
