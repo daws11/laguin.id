@@ -101,7 +101,8 @@ export const adminOrderRoutes: FastifyPluginAsync = async (app) => {
     return {
       orders: orders.map((o) => {
         // Compute total amount: base price - discount + upsells
-        const basePrice = o.themeSlug ? (themePaymentMap[o.themeSlug] ?? 497000) : 497000
+        // Use stored basePrice if available; fall back to theme lookup for legacy orders
+        const basePrice = typeof o.basePrice === 'number' ? o.basePrice : (o.themeSlug ? (themePaymentMap[o.themeSlug] ?? 497000) : 497000)
         const discount = typeof o.discountAmount === 'number' ? o.discountAmount : 0
         const upsellItems = Array.isArray(o.upsellItems) ? o.upsellItems as any[] : []
         const upsellTotal = upsellItems.reduce((sum: number, item: any) => sum + (typeof item?.price === 'number' ? item.price : 0), 0)

@@ -264,6 +264,8 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
     const xenditConfigured = Boolean(maybeDecrypt((settings as any).xenditSecretKeyEnc))
     const shouldCreateInvoice = xenditConfigured && paymentAmount > 0
 
+    const basePrice = typeof rawPaymentAmount === 'number' && Number.isFinite(rawPaymentAmount) && rawPaymentAmount >= 0 ? Math.floor(rawPaymentAmount) : 497000
+
     const order = await prisma.order.create({
       data: {
         customerId: customer.id,
@@ -272,6 +274,7 @@ export const publicOrdersRoutes: FastifyPluginAsync = async (app) => {
         deliveryStatus: 'delivery_pending',
         paymentStatus: paymentAmount === 0 ? 'free' : 'pending',
         themeSlug,
+        basePrice,
         discountCode: appliedDiscountCode,
         discountAmount: appliedDiscountAmount,
         upsellItems: validatedUpsells !== null ? (validatedUpsells as any) : undefined,
